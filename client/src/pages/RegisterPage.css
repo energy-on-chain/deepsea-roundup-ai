@@ -1,3 +1,27 @@
+/* Banner */
+.section-banner {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  height: calc(100%-90px);
+  justify-content: center;
+  align-items: center;
+  /* background-color: #0281C5; */
+  background-color: #288DAF;
+	padding-top: 75px;
+	padding-bottom: 75px;
+}
+
+.section-banner h1 {
+  width: 85%;
+  font-family: "Montserrat", Arial, serif;
+  font-style: normal;
+  font-weight: 700;
+  font-size: 40px;
+  color: #ffffff;
+  line-height: 48px;
+}
+
 .section-signup {
   display: flex;
   flex-direction: column;
@@ -238,12 +262,15 @@ a:hover{
   background-color: #ffffff;
   padding-top: 50px;
   padding-bottom: 50px;
+  padding-left: 5px;
+  padding-right: 5px;
 }
 
 .section-register h1 {
   color: #00A686;
   font-size: 40px;
   line-height: 40px;
+  padding-bottom: 5px;
 }
 
 .section-register h2 {
@@ -262,7 +289,6 @@ a:hover{
 .section-register h4 {
   color: #01143D;
   font-size: 20px;
-  padding-top: 5px;
 }
 
 .underline {
@@ -286,8 +312,9 @@ a:hover{
   /* text-decoration: underline; */
 }
 
-#weather {
-  color: red;
-  font-size: 30px;
+#disclaimer {
+  color: #00A686;
+  font-size: 40px;
   text-transform: uppercase;
+  padding-bottom: 15px;
 }

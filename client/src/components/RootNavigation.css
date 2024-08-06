@@ -7,7 +7,7 @@
   justify-content: space-between;
   background-color: white;
   flex-wrap: no-wrap;
-  overflow:visible;
+  overflow: visible;
   color: #FFF;
   height: 90px;
   width: 100%;
@@ -26,10 +26,10 @@
 }
 .logo {
   font-size: 35px;
-	font-family: sans-serif;
-	margin-left: 0px;
+  font-family: sans-serif;
+  margin-left: 0px;
   margin-top: 0px;
-	color: #333;
+  color: #333;
   text-decoration: none;
 }
 .navButton {
@@ -61,23 +61,16 @@
   margin: 0;
   padding: 0;
   transition: 0.4s;
-  /* margin-top: 0; */
 }
-.menu a {
-  /* color: #A1A1A1; */
+.menu a,
+.dropdown .dropbtn {
   color: #333333;
   text-decoration: none;
   transition: 0.3s;
 }
-.menu a:hover{
-  color: #222;
-  /* border-bottom: solid 2px; */
-  /* border-color: #222; */
-}
-.menu a:hover{
-  color: #222;
-  /* border-bottom: solid 2px; */
-  /* border-color: #222; */
+.menu a:hover,
+.dropdown .dropbtn:hover {
+  color: #555;
 }
 .menu > li {
   margin: 0 1rem;
@@ -126,7 +119,67 @@
   transform: rotate(-405deg);
 }
 
+/* Dropdown */
+.dropdown {
+  float: left;
+  overflow: hidden;
+}
+
+/* Dropdown button */
+.dropdown .dropbtn {
+  font-size: 16px;
+  border: none;
+  outline: none;
+  background-color: inherit;
+  font-family: inherit;
+  margin: 0;
+  padding-left: 1em;
+  padding-right: 1em;
+}
+
+/* Dropdown content (hidden by default) */
+.dropdown-content {
+  display: none;
+  position: absolute;
+  background-color: #f9f9f9;
+  min-width: 160px;
+  box-shadow: 0px 8px 16px 0px rgba(0,0,0,0.2);
+  z-index: 1;
+}
+
+/* Links inside the dropdown */
+.dropdown-content a {
+  float: none;
+  color: black;
+  padding: 12px 16px;
+  text-decoration: none;
+  display: block;
+  text-align: left;
+}
+
+/* Add a grey background color to dropdown links on hover */
+.dropdown-content a:hover {
+  background-color: #ddd;
+}
+
+/* Show the dropdown menu on hover */
+.dropdown:hover .dropdown-content {
+  display: block;
+}
+
+.menu a, .dropdown .dropbtn, .nav-icon {
+  color: #333333; /* Set this to the same color as your navbar links */
+}
+
+.menu a:hover, .dropdown:hover .dropbtn, .nav-icon:hover {
+  color: #222; /* Set this to the hover color if your navbar links change color on hover */
+}
+
+/* Hide dropdown menu in hamburger menu */
 @media (max-width: 950px) {
+  .dropdown {
+    display: none;
+  }
   .navButtonHamburgerToggle2 {
     display: none;
   }
@@ -134,7 +187,7 @@
     display: flex;
     margin-left: 1em;
     padding-left: 2em;
-    padding-right: 1em;
+    padding-right: 1.5em;
   }
   .menu {
     position: absolute;
@@ -146,7 +199,6 @@
     justify-content: center;
     align-items: center;
     z-index: 99;
-
   }
   #menu-toggle ~ .menu li {
     height: 0;

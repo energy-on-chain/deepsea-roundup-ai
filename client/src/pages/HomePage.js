@@ -29,12 +29,38 @@ import {
 
 import './HomePage.css';
 import './RegisterPage.css';
-import logo from '../images/HomePageLogo.png';
+import desktopLogo from '../images/HomePageLogoDesktop.png';
+import tabletLogo from '../images/HomePageLogoTablet.png';
+import mobileLogo from '../images/HomePageLogoMobile.png';
 
 function HomePage() {
+  const [logo, setLogo] = useState(desktopLogo);
   const [numTeams, setNumTeams] = useState(0);
   const [numCatches, setNumCatches] = useState(0);
   // const [potTotal, setPotTotal] = useState("TBD");
+
+  useEffect(() => {
+    const updateLogo = () => {
+      if (window.innerWidth <= 750) {
+        setLogo(mobileLogo);
+      } else if (window.innerWidth <= 1024) {
+        setLogo(tabletLogo);
+      } else {
+        setLogo(desktopLogo);
+      }
+    };
+
+    // Set the logo initially
+    updateLogo();
+
+    // Add event listener
+    window.addEventListener('resize', updateLogo);
+
+    // Clean up event listener on component unmount
+    return () => {
+      window.removeEventListener('resize', updateLogo);
+    };
+  }, []);
 
   useEffect(() => {
     let apiUrl = null;

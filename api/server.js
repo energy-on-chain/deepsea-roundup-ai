@@ -8,8 +8,8 @@ const {firebaseStagingConfig, firebaseProductionConfig} = require("../client/src
 
 // ROUTES
 const homeRoutes = require('./routes/homeRoutes');
+const registrationRoutes = require('./routes/registrationRoutes');
 // const adminRoutes = require('./routes/adminRoutes');
-// const paymentRoutes = require('./routes/paymentRoutes');
 // const leaderboardRoutes = require('./routes/leaderboardRoutes');
 // const potRoutes = require('./routes/potRoutes');
 
@@ -82,7 +82,7 @@ app.use(cors({ origin: clientUrl }));
 app.use(bodyParser.json({ verify: (req, res, buf, encoding) => { req.rawBody = buf.toString() }}));
 app.use('/', express.static(path.join(__dirname, '../client/build')));
 app.use('/', homeRoutes);
-// app.use('/', paymentRoutes({ clientUrl, serverUrl, stripe, webhookSecret }));
+app.use('/', registrationRoutes({ clientUrl, serverUrl, stripe, webhookSecret }));
 // app.use('/', adminRoutes);
 // app.use('/', leaderboardRoutes);
 // app.use('/', potRoutes);

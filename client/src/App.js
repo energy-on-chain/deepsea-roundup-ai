@@ -7,9 +7,9 @@ import {AnimatePresence} from "framer-motion";
 import RootLayout from "./layouts/RootLayout";
 import ErrorPage from './pages/ErrorPage';
 import HomePage from './pages/HomePage';
-// import RegisterPage from './pages/RegisterPage';
-// import RegisterSuccessPage from "./pages/RegisterSuccessPage";
-// import RegisterErrorPage from "./pages/RegisterErrorPage";
+import RegisterPage from './pages/RegisterPage';
+import RegisterSuccessPage from "./pages/RegisterSuccessPage";
+import RegisterErrorPage from "./pages/RegisterErrorPage";
 // import AdminPage from "./pages/AdminPage";
 // import LeaderboardPage from "./pages/LeaderboardPage";
 // import CatchesPage from "./pages/CatchesPage";
@@ -36,9 +36,9 @@ function App() {
       errorElement: <ErrorPage/>,
       children: [
         { path: '/', element: <HomePage/> },
-        // { path: '/register', element: <RegisterPage delayRefresh={delayRefresh} /> },   
-        // { path: '/registration_success', element: <RegisterSuccessPage /> },   
-        // { path: '/registration_error', element: <RegisterErrorPage /> },   
+        { path: '/register', element: <RegisterPage delayRefresh={delayRefresh} /> },   
+        { path: '/registration_success', element: <RegisterSuccessPage /> },   
+        { path: '/registration_error', element: <RegisterErrorPage /> },   
         // { path: '/admin', element: <AdminPage/> },    
         // { path: '/leaderboard', element: <LeaderboardPage/> },    
         // { path: '/catches', element: <CatchesPage/> },    

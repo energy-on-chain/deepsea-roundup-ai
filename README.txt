@@ -21,21 +21,25 @@
 # NEW TOURNAMENT SETUP STEPS
 1. Fork new github repo for tournament from template
 2. Get artwork from client
-  - Homepage logo (size = FIXME)
-  - Navbar logo (size = FIXME)
-  - Favicon (size = FIXME)
+  - Homepage logo for desktop (location="client/src/images/HomePageLogoDesktop.png" maxWidth=1020px)
+  - Homepage logo for tablet (location="client/src/images/HomePageLogoTablet.png" maxWidth=750px)
+  - Homepage logo for mobile (location="client/src/images/HomePageLogoMobile.png" location= maxWidth=350px)
+  - Navbar logo for all devices (location="client/src/images/NavBarLogo.png" size=125px wide by 63px tall or smaller)
+  - Favicon logo for all devices (location="client/public/favicon.ico" size=48px by 48px )
 3. Update the client/public folder
   - Add client title to index.html 
   - Add client favicon.ico to folder
 4. Update the .env file in the main project directory
-  - Add client stripe
+  - Add client stripe (local testing using a terminal with: stripe listen --forward-to localhost:3001/api/registration-webhook)
   - Add client firebase
   - Add google Cloud
 5. Update the config.js file at client/src/config.js
+  - Update the stripe webhook urls for test and production (test them both!!!)
 ###############################################################################
 ###############################################################################
 # FUTURE FEATURE ADDITIONS
-- Sponsors (links to their site)
+- Sponsors page (display them, link to sites)
+- Sponsor registration
 - Media (photos, videos of past tournaments)
 - Merch shop (standalone, with registration)
 - Newsfeed
@@ -45,31 +49,37 @@
 ###############################################################################
 ###############################################################################
 #DEV TODO
-[x] Create repo, frame
+[x] New template repo
 [x] Footer
-[x] Home page
-[] Registration page
-[] Admin page
-[] Catches page
-[] Leaderboard page
-[] Pots page
-[] Auction page
+[x] Home
+[] Registration
+[] Admin
+[] Catches
+[] Leaderboard
+[] Pots
+[] Auction
 [] Styling
-[] Create dev branch, heroku deploy
-[] Full scale QA with BFP2024 data
-[] Create as subdomain of customtournamentsolutions/[NAME_GOES_HERE]
+[] Create subdomains of customtournamentsolutions/[EVENT_NAME_GOES_HERE]
+[] Deploy (dev branch, heroku)
+[] Test (from blank template using BFP2024 data as if it were BFP2025)
+[] Finish setting up BFP2025
 
 REGISTRATION
-[] vars: additionalRegistrationFields, includeImageFile, hasSponsorRegistration
-[] Big tournaments have a place to uplaod an image file for their boat/ reports
-[] Use universal cutoff timestamp
-[] Include checkedIn box
-[] Include userInput unique text fields (e.g. hometown)
-[] Autocomplete using past entry data
-[] Bulk upload feature for teams
+[x] Universal cutoff timestamp
+[x] Handle multiple disclaimers (e.g. weather, refunds)
+[x] Autocomplete using past entry data
+[x] Convert double lists to objects in config file (e.g. disclaimers)
+--------
+[] Setup server with stripe (add checkedIn box) 
+[] Attempt to clear all console errors during stripe usage...
+[] Handle multiple unpaid add-ons (e.g. hometown)
+[] Handle multiple paid add-ons (e.g. exta wristbands)
+[] Handle image file uploading for registrants... dictate size, etc... how do you change it on the back end?
+[] Bulk upload feature for teams using a csv (scripts folder, templates folder)
 
 ADMIN
 [] vars: numLeaderboardAwards (e.g. top 3?)
+[] Login + logout
 [] Stay on same tab on refresh
 [] Team tab
 [] Catches tab
