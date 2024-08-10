@@ -3,8 +3,11 @@ const cors = require('cors');
 const bodyParser = require("body-parser");
 const path = require('path');
 const dotenv = require('dotenv');
-const admin = require("firebase-admin");
+const admin = require("firebase-admin");    // firebase
 const {firebaseStagingConfig, firebaseProductionConfig} = require("../client/src/config.js");
+const session = require('express-session');
+const RedisStore = require('connect-redis').default; // Corrected way to import connect-redis
+const redis = require('redis');
 
 // ROUTES
 const homeRoutes = require('./routes/homeRoutes');
@@ -19,10 +22,13 @@ dotenv.config({ path: '../.env' });
 const app = express();
 const port = process.env.PORT || 8000;
 
-let clientUrl;
+let clientUrl;    // stripe
 let serverUrl;
 let stripe;
 let webhookSecret;
+
+let redisHost;    // sessions
+let sessionSecret;    
 
 if (process.env.REACT_APP_NODE_ENV === "staging") {
 
@@ -40,6 +46,7 @@ if (process.env.REACT_APP_NODE_ENV === "staging") {
       "client_x509_cert_url": process.env.REACT_APP_GOOGLE_SERVICE_ACCOUNT_CLIENT_X509_CERT_URL_STAGING,
       "universe_domain": process.env.REACT_APP_GOOGLE_SERVICE_ACCOUNT_UNIVERSE_DOMAIN_STAGING
     }),
+    storageBucket: process.env.REACT_APP_FIREBASE_STORAGE_BUCKET_STAGING,
     config: firebaseStagingConfig
   });
 
@@ -47,6 +54,9 @@ if (process.env.REACT_APP_NODE_ENV === "staging") {
   serverUrl = process.env.REACT_APP_SERVER_URL_STAGING;
   stripe = require("stripe")(process.env.REACT_APP_STRIPE_PRIVATE_KEY_TESTING);
   webhookSecret = process.env.REACT_APP_STRIPE_WEBHOOK_SECRET_KEY_TESTING;
+
+  redisHost: process.env.REACT_APP_CLIENT_URL_STAGING;    // session
+  sessionSecret = process.env.REACT_APP_SESSION_SECRET_KEY_STAGING;   
 
 } else if (process.env.REACT_APP_NODE_ENV === "production") {
 
@@ -64,6 +74,7 @@ if (process.env.REACT_APP_NODE_ENV === "staging") {
       "client_x509_cert_url": process.env.REACT_APP_GOOGLE_SERVICE_ACCOUNT_CLIENT_X509_CERT_URL_PRODUCTION,
       "universe_domain": process.env.REACT_APP_GOOGLE_SERVICE_ACCOUNT_UNIVERSE_DOMAIN_PRODUCTION
     }),
+    storageBucket: process.env.REACT_APP_FIREBASE_STORAGE_BUCKET_PRODUCTION,
     config: firebaseProductionConfig
   });
 
@@ -72,17 +83,47 @@ if (process.env.REACT_APP_NODE_ENV === "staging") {
   stripe = require("stripe")(process.env.REACT_APP_STRIPE_PRIVATE_KEY_PRODUCTION);
   webhookSecret = process.env.REACT_APP_STRIPE_WEBHOOK_SECRET_KEY_PRODUCTION;
 
+  redisHost: process.env.REACT_APP_CLIENT_URL_PRODUCTION;    // session
+  sessionSecret = process.env.REACT_APP_SESSION_SECRET_KEY_PRODUCTION;  
+
 } else {
   console.log("There was an error while defining the environment")
 };
 
+// REDIS
+const redisClient = redis.createClient({
+  host: redisHost, // or your Redis server hostname
+  port: 6379,        // default Redis port
+});
+redisClient.on('error', (err) => console.error('Redis Client Error', err));
+redisClient.on('connect', () => console.log('Connected to Redis'));
+redisClient.on('ready', () => console.log('Redis client ready'));
+redisClient.on('end', () => console.log('Redis client disconnected'));
+(async () => {
+  try {
+    await redisClient.connect();
+  } catch (err) {
+    console.error('Failed to connect to Redis:', err);
+  }
+})();
 
 // MIDDLEWARE
 app.use(cors({ origin: clientUrl }));
 app.use(bodyParser.json({ verify: (req, res, buf, encoding) => { req.rawBody = buf.toString() }}));
+app.use(session({
+  store: new RedisStore({ client: redisClient }),
+  secret: sessionSecret, // Replace with your secret key
+  resave: false,
+  saveUninitialized: true,
+  cookie: { 
+    secure: process.env.REACT_APP_NODE_ENV === 'production' || process.env.REACT_APP_NODE_ENV === 'staging',
+    httpOnly: true,  // Helps to prevent cross-site scripting attacks by ensuring the cookie is only accessible via HTTP(S)
+    maxAge: 1000 * 60 * 60 * 24 * 7 // 1 week (adjust as needed)
+  }
+}));
 app.use('/', express.static(path.join(__dirname, '../client/build')));
 app.use('/', homeRoutes);
-app.use('/', registrationRoutes({ clientUrl, serverUrl, stripe, webhookSecret }));
+app.use('/', registrationRoutes({ clientUrl, serverUrl, stripe, webhookSecret, redisClient }));
 // app.use('/', adminRoutes);
 // app.use('/', leaderboardRoutes);
 // app.use('/', potRoutes);

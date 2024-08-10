@@ -36,3 +36,6 @@ backend/cert
 cert.pem
 csr.pem
 key.pem
+
+# session (redis) database file
+*dump.rdb

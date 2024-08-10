@@ -126,6 +126,15 @@ function HomePage() {
     // .catch(e => console.error(e));
   }, []); // <-- Missing dependency array
 
+  const formatCurrency = (value) => {
+    return new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency: 'USD',
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0,
+    }).format(value);
+  };
+
   return (
     <AnimatedPage>
       <main>
@@ -146,12 +155,12 @@ function HomePage() {
               {CONFIG_REGISTRATION_HAS_EARLYBIRD_REGISTRATION && (
                 <p>
                   <strong>{CONFIG_REGISTRATION_EARLYBIRD_DATE_STRING} </strong>
-                  <span>${CONFIG_REGISTRATION_EARLYBIRD_FEE}</span>
+                  <span>{formatCurrency(CONFIG_REGISTRATION_EARLYBIRD_FEE)}</span>
                 </p>
               )}
               <p>
                 <strong>{CONFIG_REGISTRATION_NORMAL_DATE_STRING} </strong>
-                <span>${CONFIG_REGISTRATION_NORMAL_FEE}</span>
+                <span>{formatCurrency(CONFIG_REGISTRATION_NORMAL_FEE)}</span>
               </p>
               <br/>
               <br/>
