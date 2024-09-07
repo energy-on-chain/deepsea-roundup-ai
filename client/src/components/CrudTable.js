@@ -14,6 +14,8 @@ import DeleteCatchModal from './modals/DeleteCatchModal';
 
 import AdminToolbar from './toolbars/AdminToolbar';
 
+import defaultNoImage from '../images/defaultNoImage.png';
+
 import { 
   CONFIG_GENERAL_YEAR,
   CONFIG_FIREBASE_TEAMS_TABLE_NAME,    // Firebase
@@ -87,17 +89,20 @@ function CrudTable(props) {
         // Apply value formatters
         if (columnObject.isImage) {
           updatedColumn.renderCell = (params) => {
-            console.log('Value for isImage:')
-            console.log(params.value);
-            return <img
-              src={params.value}
-              alt="Thumbnail"
-              style={{ width: '50px', height: '50px', objectFit: 'cover' }}
-              onError={(e) => {
-                console.error('Error loading image:', e);
-              }}
-            />
-          }  
+            const imageUrl = params.value || defaultNoImage; // Fallback to defaultNoImage if no image is available
+        
+            return (
+              <img
+                src={imageUrl}
+                alt="Thumbnail"
+                style={{ width: '50px', height: '50px', objectFit: 'cover' }} // Thumbnail size
+                onError={(e) => {
+                  // In case there's an error loading the image, fall back to the default image
+                  e.target.src = defaultNoImage;
+                }}
+              />
+            );
+          };
         }
 
         if (columnObject.isDateTime) {

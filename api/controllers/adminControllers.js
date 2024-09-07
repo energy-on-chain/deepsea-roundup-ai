@@ -449,13 +449,40 @@ module.exports = ({redisClient}) => {
 
   const adminAddCatch = async (req, res) => {
     console.log('In api/admin_add_catch...');
-    const catchData = JSON.parse(req.body.catchData);
-  
+    
     try {
-      
       const db = getFirestore();
-      
-      catchData.forEach(async item => {
+      const bucket = getStorage().bucket();
+  
+      // Check if catchData is a string and needs parsing
+      let catchData = req.body.catchData;
+      if (typeof catchData === 'string') {
+        catchData = JSON.parse(catchData);
+      }
+  
+      // Loop through each catch entry and handle both data and files
+      const catchPromises = catchData.map(async (item, index) => {
+        // If there's an uploaded file, handle it
+        let catchPhotoUrl = null;
+        
+        // Loop through req.files to find the matching file based on fieldname
+        const file = req.files.find(file => file.fieldname === `catchPhoto_${index}`);
+
+        if (file) {
+          console.log('There is a file!', file);
+          const filename = `${uuidv4()}-${file.originalname}`;  // Generate unique filename
+          const fileUpload = bucket.file(filename);
+
+          // Upload the file to Firebase Storage
+          await fileUpload.save(file.buffer, {
+            metadata: { contentType: file.mimetype },
+          });
+
+          // Get the public URL for the uploaded image
+          catchPhotoUrl = `https://storage.googleapis.com/${bucket.name}/${filename}`;
+        }
+  
+        // Save catch data to Firestore, including the catch photo URL if applicable
         const catchDocRef = await db.collection(req.body.catchYear).add({
           teamId: item.teamId,
           teamName: item.teamName,
@@ -465,32 +492,86 @@ module.exports = ({redisClient}) => {
           length: item.length,
           girth: item.girth,
           weight: item.weight,
-          points: item.points
+          points: item.points,
+          catchPhoto: catchPhotoUrl,  // Save the image URL here
         });
-        await catchDocRef.update({catchId: catchDocRef.id });
+  
+        // Update the document with its unique ID
+        await catchDocRef.update({ catchId: catchDocRef.id });
       });
-
+  
+      // Wait for all catch documents to be saved
+      await Promise.all(catchPromises);
+  
       res.sendStatus(200);
     } catch (e) {
-      console.log(e);
+      console.error('Error in adminAddCatch:', e);
       res.status(500).json({ error: e.message });
     }
   };
-
+  
   const adminEditCatch = async (req, res) => {
     console.log('In api/admin_edit_catch...');
+    console.log('req.files', req.files);
   
     try {
       const db = getFirestore();
-      await db.collection(req.body.catchYear).doc(req.body.catchId).update({
+      const bucket = getStorage().bucket();
+  
+      // Get the current catch document
+      const catchDocRef = db.collection(req.body.catchYear).doc(req.body.catchId);
+      const catchDoc = await catchDocRef.get();
+  
+      if (!catchDoc.exists) {
+        return res.status(404).json({ error: 'Catch not found' });
+      }
+  
+      const catchData = catchDoc.data();
+      let catchPhotoUrl = catchData.catchPhoto; // Keep the current photo URL
+  
+      // Handle image replacement if a new file is provided
+      if (req.files && req.files.length > 0) {
+        // Get the file from the request (assuming one image per catch)
+        const file = req.files[0];
+  
+        if (file) {
+          console.log('Replacing existing catch photo with new file:', file.originalname);
+  
+          // Delete the old image from Firebase Storage
+          if (catchPhotoUrl) {
+            try {
+              const filePath = decodeURIComponent(catchPhotoUrl.split('/').slice(4).join('/'));
+              await bucket.file(filePath).delete();
+              console.log(`Deleted old catch photo: ${filePath}`);
+            } catch (error) {
+              console.error(`Error deleting old catch photo: ${catchPhotoUrl}`, error);
+            }
+          }
+  
+          // Upload the new image to Firebase Storage
+          const filename = `${uuidv4()}-${file.originalname}`;
+          const fileUpload = bucket.file(filename);
+          await fileUpload.save(file.buffer, {
+            metadata: { contentType: file.mimetype },
+          });
+  
+          // Update the `catchPhotoUrl` with the new file's public URL
+          catchPhotoUrl = `https://storage.googleapis.com/${bucket.name}/${filename}`;
+          console.log(`Uploaded new catch photo: ${catchPhotoUrl}`);
+        }
+      }
+  
+      // Update the catch document in Firestore with the new data and image URL
+      await catchDocRef.update({
         dateTime: req.body.dateTime,
         length: req.body.length,
         girth: req.body.girth,
         weight: req.body.weight,
-        points: req.body.points
+        points: req.body.points,
+        catchPhoto: catchPhotoUrl,  // Update the catchPhoto URL
       });
   
-      console.log('Catch ' + req.body.catchId + ' was successfully updated!');
+      console.log('Catch ' + req.body.catchId + ' was successfully updated with new data!');
       res.sendStatus(200);
     } catch (e) {
       console.log("There was an error in edit_catch...");
@@ -498,18 +579,48 @@ module.exports = ({redisClient}) => {
       res.status(500).json({ error: e.message });
     }
   };
+  
 
   const adminDeleteCatch = async (req, res) => {
     console.log('In api/admin_delete_catch...');
   
     try {
-  
-      console.log(req.body.catchYear)
-      console.log(req.body.catchId)
-  
       const db = getFirestore();
-      const documentRef = db.doc(`${req.body.catchYear}/${req.body.catchId}`);
-      await documentRef.delete();
+      const bucket = getStorage().bucket();
+      const catchId = req.body.catchId;
+      const catchYear = req.body.catchYear;
+  
+      // Get the team document
+      const catchDocRef = db.collection(catchYear).doc(catchId);
+      const catchDoc = await catchDocRef.get();
+
+      if (!catchDoc.exists) {
+        return res.status(404).json({ error: 'Team not found' });
+      }
+  
+      const catchData = catchDoc.data();
+  
+      // Find all image URLs in the team data
+      const imageFields = Object.values(catchData).filter(value => typeof value === 'string' && value.startsWith('https://storage.googleapis.com/'));
+  
+      // Delete each image from Firebase Storage
+      const deletePromises = imageFields.map(async (imageUrl) => {
+        try {
+          // Extract the file path from the URL (remove the "https://storage.googleapis.com/[bucket_name]/")
+          const filePath = decodeURIComponent(imageUrl.split('/').slice(4).join('/')); // Decoding the path to handle any URL encoding
+          const file = bucket.file(filePath);
+          await file.delete();
+          console.log(`Deleted image: ${filePath}`);
+        } catch (error) {
+          console.error(`Error deleting image ${imageUrl}:`, error);
+        }
+      });
+  
+      // Wait for all image deletions to complete
+      await Promise.all(deletePromises);
+  
+      // Now delete the catch from the database
+      await catchDocRef.delete();
   
       console.log('Catch ' + req.body.catchId + ' was successfully deleted!');
       res.sendStatus(200);

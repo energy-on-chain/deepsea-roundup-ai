@@ -110,8 +110,8 @@ function AdminPage() {
   const openDeleteCatchModal = () => {setIsDeleteCatchModalOpen(true)};
   const closeDeleteCatchModal = () => {setIsDeleteCatchModalOpen(false)};
 
-  // Pots FIXME
-  // Auction FIXME
+  // FIXME: Pots
+  // FIXME: Auction
 
   // INITIALIZE
   useEffect(() => {
@@ -136,7 +136,7 @@ function AdminPage() {
       setTeamRowsHaveLoaded(false);
       setCatchRows([]);
       setCatchRowsHaveLoaded(false);
-      // FIXME: pots, auction
+      // FIXME: pots, auctions
   
       // Define tab settings
       let tableName;
@@ -227,6 +227,9 @@ function AdminPage() {
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ catchYear: CONFIG_FIREBASE_CATCHES_TABLE_NAME })
               }).then(res => res.json());
+
+              // FIXME: fish count by speciesType
+              // FIXME: fish count by species
 
               // Fetch fish count by species
               const speciesStatsPromises = CONFIG_CATCHES_STATS_LIST.map((speciesType) => {
@@ -527,7 +530,11 @@ function AdminPage() {
                               <br/>
                             </div>
                           }
-                          { CONFIG_GENERAL_HAS_CATCHES && <h2></h2>}
+
+                          {/* NOTE: No catch reports are needed since they can already be exported via the excel function */}
+                          { CONFIG_GENERAL_HAS_CATCHES && <h2></h2>}   
+
+                          {/* FIXME: Implement these */}
                           { CONFIG_GENERAL_HAS_POTS && <h2></h2>}
                           { CONFIG_GENERAL_HAS_AUCTION && <h2></h2>}
                         </div>

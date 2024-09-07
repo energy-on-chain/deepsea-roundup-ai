@@ -30,8 +30,8 @@ module.exports = ({ redisClient }) => {
   ]), adminEditTeam);  
   router.post('/api/admin_delete_team', adminDeleteTeam);
   router.post('/api/admin_get_catches', adminGetCatches);
-  router.post('/api/admin_add_catch', adminAddCatch);
-  router.post('/api/admin_edit_catch', adminEditCatch);
+  router.post('/api/admin_add_catch', upload.any(), adminAddCatch);
+  router.post('/api/admin_edit_catch', upload.any(), adminEditCatch);
   router.post('/api/admin_delete_catch', adminDeleteCatch);
   router.post('/api/admin_get_total_catch_count', adminGetTotalCatchCount);
   router.post('/api/admin_get_total_catch_count_by_species', adminGetTotalCatchCountBySpecies);

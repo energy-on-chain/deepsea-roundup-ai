@@ -10,7 +10,6 @@ import 'react-toastify/dist/ReactToastify.css';
 
 import {
   CONFIG_CATCHES_SPECIES_LIST,
-  CONFIG_CATCHES_ROUND_POINTS_DOWN, 
 } from '../../config';
 
 const AddCatchModal = (props) => {
@@ -92,63 +91,49 @@ const AddCatchModal = (props) => {
   }
 
   const validateUserInput = () => {
-
     let inputIsValid = true;
-
-    catchData.map((entry, i) => {
-
-      if(!entry["teamId"]) {
-        toast.warning("Please select a team for catch#" + (i+1));
+  
+    catchData.forEach((entry, i) => {
+  
+      if (!entry.teamId) {
+        toast.warning(`Please select a team for catch#${i + 1}`);
         inputIsValid = false;
-        return false;
       }
-      
-      if(!entry["species"]) {
-        toast.warning("Please select a species for catch#" + (i+1));
+  
+      if (!entry.species || entry.species.trim() === "") {
+        toast.warning(`Please select a species for catch#${i + 1}`);
         inputIsValid = false;
-        return false;
       }
-
-      if(!entry["dateTime"]) {
-        toast.warning("Please enter a date and time for catch#" + (i+1));
+  
+      if (entry.dateTimeIsRequired && !entry.dateTime) {
+        toast.warning(`Please enter a date and time for catch#${i + 1}`);
         inputIsValid = false;
-        return false;
-      } 
-
-      if(isNaN(parseInt(entry["length"]))) {
-        toast.warning("Please enter a length greater than zero for catch#" + (i+1));
-        inputIsValid = false;
-        return false;
-      } 
-
-      if(isNaN(parseInt(entry["girth"]))) {
-        toast.warning("Please enter a girth greater than zero for catch#" + (i+1));
-        inputIsValid = false;
-        return false;
-      } 
-
-      if(isNaN(parseInt(entry["weight"]))) {
-        toast.warning("Please enter a weight greater than zero for catch#" + (i+1));
-        inputIsValid = false;
-        return false;
-      } 
-
-      if(entry["catchPhotoIsRequired"] && (entry["catchPhoto"] === null || entry["catchPhoto" === undefined])) {
-        toast.warning("A photo is required for catch #" + (i+1));
-        inputIsValid = false;
-        return false;
       }
-
-    })
-
-  if (inputIsValid) {
-    return true;
-  } else {
-    return false;
-  }
-
-}  
-
+  
+      if (entry.weightIsRequired && (isNaN(parseFloat(entry.weight)) || parseFloat(entry.weight) <= 0)) {
+        toast.warning(`Please enter a valid weight greater than zero for catch#${i + 1}`);
+        inputIsValid = false;
+      }
+  
+      if (entry.lengthIsRequired && (isNaN(parseFloat(entry.length)) || parseFloat(entry.length) <= 0)) {
+        toast.warning(`Please enter a valid length greater than zero for catch#${i + 1}`);
+        inputIsValid = false;
+      }
+  
+      if (entry.girthIsRequired && (isNaN(parseFloat(entry.girth)) || parseFloat(entry.girth) <= 0)) {
+        toast.warning(`Please enter a valid girth greater than zero for catch#${i + 1}`);
+        inputIsValid = false;
+      }
+  
+      if (entry.photoIsRequired && !entry.catchPhoto) {
+        toast.warning(`A photo is required for catch#${i + 1}`);
+        inputIsValid = false;
+      }
+    });
+  
+    return inputIsValid;
+  };
+  
   const handleChangeNumberOfCatches = (e) => {
     setNumCatches(e.target.value);
     if (e.target.value > 0) {
@@ -161,13 +146,12 @@ const AddCatchModal = (props) => {
             teamName: teamName,
             speciesType: "",
             species: "",
-            dateTime: "",
-            length: "",
-            girth: "",
-            weight: "",
-            points: "",
+            dateTime: undefined,
+            length: 0,
+            girth: 0,
+            weight: 0,
+            points: 0,
             catchPhoto: null,
-            catchPhotoIsRequired: false,
           }
         )
       }
@@ -177,65 +161,108 @@ const AddCatchModal = (props) => {
     }
   }
 
+  const handlePointsCalculation = (catchEntry) => {
+    console.log("In handlePointsCalculation");
+    console.log(catchEntry);
+
+    let points = 0;
+    const { pointsCalculationMethod, weight, length } = catchEntry;
+  
+    if (pointsCalculationMethod === "flat") {
+      points = catchEntry.points;  // Assume points are predefined
+    } else if (pointsCalculationMethod.includes("weight")) {
+      if (pointsCalculationMethod === "weightRoundUp") {
+        points = Math.ceil(weight);
+      } else if (pointsCalculationMethod === "weightExact") {
+        points = weight;
+      } else if (pointsCalculationMethod === "weightRoundDown") {
+        points = Math.floor(weight);
+      }
+    } else if (pointsCalculationMethod.includes("length")) {
+      if (pointsCalculationMethod === "lengthRoundUp") {
+        points = Math.ceil(length);
+      } else if (pointsCalculationMethod === "lengthExact") {
+        points = length;
+      } else if (pointsCalculationMethod === "lengthRoundDown") {
+        points = Math.floor(length);
+      }
+    }
+  
+    return points;
+  };  
+
   const handleTeamSelection = (event, value) => {
     setTeamId(value["teamKey"]);
     setTeamName(value["teamData"]["teamName"]);
     setTeamIsSelected(true);
-  }
+  
+    let updatedCatchData = catchData.map(catchEntry => ({
+      ...catchEntry,
+      teamId: value["teamKey"],
+      teamName: value["teamData"]["teamName"]
+    }));
+  
+    setCatchData(updatedCatchData);
+  };
 
   const handleSpeciesSelection = (event, value) => {
-
     let newCatchData = [...catchData];
     let index = parseInt(event.target.id.replace("select-angler-species-box-", "")[0]);
-
-    if (value["category"] === "Catch & Release") {
-
-      newCatchData[index].species = value["label"];
-      newCatchData[index].speciesType = value["category"];
-      newCatchData[index].length = 0;
-      newCatchData[index].girth = 0;
-      newCatchData[index].weight = 0;
-      speciesList.forEach(species => {
-        if (species.label === value["label"]) {
-          newCatchData[index].points = species.points;
-        };
-      });
-      speciesList.forEach(species => {
-        if (species.label === value["label"]) {
-          newCatchData[index].catchPhotoIsRequired = species.photoIsRequired;
-        };
-      });
-
-    } else if (value["category"] === "Meatfish") {
-
-      newCatchData[index].species = value["label"];
-      newCatchData[index].speciesType = value["category"];
-      newCatchData[index].dateTime = today;
-      speciesList.forEach(species => {
-        if (species.label === value["label"]) {
-          newCatchData[index].catchPhotoIsRequired = species.photoIsRequired;
-        };
-      });
-
-    }
-
-    setCatchData(newCatchData)
-  }
-
+  
+    let defaultPoints = handlePointsCalculation({...value, weight: 0, length: 0, girth: 0});
+  
+    newCatchData[index] = {
+      ...newCatchData[index],
+      species: value["label"],
+      speciesType: value["category"],
+      dateTime: value["dateTimeIsRequired"] ? null : dayjs(),  // Set to null if required, else to current dateTime
+      length: 0,  // Reset these values
+      girth: 0,   // Reset these values
+      weight: 0,  // Reset these values
+      catchPhoto: null,
+      catchPhotoPreview: null,
+      pointsCalculationMethod: value["pointsCalculationMethod"],
+      points: defaultPoints,
+      weightIsRequired: value["weightIsRequired"],
+      lengthIsRequired: value["lengthIsRequired"],
+      girthIsRequired: value["girthIsRequired"],
+      dateTimeIsRequired: value["dateTimeIsRequired"],
+      photoIsRequired: value["photoIsRequired"],
+    };
+  
+    setCatchData(newCatchData);
+  };
+  
   const handleDateTimeSelection = (index, event) => {
-    console.log('handleDateSelection...');
     let newCatchData = [...catchData];
-    newCatchData[index].dateTime = event.$d;
+    newCatchData[index].dateTime = event ? event.toISOString() : null;  // Use event to set the date or null
     setCatchData(newCatchData);
   }
 
+  const handleWeightSelection = (index, event) => {
+    let newCatchData = [...catchData];
+    newCatchData[index].weight = event.target.value;
+  
+    // Recalculate points if the method involves weight
+    if (newCatchData[index].pointsCalculationMethod.includes("weight")) {
+      newCatchData[index].points = handlePointsCalculation(newCatchData[index]);
+    }
+  
+    setCatchData(newCatchData);
+  };
+  
   const handleLengthSelection = (index, event) => {
-    console.log('handleLengthSelection...');
     let newCatchData = [...catchData];
     newCatchData[index].length = event.target.value;
+  
+    // Recalculate points if the method involves length
+    if (newCatchData[index].pointsCalculationMethod.includes("length")) {
+      newCatchData[index].points = handlePointsCalculation(newCatchData[index]);
+    }
+  
     setCatchData(newCatchData);
-  }
-
+  };
+  
   const handleGirthSelection = (index, event) => {
     console.log('handleGirthSelection...');
     let newCatchData = [...catchData];
@@ -243,25 +270,32 @@ const AddCatchModal = (props) => {
     setCatchData(newCatchData);
   }
 
-  const handleWeightSelection = (index, event) => {
-    console.log('handleWeightSelection...');
+  const handleImageChange = (index, event) => {
+    console.log('In handleImageChange...');
     let newCatchData = [...catchData];
-    newCatchData[index].weight = event.target.value;
-    if (CONFIG_CATCHES_ROUND_POINTS_DOWN) {
-      newCatchData[index].points = Math.floor(event.target.value);
-    } else {
-      newCatchData[index].points = Math.ceil(event.target.value);
+
+    if (event.target.files[0]) {
+      const file = event.target.files[0];
+      console.log("file:", file);
+      const fileExtension = file.name.substring(file.name.lastIndexOf('.'));
+      const newFile = new File([file], "catchPhoto", {
+        type: file.type,
+      });
+      newCatchData[index].catchPhoto = file;
+      newCatchData[index].catchPhotoUrl = URL.createObjectURL(file);  // Add preview URL
     }
+    
     setCatchData(newCatchData);
-  }
-
-  const handleImageChange = (e, fieldName) => {
-    // FIXME: implement this function
+    console.log(newCatchData);
   };
-
-  const handleRemoveImage = (fieldName) => {
-    // FIXME: implement this function
-  };
+  
+  const handleRemoveImage = (index) => {
+    let newCatchData = [...catchData];
+    newCatchData[index].catchPhoto = null;
+    newCatchData[index].catchPhotoUrl = null;  // Clear the preview URL
+    setCatchData(newCatchData);
+    document.getElementById(`upload-photo-${index}`).value = '';
+  };  
 
   const addCatches = () => {
     return catchData.map((element, index) => (
@@ -271,205 +305,224 @@ const AddCatchModal = (props) => {
           <InputLabel id={"catch-" + index}>Catch #{index + 1}</InputLabel>
         </Divider>
         <br/>
+        
+        {/* Species, Type, Points */}
         <Grid container spacing={2}>
           <Grid item xs={12} sm={4} md={4} lg={4} xl={4}>
             <Autocomplete
               disablePortal
               id={"select-angler-species-box-" + index}
+              value={(catchData[index].species) || null}
               options={speciesList}
               groupBy={(option) => option.category}
-              renderInput={(params) => <TextField {...params} label="Select species"/>}
+              renderInput={(params) => <TextField {...params} label="Select species" />}
               onChange={handleSpeciesSelection}
             />
           </Grid>
+          <Grid item xs={12} sm={4} md={4} lg={4} xl={4}>
+            { catchData[index].speciesType && <InputLabel>Species Type: {catchData[index].speciesType}</InputLabel> }
+          </Grid>
+          <Grid item xs={12} sm={4} md={4} lg={4} xl={4}>
+            { catchData[index].points ? (
+              <InputLabel>Points: {catchData[index].points}</InputLabel>
+            ) : (
+              <InputLabel>Points: -</InputLabel>
+            )}
+          </Grid>
         </Grid>
         <br/>
-          {(
-            catchData[index].speciesType === "Catch & Release" &&    // no catch photo case
-            !catchData[index].catchPhotoIsRequired
-          ) && 
-            <div>
-              <Grid container spacing={2}>
-                <Grid item xs={12} sm={12} md={12} lg={12} xl={12}>
-                  <LocalizationProvider dateAdapter={AdapterDayjs}>
-                    <DateTimePicker 
-                      required 
-                      // disablePast 
-                      id={"select-catch-date-" + index} 
-                      timeSteps={{ minutes: 1 }}
-                      minDate={dayjs(day1)} 
-                      maxDate={dayjs(day2)} 
-                      onChange={(e) => handleDateTimeSelection(index, e)}/>
-                  </LocalizationProvider>
-                </Grid>
-              </Grid>
-            </div>
-          }
-          {(
-            catchData[index].speciesType === "Catch & Release" &&    // catch photo case
-            catchData[index].catchPhotoIsRequired
-          ) && 
-            <div>
-              <Grid container spacing={2}>
-                <Grid item xs={6} sm={6} md={6} lg={6} xl={6}>
-                  <LocalizationProvider dateAdapter={AdapterDayjs}>
-                    <DateTimePicker 
-                      required 
-                      // disablePast 
-                      id={"select-catch-date-" + index} 
-                      timeSteps={{ minutes: 1 }}
-                      minDate={dayjs(day1)} 
-                      maxDate={dayjs(day2)} 
-                      onChange={(e) => handleDateTimeSelection(index, e)}/>
-                  </LocalizationProvider>
-                </Grid>
-                <Grid item xs={6} sm={6} md={6} lg={6} xl={6}>
-                  <InputLabel>FIXME: image upload</InputLabel>
-                </Grid>
-              </Grid>
-            </div>
-          }
 
-        {( 
-          catchData[index].speciesType === "Meatfish" &&    // no catch photo case
-          !catchData[index].catchPhotoIsRequired
-        ) &&
-          <Grid container spacing={2}>
-            <Grid item xs={12} sm={4} md={4} lg={4} xl={4}>
-              <TextField 
-                    type="number"
-                    id={"select-catch-weight-" + index}
-                    InputProps={{
-                        inputProps: { 
-                            step: 0.1, min: 0.1 
-                        }
-                    }}
-                    label="Weight (by 1/10 lb)"
-                    onChange={(e) => handleWeightSelection(index, e)}
-                />
-            </Grid>
-            <Grid item xs={12} sm={4} md={4} lg={4} xl={4}>
-              <TextField 
-                  type="number"
-                  id={"select-catch-length-" + index}
-                  InputProps={{
-                      inputProps: { 
-                          step: 0.125, min: 0.125 
-                      }
-                  }}
-                  label="Length (by 1/8 inch)"
-                  onChange={(e) => handleLengthSelection(index, e)}
-              />
-            </Grid>
-            <Grid item xs={12} sm={4} md={4} lg={4} xl={4}>
-              <TextField 
-                    type="number"
-                    id={"select-catch-girth-" + index}
-                    InputProps={{
-                        inputProps: { 
-                            step: 0.125, min: 0.125 
-                        }
-                    }}
-                    label="Girth (by 1/8 inch)"
-                    onChange={(e) => handleGirthSelection(index, e)}
-                />
-            </Grid>
+        {/* Length, Width, Girth */}
+        { (
+            catchData[index].lengthIsRequired ||
+            catchData[index].widthIsRequired ||
+            catchData[index].girthIsRequired
+          ) &&
+              <Grid container spacing={2}>
+
+                {/* Weight */}
+                { catchData[index].weightIsRequired && 
+                  <Grid item xs={12} sm={4} md={4} lg={4} xl={4}>
+                    <TextField 
+                          type="number"
+                          id={"select-catch-weight-" + index}
+                          InputProps={{
+                              inputProps: { 
+                                  step: 0.1, min: 0.1 
+                              }
+                          }}
+                          label="Weight (by 1/10 lb)"
+                          value={catchData[index].weight || ''}  
+                          onChange={(e) => handleWeightSelection(index, e)}
+                      />
+                  </Grid>
+                }
+
+                {/* Length */}
+                { catchData[index].lengthIsRequired && 
+                  <Grid item xs={12} sm={4} md={4} lg={4} xl={4}>
+                    <TextField 
+                      type="number"
+                      id={"select-catch-length-" + index}
+                      InputProps={{
+                          inputProps: { 
+                              step: 0.125, min: 0.125 
+                          }
+                      }}
+                      label="Length (by 1/8 inch)"
+                      value={catchData[index].length || ''}  
+                      onChange={(e) => handleLengthSelection(index, e)}
+                    />
+                  </Grid>
+                }
+
+                {/* Girth */}
+                { catchData[index].girthIsRequired && 
+                  <Grid item xs={12} sm={4} md={4} lg={4} xl={4}>
+                    <TextField 
+                      type="number"
+                      id={"select-catch-girth-" + index}
+                      InputProps={{
+                          inputProps: { 
+                              step: 0.125, min: 0.125 
+                          }
+                      }}
+                      label="Girth (by 1/8 inch)"
+                      value={catchData[index].girth || ''} 
+                      onChange={(e) => handleGirthSelection(index, e)}
+                      />
+                  </Grid>
+                }
+
           </Grid>
         }
-        {( 
-          catchData[index].speciesType === "Meatfish" &&    // catch photo case
-          catchData[index].catchPhotoIsRequired 
-        ) &&
-          <Grid container spacing={2}>
-            <Grid item xs={12} sm={3} md={3} lg={3} xl={3}>
-              <TextField 
-                    type="number"
-                    id={"select-catch-weight-" + index}
-                    InputProps={{
-                        inputProps: { 
-                            step: 0.1, min: 0.1 
-                        }
-                    }}
-                    label="Weight (by 1/10 lb)"
-                    onChange={(e) => handleWeightSelection(index, e)}
-                />
-            </Grid>
-            <Grid item xs={12} sm={3} md={3} lg={3} xl={3}>
-              <TextField 
-                  type="number"
-                  id={"select-catch-length-" + index}
-                  InputProps={{
-                      inputProps: { 
-                          step: 0.125, min: 0.125 
-                      }
-                  }}
-                  label="Length (by 1/8 inch)"
-                  onChange={(e) => handleLengthSelection(index, e)}
-              />
-            </Grid>
-            <Grid item xs={12} sm={3} md={3} lg={3} xl={3}>
-              <TextField 
-                    type="number"
-                    id={"select-catch-girth-" + index}
-                    InputProps={{
-                        inputProps: { 
-                            step: 0.125, min: 0.125 
-                        }
-                    }}
-                    label="Girth (by 1/8 inch)"
-                    onChange={(e) => handleGirthSelection(index, e)}
-                />
-            </Grid>
-            <Grid item xs={12} sm={3} md={3} lg={3} xl={3}>
-              <InputLabel>FIXME: image upload</InputLabel>
-            </Grid>
-          </Grid>
-        }
-
         <br/>
+
+        {/* DateTime */}
+        { catchData[index].dateTimeIsRequired && 
+          <div>
+            <Grid container spacing={2}>
+              <Grid item xs={12} sm={12} md={12} lg={12} xl={12}>
+                <LocalizationProvider dateAdapter={AdapterDayjs}>
+                  <DateTimePicker 
+                    required 
+                    // disablePast 
+                    id={"select-catch-date-" + index} 
+                    value={catchData[index].dateTime ? dayjs(catchData[index].dateTime) : null}
+                    timeSteps={{ minutes: 1 }}
+                    minDate={dayjs(day1)} 
+                    maxDate={dayjs(day2)} 
+                    onChange={(e) => handleDateTimeSelection(index, e)}/>
+                </LocalizationProvider>
+              </Grid>
+            </Grid>
+          </div>
+        }
+        <br/>
+
+        {/* Photo */}
+        { catchData[index].photoIsRequired && 
+          <div>
+            <Grid container spacing={2}>
+              <Grid item xs={12} sm={12} md={12} lg={12} xl={12}>
+                <div>
+                  {/* Hide the file input and create a custom label to trigger it */}
+                  <input
+                    accept="image/*"
+                    type="file"
+                    id={"upload-photo-" + index}
+                    style={{ display: 'none' }}  // Hide the default file input
+                    onChange={(e) => handleImageChange(index, e)}
+                  />
+                  <label htmlFor={"upload-photo-" + index}>
+                    <Button variant="contained" component="span">
+                      Upload Catch Photo*
+                    </Button>
+                  </label>
+                  
+                  { catchData[index].catchPhotoUrl && (
+                    <div style={{ width: '100px', height: '100px', marginTop: '10px' }}>
+                      <img 
+                        src={catchData[index].catchPhotoUrl} 
+                        alt="Catch preview" 
+                        style={{ width: '100px', height: '100px', objectFit: 'cover' }}  // Restrict size to 100x100
+                      />
+                      <Button onClick={() => handleRemoveImage(index)}>Remove Photo</Button>
+                    </div>
+                  )}
+                </div>
+              </Grid>
+            </Grid>
+          </div>
+        }
+        <br/>
+
       </div>
     ))
   }
 
   const handleCreateCatches = () => {
-    if ( validateUserInput() ) {
-      console.log('Input validated! Writing to catch database now...')
-
-      const catchDataString = JSON.stringify(catchData);
-
+    if (validateUserInput()) {
+      console.log('Input validated! Writing to catch database now...');
+  
+      const formData = new FormData();
+  
+      // Append each catch's data and photo (if present) to FormData
+      catchData.forEach((item, index) => {
+        formData.append(`catchData[${index}][teamId]`, item.teamId);
+        formData.append(`catchData[${index}][teamName]`, item.teamName);
+        formData.append(`catchData[${index}][speciesType]`, item.speciesType);
+        formData.append(`catchData[${index}][species]`, item.species);
+        // Check if dateTime is a valid Day.js object before calling toISOString()
+        formData.append(
+          `catchData[${index}][dateTime]`,
+          item.dateTime ? dayjs(item.dateTime).toISOString() : '' // Safely append dateTime
+        );
+        formData.append(`catchData[${index}][length]`, item.length);
+        formData.append(`catchData[${index}][girth]`, item.girth);
+        formData.append(`catchData[${index}][weight]`, item.weight);
+        formData.append(`catchData[${index}][points]`, item.points);
+        
+        // Append the photo if it exists
+        if (item.catchPhoto) {
+          console.log('catchPhoto exists!')
+          console.log(item.catchPhoto);
+          console.log(item.catchPhotoUrl);
+          formData.append(`catchPhoto_${index}`, item.catchPhoto);
+        }
+      });
+  
+      formData.append('catchYear', props.catchYear);
+  
       let apiUrl = null;
-      if (process.env.REACT_APP_NODE_ENV === "staging") {
+      if (process.env.REACT_APP_NODE_ENV === 'staging') {
         apiUrl = process.env.REACT_APP_SERVER_URL_STAGING;
-      } else if (process.env.REACT_APP_NODE_ENV === "production") {
+      } else if (process.env.REACT_APP_NODE_ENV === 'production') {
         apiUrl = process.env.REACT_APP_SERVER_URL_PRODUCTION;
       }
   
       fetch(`${apiUrl}/api/admin_add_catch`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          catchData: catchDataString,
-          catchYear: props.catchYear
-        })
-      }).then(res => {
-        if (res.ok) {
-          toast.success("Successfully added " + numCatches + " catches! Page refreshing...");
-          handleClose();
-          delayRefresh();
-        }
-      }).catch(e => {
-        console.error(e.error)
-        toast.error("Error while attempting to save catches to database. Please try again or contact site administrator.");
-        delayRefresh();
-        handleClose();
+        body: formData, // FormData object
       })
+        .then((res) => {
+          if (res.ok) {
+            toast.success(`Successfully added ${numCatches} catches! Page refreshing...`);
+            handleClose();
+            delayRefresh();
+          }
+        })
+        .catch((e) => {
+          console.error(e);
+          toast.error('Error while attempting to save catches to database. Please try again or contact the site administrator.');
+          delayRefresh();
+          handleClose();
+        });
     } else {
-      console.log("Input was not valid or there was an error")
+      console.log('Input was not valid or there was an error');
     }
-  }
-
+  };
+  
   return (
     <Dialog open={props.status} onClose={handleClose} fullWidth maxWidth="xl">
       <form action="/" method="POST" onSubmit={(e) => { e.preventDefault(); alert('Submitted form!'); this.handleClose(); } }>
