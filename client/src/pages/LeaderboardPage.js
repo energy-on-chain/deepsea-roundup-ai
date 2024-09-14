@@ -20,6 +20,10 @@ import {
 } from '../config/generalConfig';
 
 import { 
+  CONFIG_STYLING_LEADERBOARD_TIMESTAMP_TEXT_COLOR,
+} from '../config/stylingConfig';
+
+import { 
   CONFIG_LEADERBOARD_INCLUDE_PRELIMINARY_RESULTS_DISCLAIMER,
   CONFIG_LEADERBOARD_PRELIMINARY_RESULTS_DISCLAIMER_CUTOFF_IN_LOCAL_TIME_IN_MS,
   CONFIG_LEADERBOARD_CATEGORIES, 
@@ -105,6 +109,9 @@ function LeaderboardPage() {
     setViewAlignment("List");
     setSelectedResult([]);
     setHasSelectedResult(false);
+
+    // Set styling
+    document.documentElement.style.setProperty('--timestamp-text-color', CONFIG_STYLING_LEADERBOARD_TIMESTAMP_TEXT_COLOR);
 
   }, []);
 
@@ -210,7 +217,7 @@ function LeaderboardPage() {
               (
                 <div>
                   <br/>
-                  <h3><em>{timestamp}</em></h3>
+                  <h3 className="timestamp-text"><em>{timestamp}</em></h3>
                   <br/>
                 </div>
               ) : (

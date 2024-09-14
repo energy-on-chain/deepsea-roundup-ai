@@ -4,16 +4,31 @@ import dayjs from 'dayjs'; // Ensure you have dayjs installed for date formattin
 import './LeaderboardResultTable.css';
 
 import { 
-  CONFIG_STYLING_LEADERBOARD_TITLE_TEXT_COLOR,
-  CONFIG_STYLING_LEADERBOARD_SUBTITLE_TEXT_COLOR, 
-  CONFIG_STYLING_LEADERBOARD_SUBTITLE_FONT_STYLE,
+  CONFIG_STYLING_POTS_TITLE_TEXT_COLOR,
+  CONFIG_STYLING_POTS_SUBTITLE_TEXT_COLOR,
+  CONFIG_STYLING_POTS_SUBTITLE_FONT_STYLE,
+  CONFIG_STYLING_POTS_WINNER_ROW_BACKGROUND_COLOR,
+  CONFIG_STYLING_POTS_LOSER_ROW_BACKGROUND_COLOR,
+  CONFIG_STYLING_POTS_ROW_TEXT_COLOR,
   CONFIG_STYLING_TABLE_HEADER_BACKGROUND_COLOR,
   CONFIG_STYLING_TABLE_HEADER_TEXT_COLOR,
   CONFIG_STYLING_TABLE_ODD_ROW_BACKGROUND_COLOR,
   CONFIG_STYLING_TABLE_CELL_TEXT_COLOR,
 } from '../../config/stylingConfig';
 
-function LeaderboardResultTable(props) {
+function PotsResultTable(props) {
+
+  console.log(props);
+
+  // Find the column labeled 'payout' if it exists
+  const payoutColumn = props.columns.find((col) => col.field === 'payout');
+
+  // Calculate total payout if the payout column exists
+  const totalPayout = props.rows[0].totalPayout;
+
+  // Format the total payout as US currency
+  const formattedTotalPayout = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(totalPayout);
+
   // Modify columns to apply the valueFormatter dynamically
   const formattedColumns = props.columns.map((col) => {
     if (col.isDateTime) {
@@ -21,16 +36,26 @@ function LeaderboardResultTable(props) {
         ...col,
         valueFormatter: (value) => dayjs(value).format('MMMM Do, YYYY @ hh:mm A'),
       };
+    } else if (col.isCurrency) {
+      return {
+        ...col,
+        valueFormatter: (value) => new Intl.NumberFormat('en-US', {style: 'currency', currency: 'USD'}).format(value),
+      }
     }
     return col;
   });
 
   return (
     <div style={{ ...props.style, overflowX: 'auto' }}>
-      <h1 style={{ fontSize: '30px', color: CONFIG_STYLING_LEADERBOARD_TITLE_TEXT_COLOR, marginBottom: '20px' }}>
+      <h1 style={{ fontSize: '30px', color: CONFIG_STYLING_POTS_TITLE_TEXT_COLOR, marginBottom: '20px' }}>
         {props.title} 
+        {totalPayout > 0 && (
+          <span style={{ fontSize: '30px', marginLeft: '10px' }}>
+          - ({formattedTotalPayout} total)
+          </span>
+        )}
         {props.subtitle && (
-          <span style={{ fontSize: '30px', fontStyle: CONFIG_STYLING_LEADERBOARD_SUBTITLE_FONT_STYLE, fontWeight: 'lighter', marginLeft: '10px', color: CONFIG_STYLING_LEADERBOARD_SUBTITLE_TEXT_COLOR }}>
+          <span style={{ fontSize: '24px', fontStyle: CONFIG_STYLING_POTS_SUBTITLE_FONT_STYLE, fontWeight: 'lighter', marginLeft: '10px', color: CONFIG_STYLING_POTS_SUBTITLE_TEXT_COLOR }}>
             ({props.subtitle})
           </span>
         )}
@@ -41,10 +66,6 @@ function LeaderboardResultTable(props) {
         columnVisibilityModel={props.visibility}
         sx={{
           overflowX: 'auto',
-          '.MuiDataGrid-row.Mui-odd': {
-            backgroundColor: CONFIG_STYLING_TABLE_ODD_ROW_BACKGROUND_COLOR,
-            fontSize: '16px',
-          },
           '.MuiDataGrid-columnHeaderTitleContainer': {
             backgroundColor: CONFIG_STYLING_TABLE_HEADER_BACKGROUND_COLOR,
             fontSize: '16px',
@@ -65,9 +86,10 @@ function LeaderboardResultTable(props) {
         }}
         hideFooter={true}
         density='compact'
-        getRowClassName={(params) =>
-          params.indexRelativeToCurrentPage % 2 === 0 ? 'Mui-even' : 'Mui-odd'
-        }
+        getRowClassName={(params) => {
+          const payoutValue = params.row[payoutColumn?.field] || 0;
+          return payoutValue > 0 ? 'winner-row' : 'loser-row';
+        }}
         disableColumnMenu
         disableColumnFilter
         disableColumnSelector
@@ -79,5 +101,5 @@ function LeaderboardResultTable(props) {
   );
 }
 
-export default LeaderboardResultTable;
+export default PotsResultTable;
 

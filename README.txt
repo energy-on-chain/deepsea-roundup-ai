@@ -22,6 +22,9 @@
 ###############################################################################
 ###############################################################################
 # NEW TOURNAMENT SETUP STEPS
+
+0. CHANGE THAT TAB TITLE IN THE PUBLIC INDEX.HTML PAGE!!!
+
 1. Fork new github repo for tournament from template
 2. Update client artwork
   - Homepage logo for desktop (location="client/src/images/HomePageLogoDesktop.png" maxWidth=1020px)

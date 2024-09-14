@@ -2,6 +2,16 @@ import React, { useState, useEffect } from 'react';
 import { DataGrid } from '@mui/x-data-grid';
 import { Tooltip } from '@mui/material';
 
+import { 
+  CONFIG_STYLING_LEADERBOARD_TITLE_TEXT_COLOR,
+  CONFIG_STYLING_LEADERBOARD_SUBTITLE_TEXT_COLOR, 
+  CONFIG_STYLING_LEADERBOARD_SUBTITLE_FONT_STYLE,
+  CONFIG_STYLING_TABLE_HEADER_BACKGROUND_COLOR,
+  CONFIG_STYLING_TABLE_HEADER_TEXT_COLOR,
+  CONFIG_STYLING_TABLE_ODD_ROW_BACKGROUND_COLOR,
+  CONFIG_STYLING_TABLE_CELL_TEXT_COLOR,
+} from '../../config/stylingConfig';
+
 function CountTable(props) {   
   const [style, setStyle] = useState();
   const [rows, setRows] = useState();
@@ -40,18 +50,23 @@ function CountTable(props) {
           '.MuiDataGrid-columnHeaders': {
             justifyContent: 'center',
             textAlign: 'center',
-            backgroundColor: '#288DAF',  
+            backgroundColor: CONFIG_STYLING_TABLE_HEADER_BACKGROUND_COLOR,
+            color: CONFIG_STYLING_TABLE_HEADER_TEXT_COLOR,
           },
           // Ensure search and filter icons section gets the correct color
           '.MuiDataGrid-columnHeaderTitleContainer': {
             justifyContent: 'center',
-            backgroundColor: '#288DAF',  // Set your desired background color
+            backgroundColor: CONFIG_STYLING_TABLE_HEADER_BACKGROUND_COLOR,  // Set your desired background color
             fontSize: '16px',
-            color: 'white',
+            color: CONFIG_STYLING_TABLE_HEADER_TEXT_COLOR,
+            ".MuiSvgIcon-root": {
+              color: CONFIG_STYLING_TABLE_HEADER_TEXT_COLOR,
+            }
           },
           // Correct class to target the filter/search icons background
           '.MuiDataGrid-iconButtonContainer': {
-            backgroundColor: '#288DAF !important',  // Ensure it's applied with `!important`
+            backgroundColor: CONFIG_STYLING_TABLE_HEADER_BACKGROUND_COLOR + ' !important',  // Ensure it's applied with `!important`
+            color: CONFIG_STYLING_TABLE_HEADER_TEXT_COLOR,
           },
           '& .MuiDataGrid-cell': {
             justifyContent: 'center',  
@@ -64,7 +79,7 @@ function CountTable(props) {
           },
           '& .super-app-theme--header': {
             justifyContent: 'center',
-            backgroundColor: '#288DAF',
+            backgroundColor: CONFIG_STYLING_TABLE_HEADER_BACKGROUND_COLOR,
             fontSize: '16px',
             color: 'white'
           },
@@ -72,6 +87,7 @@ function CountTable(props) {
             justifyContent: 'center',
             textAlign: 'center',
             fontSize: '16px',
+            color: CONFIG_STYLING_TABLE_CELL_TEXT_COLOR,
           },
         }}
         density='compact'

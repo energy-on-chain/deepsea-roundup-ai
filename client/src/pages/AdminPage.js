@@ -129,8 +129,26 @@ function AdminPage() {
   const openDeleteAnnouncementModal = () => {setIsDeleteAnnouncementModalOpen(true)};
   const closeDeleteAnnouncementModal = () => {setIsDeleteAnnouncementModalOpen(false)};
 
-  // FIXME: Pots
-  // FIXME: Auction
+  // STATE - POTS
+  const [potRows, setPotRows] = useState([]);
+  const [potRowsHaveLoaded, setPotRowsHaveLoaded] = useState(false);
+  const [isAddPotModalOpen, setIsAddPotModalOpen] = useState(false);
+  const [isDeletePotModalOpen, setIsDeletePotModalOpen] = useState(false);
+  const [isEditPotModalOpen, setIsEditPotModalOpen] = useState(false);
+  const [deletePotInfo, setDeletePotInfo] = useState();
+  const [editPotInfo, setEditPotInfo] = useState();
+  const [potStats, setPotStats] = useState({
+    // FIXME
+  });
+  const openAddPotModal = () => {setIsAddPotModalOpen(true)};
+  const closeAddPotModal = () => {setIsAddPotModalOpen(false)};
+  const openEditPotModal = () => {setIsEditPotModalOpen(true)};
+  const closeEditPotModal = () => {setIsEditPotModalOpen(false)};
+  const openDeletePotModal = () => {setIsDeletePotModalOpen(true)};
+  const closeDeletePotModal = () => {setIsDeletePotModalOpen(false)};
+
+  // STATE - AUCTION
+  // FIXME
 
   // INITIALIZE
   useEffect(() => {
@@ -157,7 +175,9 @@ function AdminPage() {
       setCatchRowsHaveLoaded(false);
       setAnnouncementRows([]);
       setAnnouncementRowsHaveLoaded(false);
-      // FIXME: pots, auctions
+      setPotRows([]);
+      setPotRowsHaveLoaded(false);
+      // FIXME: auctions
   
       // Define tab settings
       let tableName;
@@ -331,7 +351,8 @@ function AdminPage() {
         setAnnouncementRows(tempRows);
         setAnnouncementRowsHaveLoaded(true);
       } else if (tab === 'Pots') {
-        // FIMXE
+        setPotRows(tempRows);
+        setPotRowsHaveLoaded(true);
       } else if (tab === 'Auction') {
         // FIXME
       }
@@ -353,6 +374,10 @@ function AdminPage() {
       setIsDeleteAnnouncementModalOpen(false);
 
       // Pots FIXME
+      setIsAddPotModalOpen(false);
+      setIsEditPotModalOpen(false);
+      setIsDeletePotModalOpen(false);
+
       // Auction FIXME
   
     } catch (error) {
@@ -715,7 +740,55 @@ function AdminPage() {
                         )}
                       </TabPanel>
                     );
+                  } else if (tab === "Pots") {
+                    return (
+                      <TabPanel key={tab} value={tab}>
+                        {!potRowsHaveLoaded ? (
+                          <CircularProgress />
+                        ) : (
+                          <div style={style}> 
+                            <CrudTable
+                              // dates
+                              today={today}
+                              startDate={CONFIG_ADMIN_TOURNAMENT_START_DATE_STRING}
+                              endDate={CONFIG_ADMIN_TOURNAMENT_END_DATE_STRING}
+
+                              // table styling
+                              tableType={tab}
+                              buttonLabel={`Add ${tab} Entry`}
+                              tableProperties={tableProperties}
+                              style={style}
+                              rows={potRows || []}
+                              scroll={matches ? desktopScroll : mobileScroll}
+                              initialState={initialState}
+                              pageSizeOptions={pageSizeOptions}
+                              checkboxSelection={true}
+
+                              // add
+                              addStatus={isAddPotModalOpen}
+                              openAddModal={openAddPotModal}
+                              closeAddModal={closeAddPotModal}
+
+                              // edit
+                              editStatus={isEditPotModalOpen}
+                              editInfo={editPotInfo}
+                              setEditInfo={setEditPotInfo}
+                              openEditModal={openEditPotModal}
+                              closeEditModal={closeEditPotModal}
+
+                              // delete
+                              deleteStatus={isDeletePotModalOpen}
+                              deleteInfo={deletePotInfo}
+                              setDeleteInfo={setDeletePotInfo}
+                              openDeleteModal={openDeletePotModal}
+                              closeDeleteModal={closeDeletePotModal}
+                            />
+                          </div>
+                        )}
+                      </TabPanel>
+                    );
                   }
+
                 })}
 
               </TabContext>

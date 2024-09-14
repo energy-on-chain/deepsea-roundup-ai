@@ -16,6 +16,10 @@ import AddAnnouncementModal from '../modals/AddAnnouncementModal';
 import EditAnnouncementModal from '../modals/EditAnnouncementModal';
 import DeleteAnnouncementModal from '../modals/DeleteAnnouncementModal';
 
+import AddPotModal from '../modals/AddPotModal';
+import EditPotModal from '../modals/EditPotModal';
+import DeletePotModal from '../modals/DeletePotModal';
+
 import AdminToolbar from '../toolbars/AdminToolbar';
 
 import defaultNoImage from '../../images/defaultNoImage.png';
@@ -33,6 +37,7 @@ import {
   CONFIG_ADMIN_TABLE_PROPERTIES_FOR_TEAMS,
   CONFIG_ADMIN_TABLE_PROPERTIES_FOR_CATCHES,
   CONFIG_ADMIN_TABLE_PROPERTIES_FOR_ANNOUNCEMENTS,
+  CONFIG_ADMIN_TABLE_PROPERTIES_FOR_POTS,
 } from '../../config/adminConfig';
 
 function CrudTable(props) {
@@ -64,6 +69,8 @@ function CrudTable(props) {
       rawColumns = CONFIG_ADMIN_TABLE_PROPERTIES_FOR_CATCHES;
     } else if (props.tableType === "Announcements") {
       rawColumns = CONFIG_ADMIN_TABLE_PROPERTIES_FOR_ANNOUNCEMENTS;
+    } else if (props.tableType === "Pots") {
+      rawColumns = CONFIG_ADMIN_TABLE_PROPERTIES_FOR_POTS;
     }
 
     loadAllData(rawColumns);
@@ -275,6 +282,22 @@ function CrudTable(props) {
           announcementYear={CONFIG_GENERAL_FIREBASE_ANNOUNCEMENTS_TABLE_NAME}
         />
       }
+      { (deleteInfo && props.tableType === "Pots") && 
+        <DeletePotModal 
+          tableType={props.tableType}
+          tableProperties={tableProperties}
+          deleteInfo={deleteInfo} 
+          status={isDeleteModalOpen} 
+          open={openDeleteModal} 
+          close={closeDeleteModal} 
+          year={CONFIG_GENERAL_YEAR} 
+          teamYear={CONFIG_GENERAL_FIREBASE_TEAMS_TABLE_NAME} 
+          catchYear={CONFIG_GENERAL_FIREBASE_CATCHES_TABLE_NAME} 
+          potYear={CONFIG_GENERAL_FIREBASE_POTS_TABLE_NAME} 
+          auctionYear={CONFIG_GENERAL_FIREBASE_AUCTION_TABLE_NAME} 
+          announcementYear={CONFIG_GENERAL_FIREBASE_ANNOUNCEMENTS_TABLE_NAME}
+        />
+      }
 
       {/* EDIT */}
       { (editInfo && props.tableType === "Teams") && 
@@ -315,6 +338,24 @@ function CrudTable(props) {
       }
       { (editInfo && props.tableType === "Announcements") && 
         <EditAnnouncementModal 
+          tableType={props.tableType}
+          tableProperties={tableProperties}
+          editInfo={editInfo} 
+          status={isEditModalOpen} 
+          open={openEditModal} 
+          close={closeEditModal} 
+          startDate={props.startDate}
+          endDate={props.endDate} 
+          year={CONFIG_GENERAL_YEAR} 
+          teamYear={CONFIG_GENERAL_FIREBASE_TEAMS_TABLE_NAME} 
+          catchYear={CONFIG_GENERAL_FIREBASE_CATCHES_TABLE_NAME} 
+          potYear={CONFIG_GENERAL_FIREBASE_POTS_TABLE_NAME} 
+          auctionYear={CONFIG_GENERAL_FIREBASE_AUCTION_TABLE_NAME} 
+          announcementYear={CONFIG_GENERAL_FIREBASE_ANNOUNCEMENTS_TABLE_NAME}
+        />
+      }
+      { (editInfo && props.tableType === "Pots") && 
+        <EditPotModal 
           tableType={props.tableType}
           tableProperties={tableProperties}
           editInfo={editInfo} 
@@ -373,6 +414,24 @@ function CrudTable(props) {
         }
         { (props.tableType === "Announcements") && 
           <AddAnnouncementModal 
+            isAdmin={true}
+            tableStyle={props.tableStyle}
+            today={props.today} 
+            startDate={props.startDate}
+            endDate={props.endDate} 
+            status={props.addStatus} 
+            open={props.openAddModal} 
+            close={props.closeAddModal}  
+            year={CONFIG_GENERAL_YEAR} 
+            teamYear={CONFIG_GENERAL_FIREBASE_TEAMS_TABLE_NAME} 
+            catchYear={CONFIG_GENERAL_FIREBASE_CATCHES_TABLE_NAME} 
+            potYear={CONFIG_GENERAL_FIREBASE_POTS_TABLE_NAME} 
+            auctionYear={CONFIG_GENERAL_FIREBASE_AUCTION_TABLE_NAME} 
+            announcementYear={CONFIG_GENERAL_FIREBASE_ANNOUNCEMENTS_TABLE_NAME}
+          />
+        }
+        { (props.tableType === "Pots") && 
+          <AddPotModal 
             isAdmin={true}
             tableStyle={props.tableStyle}
             today={props.today} 

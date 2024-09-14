@@ -16,6 +16,10 @@ module.exports = ({ redisClient }) => {
     adminAddAnnouncement,
     adminEditAnnouncement,
     adminDeleteAnnouncement,
+    adminAddPot,
+    adminAddPotCheckForDuplicateEntries,
+    adminEditPot,
+    adminDeletePot,
     adminGetTotalCatchCount,
     adminGetTotalCatchCountBySpecies,
     adminGetRegisteredTeamDataForReport,
@@ -39,6 +43,10 @@ module.exports = ({ redisClient }) => {
   router.post('/api/admin_add_announcement', adminAddAnnouncement);
   router.post('/api/admin_edit_announcement', adminEditAnnouncement);
   router.post('/api/admin_delete_announcement', adminDeleteAnnouncement);
+  router.post('/api/admin_add_pot', adminAddPot);
+  router.post('/api/admin_add_pot_check_for_duplicate_entries', adminAddPotCheckForDuplicateEntries);
+  router.post('/api/admin_edit_pot', adminEditPot);
+  router.post('/api/admin_delete_pot', adminDeletePot);
   router.post('/api/admin_get_total_catch_count', adminGetTotalCatchCount);
   router.post('/api/admin_get_total_catch_count_by_species', adminGetTotalCatchCountBySpecies);
   router.post('/api/admin_get_registered_team_data_for_report', adminGetRegisteredTeamDataForReport);

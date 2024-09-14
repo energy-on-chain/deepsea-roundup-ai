@@ -13,7 +13,7 @@ import RegisterErrorPage from "./pages/RegisterErrorPage";
 import AdminPage from "./pages/AdminPage";
 import NewsfeedPage from "./pages/NewsfeedPage";
 import LeaderboardPage from "./pages/LeaderboardPage";
-// import PotsPage from "./pages/PotsPage";
+import PotsPage from "./pages/PotsPage";
 // import AuctionPage from "./pages/AuctionPage";
 
 
@@ -43,7 +43,8 @@ function App() {
         { path: '/admin', element: <AdminPage/> },    
         { path: '/newsfeed', element: <NewsfeedPage/> },    
         { path: '/leaderboard', element: <LeaderboardPage/> },    
-        // { path: '/pots', element: <PotsPage/> },    
+        { path: '/pots', element: <PotsPage/> },    
+        // { path: '/auction', element: <AuctionPage/> },    
       ],
     },
   ]);

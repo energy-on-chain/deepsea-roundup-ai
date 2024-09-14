@@ -4,7 +4,7 @@ const bodyParser = require("body-parser");
 const path = require('path');
 const dotenv = require('dotenv');
 const admin = require("firebase-admin");    // firebase
-const {firebaseStagingConfig, firebaseProductionConfig} = require("../client/src/config.js");
+const {firebaseStagingConfig, firebaseProductionConfig} = require("../client/src/config/generalConfig.js");
 const session = require('express-session');
 const RedisStore = require('connect-redis').default; // Corrected way to import connect-redis
 const redis = require('redis');
@@ -15,7 +15,7 @@ const registrationRoutes = require('./routes/registrationRoutes');
 const adminRoutes = require('./routes/adminRoutes');
 const newsfeedRoutes = require('./routes/newsfeedRoutes');
 const leaderboardRoutes = require('./routes/leaderboardRoutes');
-// const potRoutes = require('./routes/potRoutes');
+const potRoutes = require('./routes/potRoutes');
 // const auctionRoutes = require('./routes/auctionRoutes');
 
 // ENVIRONMENT
@@ -129,7 +129,7 @@ app.use('/', registrationRoutes({ clientUrl, serverUrl, stripe, webhookSecret, r
 app.use('/', adminRoutes ({redisClient}));
 app.use('/', newsfeedRoutes);
 app.use('/', leaderboardRoutes);
-// app.use('/', potRoutes);
+app.use('/', potRoutes);
 // app.use('/', auctionRoutes);
 
 

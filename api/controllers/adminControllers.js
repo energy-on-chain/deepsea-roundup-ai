@@ -247,7 +247,7 @@ module.exports = ({redisClient}) => {
     try {
       const db = getFirestore();
       const bucket = getStorage().bucket();
-      const { catchYear, teamId, teamYear, teamName, teamEmail, teamPhone } = req.body;
+      const { potYear, catchYear, teamId, teamYear, teamName, teamEmail, teamPhone } = req.body;
       let { hasCheckedIn } = req.body;
 
       // Convert hasCheckedIn back to a boolean
@@ -338,7 +338,15 @@ module.exports = ({redisClient}) => {
         catchUpdatePromises.push(doc.ref.update({ teamName: teamName }));
       });
       await Promise.all(catchUpdatePromises);
-  
+
+      // Update the team name in all matching pots
+      const potQuerySnapshot = await db.collection(potYear).where('teamId', '==', teamId).get();
+      const potUpdatePromises = [];
+      potQuerySnapshot.forEach(doc => {
+        potUpdatePromises.push(doc.ref.update({ teamName }));
+      });
+      await Promise.all(potUpdatePromises);
+    
       console.log(`Team ${teamId} updated successfully in ${teamYear} collection`);
       res.sendStatus(200);
     } catch (e) {
@@ -357,6 +365,7 @@ module.exports = ({redisClient}) => {
       const teamId = req.body.teamId;
       const teamYear = req.body.teamYear;
       const catchYear = req.body.catchYear;
+      const potYear = req.body.potYear;
   
       // Get the team document
       const teamDocRef = db.collection(teamYear).doc(teamId);
@@ -399,6 +408,16 @@ module.exports = ({redisClient}) => {
       });
       await Promise.all(catchDeletePromises);
       console.log(`All catches with teamId ${teamId} deleted successfully from ${catchYear} collection`);
+
+      // Delete all pots with the specified teamId
+      const potQuerySnapshot = await db.collection(potYear).where('teamId', '==', teamId).get();
+      const potDeletePromises = [];
+      potQuerySnapshot.forEach(doc => {
+        potDeletePromises.push(doc.ref.delete());
+      });
+      await Promise.all(potDeletePromises);
+      console.log(`All pots with teamId ${teamId} deleted successfully from ${potYear} collection`);
+
   
       res.sendStatus(200);
     } catch (e) {
@@ -722,6 +741,106 @@ module.exports = ({redisClient}) => {
     }
   };  
 
+  // Pots
+  const adminAddPot = async (req, res) => {
+    try {
+      const db = getFirestore();
+      const { potYear, teamId, teamName, boardSelections } = req.body;
+  
+      // Validate required fields
+      if (!potYear || !teamId || !teamName || !boardSelections) {
+        return res.status(400).json({ error: 'Missing required fields.' });
+      }
+  
+      // Calculate total fees
+      const totalPotFee = boardSelections.reduce((acc, selection) => acc + selection.totalFee, 0);
+  
+      // Prepare data with individual board fees
+      const potData = {
+        teamId,
+        teamName,
+        potYear,
+        boardSelections,  // No need to parse, it's already an object
+        totalPotFee,
+        ...boardSelections.reduce((acc, selection) => {
+          const key = `total${selection.board.replace(/ /g, '')}Fee`;
+          acc[key] = selection.totalFee;
+          return acc;
+        }, {}),
+        timestamp: new Date().toISOString(),
+      };
+  
+      // Add pot data to Firestore
+      const potDocRef = await db.collection(potYear).add(potData);
+  
+      // Update document with potId
+      await potDocRef.update({ potId: potDocRef.id });
+  
+      res.status(200).json({ message: 'Pot entry added successfully' });
+    } catch (error) {
+      console.error('Error in adminAddPot:', error);
+      res.status(500).json({ error: 'Failed to add pot entry. Please try again.' });
+    }
+  };
+
+  const adminAddPotCheckForDuplicateEntries = async (req, res) => {
+    const { potYear, teamId } = req.body;
+  
+    try {
+      const db = getFirestore();
+      const snapshot = await db.collection(potYear).where('teamId', '==', teamId).get();
+  
+      if (!snapshot.empty) {
+        return res.status(200).json({ exists: true });
+      } else {
+        return res.status(200).json({ exists: false });
+      }
+    } catch (error) {
+      console.error('Error checking for duplicate teamId:', error);
+      return res.status(500).json({ error: 'Failed to check for duplicate teamId' });
+    }
+  };
+  
+  const adminEditPot = async (req, res) => {
+    try {
+      const db = getFirestore();
+      const { potYear, potId, teamId, teamName, boardSelections } = req.body;
+  
+      // Find the pot entry by teamId and update it
+      const potRef = db.collection(potYear).doc(potId);
+      await potRef.update({
+        boardSelections,
+        totalPotFee: boardSelections.reduce((acc, selection) => acc + selection.totalFee, 0),
+        ...boardSelections.reduce((acc, selection) => {
+          const key = `total${selection.board.replace(/ /g, '')}Fee`;
+          acc[key] = selection.totalFee;
+          return acc;
+        }, {}),
+        timestamp: new Date().toISOString(),
+      });
+  
+      res.status(200).json({ message: 'Pot entry updated successfully' });
+    } catch (error) {
+      console.error('Error updating pot entry:', error);
+      res.status(500).json({ error: 'Failed to update pot entry.' });
+    }
+  }; 
+  
+  const adminDeletePot = async (req, res) => {
+    try {
+      const db = getFirestore();
+      const { potId, potYear } = req.body;
+  
+      // Remove the document
+      await db.collection(potYear).doc(potId).delete();
+  
+      res.status(200).json({ message: 'Pot entry deleted successfully' });
+    } catch (error) {
+      console.error('Error deleting pot entry:', error);
+      res.status(500).json({ error: 'Failed to delete pot entry.' });
+    }
+  }; 
+
   return {
     adminGetDatabaseCount,
     adminGetDatabaseList,
@@ -735,6 +854,10 @@ module.exports = ({redisClient}) => {
     adminAddAnnouncement,
     adminEditAnnouncement,
     adminDeleteAnnouncement,
+    adminAddPot,
+    adminAddPotCheckForDuplicateEntries,
+    adminEditPot,
+    adminDeletePot,
     adminGetTotalCatchCount,
     adminGetTotalCatchCountBySpecies,
     adminGetRegisteredTeamDataForReport,

@@ -20,6 +20,14 @@ import {
 } from '../config/generalConfig';
 
 import {
+  CONFIG_STYLING_BANNER_BACKGROUND_COLOR,
+  CONFIG_STYLING_BANNER_TEXT_COLOR,
+  CONFIG_STYLING_SECTION_BACKGROUND_COLOR,
+  CONFIG_STYLING_SECTION_TEXT_COLOR,
+  CONFIG_STYLING_H2_COLOR,
+} from '../config/stylingConfig';
+
+import {
   CONFIG_NEWSFEED_INCLUDE_TYPE_COUNT_TABLE,
   CONFIG_NEWSFEED_INCLUDE_SPECIES_COUNT_TABLE,
   CONFIG_NEWSFEED_INCLUDE_TEAM_COUNT_TABLE,
@@ -244,10 +252,10 @@ function NewsfeedPage() {
   return (
     <AnimatedPage>
       <main>
-        <section className="section-banner">
-          <h1>Newsfeed</h1>
+        <section style={{ backgroundColor: CONFIG_STYLING_BANNER_BACKGROUND_COLOR }} className="section-banner">
+          <h1 style={{ color: CONFIG_STYLING_BANNER_TEXT_COLOR }}>Newsfeed</h1>
         </section>
-        <section className="section-contact">
+        <section style={{ backgroundColor: CONFIG_STYLING_SECTION_BACKGROUND_COLOR, color: CONFIG_STYLING_SECTION_TEXT_COLOR }}className="section-contact">
           <Box sx={{ 
             width: '90%', 
             typography: 'body1', 
@@ -259,7 +267,7 @@ function NewsfeedPage() {
             <Box sx={{ width: matches ? '33%' : '100%', paddingRight: matches ? 2 : 0 }}>
               {!loading && (
                 <>
-                  <h2>Counts</h2>
+                  <h2 style={{ color: CONFIG_STYLING_H2_COLOR }}>Counts</h2>
                   <br/>
                   <FormControl key={`count-type-dropdown`} fullWidth>
                   <InputLabel>Select View</InputLabel>
@@ -324,7 +332,7 @@ function NewsfeedPage() {
             <Box sx={{ width: matches ? '66%' : '100%', paddingLeft: matches ? 2 : 0 }}>
               {!loading ? (
                 <>
-                  <h2>Event Log</h2>
+                  <h2 style={{ color: CONFIG_STYLING_H2_COLOR }}>Event Log</h2>
                   <br/>
                   <FormControl key={`event-type-dropdown`} fullWidth>
                     <InputLabel>Select View</InputLabel>

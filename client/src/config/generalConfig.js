@@ -13,7 +13,7 @@ module.exports = {
   CONFIG_GENERAL_HAS_ADMIN: true,
   CONFIG_GENERAL_HAS_STATS_TAB: true,
   CONFIG_GENERAL_HAS_REPORTS_TAB: true,
-  CONFIG_GENERAL_HAS_POTS: false,
+  CONFIG_GENERAL_HAS_POTS: true,
   CONFIG_GENERAL_HAS_AUCTION: false,
   CONFIG_GENERAL_LINK_TO_TOURNAMENT_WEBSITE:
     "https://www.billfishpachanga.com/",
@@ -23,7 +23,7 @@ module.exports = {
     Register: "/register",
     Newsfeed: "/newsfeed",
     Leaderboard: "/leaderboard",
-    // "Pots": "/pots",
+    Pots: "/pots",
     // "Auction": "/auction",
   },
   CONFIG_GENERAL_INFO_LINK_OBJECT: {

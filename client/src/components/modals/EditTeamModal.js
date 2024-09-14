@@ -125,6 +125,7 @@ const EditTeamModal = (props) => {
           : process.env.REACT_APP_SERVER_URL_PRODUCTION;
 
         const formData = new FormData();
+        formData.append('potYear', props.potYear);
         formData.append('catchYear', props.catchYear);
         formData.append('teamYear', props.teamYear);
         formData.append('teamId', props.editInfo.teamId);
