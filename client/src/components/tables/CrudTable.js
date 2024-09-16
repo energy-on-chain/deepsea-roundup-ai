@@ -34,6 +34,14 @@ import {
 } from '../../config/generalConfig';
 
 import { 
+  CONFIG_STYLING_TABLE_HEADER_BACKGROUND_COLOR,
+  CONFIG_STYLING_TABLE_HEADER_TEXT_COLOR,
+  CONFIG_STYLING_ADMIN_TOOLBAR_TEXT_COLOR,
+  CONFIG_STYLING_TABLE_ODD_ROW_BACKGROUND_COLOR,
+  CONFIG_STYLING_TABLE_CELL_TEXT_COLOR,
+} from '../../config/stylingConfig';
+
+import { 
   CONFIG_ADMIN_TABLE_PROPERTIES_FOR_TEAMS,
   CONFIG_ADMIN_TABLE_PROPERTIES_FOR_CATCHES,
   CONFIG_ADMIN_TABLE_PROPERTIES_FOR_ANNOUNCEMENTS,
@@ -458,24 +466,38 @@ function CrudTable(props) {
           onColumnVisibilityModelChange={(newModel) => setColumnVisibilityModel(newModel)}
           sx={{
             overflowX: scroll,
+            '.MuiDataGrid-toolbarContainer .MuiButton-root': {
+                backgroundColor: 'white', // Button background color
+                color: CONFIG_STYLING_ADMIN_TOOLBAR_TEXT_COLOR,
+                '&:hover': {
+                  // backgroundColor: '#115293', // Hover background color
+                },
+              },
+              // Other customizations
+              '.MuiDataGrid-toolbarContainer': {
+                color: CONFIG_STYLING_TABLE_CELL_TEXT_COLOR,
+              },
             '.MuiDataGrid-row.Mui-odd': {
               backgroundColor: 'rgba(234, 234, 234)',
             },
             '.MuiDataGrid-columnHeaderTitleContainer': {
-              backgroundColor: '#288DAF',
-              color: 'white',
               fontSize: '16px',
+              backgroundColor: CONFIG_STYLING_TABLE_HEADER_BACKGROUND_COLOR,
+              color: CONFIG_STYLING_TABLE_HEADER_TEXT_COLOR,
               ".MuiSvgIcon-root": {
-                color: "white",
+                color: CONFIG_STYLING_TABLE_HEADER_TEXT_COLOR,
               }
             },
             '& .super-app-theme--header': {
-              backgroundColor: '#288DAF',
+              backgroundColor: CONFIG_STYLING_TABLE_HEADER_BACKGROUND_COLOR,
               color: 'white',
               fontSize: '16px',
             },
             '& .MuiDataGrid-cell': {
+              justifyContent: 'center',
+              textAlign: 'center',
               fontSize: '16px',
+              color: CONFIG_STYLING_TABLE_CELL_TEXT_COLOR,
             },
           }}
           initialState={initialState}
@@ -485,7 +507,11 @@ function CrudTable(props) {
           }
           slots={{ toolbar: AdminToolbar }}
           slotProps={{
-            toolbar: { handleOpenAddModal, handleCloseAddModal, buttonLabel },
+            toolbar: { 
+              handleOpenAddModal,
+              handleCloseAddModal, 
+              buttonLabel,
+            },
           }}
         />
       </div>

@@ -2,6 +2,8 @@ import React from 'react';
 import { Button } from '@mui/material';
 import '../../pages/DashboardPage.css';
 
+import { CONFIG_STYLING_DASHBOARD_TITLE_TEXT_COLOR } from '../../config/stylingConfig';
+
 function TournamentCard({ tournament, cardWidth, cardHeight }) {
   // Attempt to require the image based on the logo path
   let logoImage;
@@ -25,8 +27,8 @@ function TournamentCard({ tournament, cardWidth, cardHeight }) {
             style={{ width: '80%', height: '140px', objectFit: 'contain', margin: '0 auto', paddingBottom: '5px'}}
           />
         )}
-        {tournament.title && <h3 style={{ paddingTop: '15px', paddingBottom: '15px' }}>{tournament.title}</h3>}
-        {tournament.dates && <h4 style={{ paddingBottom: '5px' }}>{tournament.dates}</h4>}
+        {tournament.title && <h3 style={{ paddingTop: '15px', paddingBottom: '15px', color: CONFIG_STYLING_DASHBOARD_TITLE_TEXT_COLOR }}>{tournament.title}</h3>}
+        {tournament.dates && <h4 style={{ paddingBottom: '5px', color: CONFIG_STYLING_DASHBOARD_TITLE_TEXT_COLOR }}>{tournament.dates}</h4>}
         {tournament.home && <Button fullWidth variant="contained" href={tournament.home} target="_blank">Home</Button>}
         {tournament.register && <Button fullWidth variant="contained" href={tournament.register} target="_blank">Register</Button>}
         {tournament.leaderboard && <Button fullWidth variant="contained" href={tournament.leaderboard} target="_blank">Leaderboard</Button>}

@@ -21,6 +21,11 @@ import {
 
 import { 
   CONFIG_STYLING_LEADERBOARD_TIMESTAMP_TEXT_COLOR,
+  CONFIG_STYLING_BANNER_BACKGROUND_COLOR,
+  CONFIG_STYLING_BANNER_TEXT_COLOR,
+  CONFIG_STYLING_SECTION_BACKGROUND_COLOR,
+  CONFIG_STYLING_SECTION_TEXT_COLOR,
+  CONFIG_STYLING_H2_COLOR,
 } from '../config/stylingConfig';
 
 import { 
@@ -111,7 +116,7 @@ function LeaderboardPage() {
     setHasSelectedResult(false);
 
     // Set styling
-    document.documentElement.style.setProperty('--timestamp-text-color', CONFIG_STYLING_LEADERBOARD_TIMESTAMP_TEXT_COLOR);
+    // document.documentElement.style.setProperty('--timestamp-text-color', CONFIG_STYLING_LEADERBOARD_TIMESTAMP_TEXT_COLOR);
 
   }, []);
 
@@ -198,8 +203,9 @@ function LeaderboardPage() {
     <AnimatedPage>
       <main>
 
-        <section className="section-banner">
-          <h1>Leadboard</h1>
+        {/* BANNER */}
+        <section style={{ backgroundColor: CONFIG_STYLING_BANNER_BACKGROUND_COLOR }} className="section-banner">
+          <h1 style={{ color: CONFIG_STYLING_BANNER_TEXT_COLOR }}>Leaderboard</h1>
         </section>
 
         <section className="section-leaderboard">
@@ -217,7 +223,7 @@ function LeaderboardPage() {
               (
                 <div>
                   <br/>
-                  <h3 className="timestamp-text"><em>{timestamp}</em></h3>
+                  <h3 className="timestamp-text" style={{color: CONFIG_STYLING_LEADERBOARD_TIMESTAMP_TEXT_COLOR}}><em>{timestamp}</em></h3>
                   <br/>
                 </div>
               ) : (
@@ -232,7 +238,7 @@ function LeaderboardPage() {
               <div>
                 <br />
                 <br />
-                <h2>The {CONFIG_GENERAL_YEAR} tournament will begin soon!</h2>
+                <h2 style={{color: CONFIG_STYLING_H2_COLOR}}>The {CONFIG_GENERAL_YEAR} tournament will begin soon!</h2>
               </div>
             }
 
@@ -321,7 +327,7 @@ function LeaderboardPage() {
                       ))}
                     </div>
                   ) : (
-                    <h1>Please select a category</h1>
+                    <h1 style={{color: CONFIG_STYLING_H2_COLOR}}>Please select a category</h1>
                   )}
                 </div>
               ))

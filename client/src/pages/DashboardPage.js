@@ -58,6 +58,7 @@ function DashboardPage() {
   return (
     <AnimatedPage>
       <main>
+        
         {/* BANNER */}
         <section style={{ backgroundColor: CONFIG_STYLING_BANNER_BACKGROUND_COLOR }} className="section-banner">
           <h1 style={{ color: CONFIG_STYLING_BANNER_TEXT_COLOR }}>Dashboard</h1>

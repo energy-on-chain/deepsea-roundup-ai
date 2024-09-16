@@ -18,7 +18,8 @@ import {
   CONFIG_GENERAL_HAS_NEWSFEED, 
   CONFIG_GENERAL_FIREBASE_TEAMS_TABLE_NAME,
   CONFIG_GENERAL_FIREBASE_CATCHES_TABLE_NAME,
-  CONFIG_GENERAL_FIREBASE_POTS_TABLE_NAME
+  CONFIG_GENERAL_FIREBASE_POTS_TABLE_NAME,
+  CONFIG_GENERAL_HAS_POTS
 } from '../config/generalConfig';
 
 import { 
@@ -38,11 +39,26 @@ import {
   CONFIG_REGISTRATION_NORMAL_FEE,
 } from '../config/registrationConfig';
 
+import { 
+  CONFIG_POTS_BOARD_LIST 
+} from '../config/potsConfig';
+
+import { 
+  CONFIG_STYLING_HOME_HERO_BACKGROUND_COLOR,
+  CONFIG_STYLING_HOME_HERO_TEXT_COLOR,
+  CONFIG_STYLING_BUTTON_BORDER_COLOR,
+  CONFIG_STYLING_BUTTON_BACKGROUND_COLOR,
+  CONFIG_STYLING_BUTTON_TEXT_COLOR,
+  CONFIG_STYLING_HOME_INFO_BACKGROUND_COLOR,
+  CONFIG_STYLING_HOME_INFO_TEXT_COLOR,
+  CONFIG_STYLING_HOME_INFO_HIGHLIGHTED_TEXT_COLOR,
+} from '../config/stylingConfig';
+
 function HomePage() {
   const [logo, setLogo] = useState(desktopLogo);
   const [numTeams, setNumTeams] = useState(0);
   const [numCatches, setNumCatches] = useState(0);
-  // const [potTotal, setPotTotal] = useState("TBD");
+  const [potTotal, setPotTotal] = useState(0);
 
   useEffect(() => {
     const updateLogo = () => {
@@ -114,21 +130,24 @@ function HomePage() {
       .catch(e => console.error(e));
     }
 
-    // Pot total FIXME
-    // fetch(`${apiUrl}/api/get_all_pots_data`, {
-    //   method: 'POST',
-    //   headers: { 'Content-Type': 'application/json' },
-    //   body: JSON.stringify({ potYear: CONFIG_GENERAL_FIREBASE_POTS_TABLE_NAME })
-    // })
-    // .then(res => res.json())
-    // .then(data => {
-    //   if (data.totalPotAmount === 'TBD') {
-    //     setPotTotal('TBD');
-    //   } else {
-    //     setPotTotal(data.totalPotAmount.toLocaleString('en-US', { style: 'currency', currency: 'USD', minimumFractionDigits: 0, maximumFractionDigits: 0 }));
-    //   }
-    // })
-    // .catch(e => console.error(e));
+    // Pot total
+    if (CONFIG_GENERAL_HAS_POTS) {
+      const boardNames = CONFIG_POTS_BOARD_LIST.map(board => Object.keys(board)[0]);
+      fetch(`${apiUrl}/api/get_total_pot_size_data`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ potYear: CONFIG_GENERAL_FIREBASE_POTS_TABLE_NAME, boardNames })
+      })
+      .then(res => res.json())
+      .then(data => {
+        if (data.totalPotSize == 0) {
+          setPotTotal("TBD");
+        } else {
+          setPotTotal(data.totalPotSize);
+        }
+      })
+      .catch(e => console.error(e));
+    }
   }, []); // <-- Missing dependency array
 
   const formatCurrency = (value) => {
@@ -143,38 +162,49 @@ function HomePage() {
   return (
     <AnimatedPage>
       <main>
-        <section className="section-hero">
+        <section style={{backgroundColor: CONFIG_STYLING_HOME_HERO_BACKGROUND_COLOR}} className="section-hero">
           <img src={logo} alt="Tournament Logo" />
-          <h2>{CONFIG_HOME_TOURNAMENT_DATE_STRING}</h2>
+          <br/>
+          <h2 style={{color: CONFIG_STYLING_HOME_HERO_TEXT_COLOR}}>{CONFIG_HOME_TOURNAMENT_DATE_STRING}</h2>
           <div className="tournamentColElement">
             <HomeCountdownTimer className="countdown-timer-element" targetDate={parseInt(CONFIG_HOME_TOURNAMENT_START_IN_LOCAL_TIME_IN_MS, 10)} />
           </div>
         </section>
-        <section className="section-hero2">
+        <section 
+          style={{backgroundColor: CONFIG_STYLING_HOME_INFO_BACKGROUND_COLOR}} 
+          className="section-hero2"
+        >
           {CONFIG_GENERAL_HAS_REGISTRATION && (
             <div className="registration-info">
               <Link to="/register">
-                <button className="home-signup-button" type="button">Register Now!</button>  
+                <button 
+                  style={{backgroundColor: CONFIG_STYLING_BUTTON_BACKGROUND_COLOR, color: CONFIG_STYLING_BUTTON_TEXT_COLOR, borderColor: CONFIG_STYLING_BUTTON_BORDER_COLOR}} 
+                  className="home-signup-button" 
+                  type="button"
+                >
+                    Register Now!
+                </button>  
               </Link>
               <br/>
               {CONFIG_REGISTRATION_HAS_EARLYBIRD_REGISTRATION && (
-                <p>
+                <p style={{color: CONFIG_STYLING_HOME_INFO_TEXT_COLOR}} >
                   <strong>{CONFIG_REGISTRATION_EARLYBIRD_DATE_STRING} </strong>
-                  <span>{formatCurrency(CONFIG_REGISTRATION_EARLYBIRD_FEE)}</span>
+                  <span style={{color: CONFIG_STYLING_HOME_INFO_HIGHLIGHTED_TEXT_COLOR}}>{formatCurrency(CONFIG_REGISTRATION_EARLYBIRD_FEE)}</span>
                 </p>
               )}
-              <p>
+              <p style={{color: CONFIG_STYLING_HOME_INFO_TEXT_COLOR}}>
                 <strong>{CONFIG_REGISTRATION_NORMAL_DATE_STRING} </strong>
-                <span>{formatCurrency(CONFIG_REGISTRATION_NORMAL_FEE)}</span>
+                <span style={{color: CONFIG_STYLING_HOME_INFO_HIGHLIGHTED_TEXT_COLOR}}>{formatCurrency(CONFIG_REGISTRATION_NORMAL_FEE)}</span>
               </p>
               <br/>
               <br/>
             </div>
           )}
           {CONFIG_HOME_PAST_TOURNAMENT_RESULT_STRINGS.map((result, index) => (
-            <p key={index}>{result}</p>
+            <p style={{color: CONFIG_STYLING_HOME_INFO_TEXT_COLOR}} key={index}>{result}</p>
           ))}
-          <p><strong>{CONFIG_GENERAL_YEAR} Tournament:</strong> <span>{numTeams} teams </span> / <span>{numCatches} {CONFIG_HOME_CATCH_STAT_TYPE}</span> / <span>{/*potTotal*/}TBD total pot</span></p>
+          <p style={{color: CONFIG_STYLING_HOME_INFO_TEXT_COLOR}}>
+            <strong>{CONFIG_GENERAL_YEAR} Tournament:</strong> <span style={{color: CONFIG_STYLING_HOME_INFO_HIGHLIGHTED_TEXT_COLOR}}>{numTeams} teams </span> / <span style={{color: CONFIG_STYLING_HOME_INFO_HIGHLIGHTED_TEXT_COLOR}}>{numCatches} {CONFIG_HOME_CATCH_STAT_TYPE}</span> / <span style={{color: CONFIG_STYLING_HOME_INFO_HIGHLIGHTED_TEXT_COLOR}}>{formatCurrency(potTotal)} total pot</span></p>
         </section>
         <Footer/>
       </main>

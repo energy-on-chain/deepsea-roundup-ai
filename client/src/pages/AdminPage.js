@@ -46,6 +46,13 @@ import {
 } from '../config/generalConfig';
 
 import { 
+  CONFIG_STYLING_BANNER_BACKGROUND_COLOR,
+  CONFIG_STYLING_BANNER_TEXT_COLOR,
+  CONFIG_STYLING_LOGIN_TEXT_COLOR,
+  CONFIG_STYLING_STATS_TEXT_COLOR,
+} from '../config/stylingConfig';
+
+import { 
   CONFIG_ADMIN_DEFAULT_TAB_NAME,
   CONFIG_ADMIN_DEFAULT_TAB_NAME_LIST,
   CONFIG_ADMIN_TOURNAMENT_START_DATE_STRING,
@@ -530,14 +537,16 @@ function AdminPage() {
   return (
     <AnimatedPage>
       <main>
-        <section className="section-banner">
-          <h1>Admin</h1>
+
+        {/* BANNER */}
+        <section style={{ backgroundColor: CONFIG_STYLING_BANNER_BACKGROUND_COLOR }} className="section-banner">
+          <h1 style={{ color: CONFIG_STYLING_BANNER_TEXT_COLOR }}>Settings</h1>
         </section>
 
         <section className="section-logout">
           {(!(currentUser === undefined) && !(currentUser === null)) && 
             <Box sx={{ width: '90%', typography: 'body1' }}>
-              <p>{`You are currently logged in as: ${currentUser.email}`}</p>
+              <p style={{color: CONFIG_STYLING_LOGIN_TEXT_COLOR}}>{`You are currently logged in as: ${currentUser.email}`}</p>
               <br/>
 
               <Button onClick={handleLogout} color="primary" variant="contained" fullwidth >Logout</Button>  
@@ -560,7 +569,7 @@ function AdminPage() {
                       <TabPanel key="Stats" value="Stats">
                         <div>
                           { CONFIG_GENERAL_HAS_REGISTRATION && 
-                            <div>
+                            <div style={{color: CONFIG_STYLING_STATS_TEXT_COLOR}}>
                               <h2>Registration</h2>
                               {isMobile ? (
                                 <>
@@ -582,7 +591,7 @@ function AdminPage() {
                           }
 
                           {CONFIG_GENERAL_HAS_NEWSFEED &&
-                            <div>
+                            <div style={{color: CONFIG_STYLING_STATS_TEXT_COLOR}}>
                               <h2>Catches</h2>
                               {console.log("Rendering catchesStats:", catchesStats)}
                               {isMobile ? (
@@ -618,7 +627,7 @@ function AdminPage() {
                           }
 
                           {CONFIG_GENERAL_HAS_POTS && (
-                            <div>
+                            <div style={{color: CONFIG_STYLING_STATS_TEXT_COLOR}}>
                               <h2>Pots</h2>
                               {isMobile ? (
                                 <>

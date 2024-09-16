@@ -40,7 +40,7 @@
 
 .section-footer-container h4:before {
   position: absolute;
-  background: var(--footer-section-divider-highlight-color); /* Use CSS variable */
+  background: white;
   height: 2px;
   content: '';
   width: 50px;

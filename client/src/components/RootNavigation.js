@@ -10,6 +10,12 @@ import {
   CONFIG_GENERAL_HAS_ADMIN, 
 } from '../config/generalConfig';
 
+import {
+  CONFIG_STYLING_NAVBAR_BACKGROUND_COLOR,
+  CONFIG_STYLING_NAVBAR_TEXT_COLOR,
+} from '../config/stylingConfig';
+
+
 import './RootNavigation.css';
 import logo from '../images/NavBarLogo.png';
 
@@ -77,7 +83,7 @@ function RootNavigation(props) {
   }, []);
 
   return (
-    <section id="navbar" className="top-nav">
+    <section id="navbar" className="top-nav" style={{backgroundColor: CONFIG_STYLING_NAVBAR_BACKGROUND_COLOR}}>
       <div>
         <Link to="/" className="logo">
           <img src={logo} alt="error"/>
@@ -89,36 +95,40 @@ function RootNavigation(props) {
         <div className='menu-button'></div>
       </label>
       
-      <ul id="menu" className="menu">
-        <li>
-          <NavLink to="/" className={({ isActive }) => isActive ? "active" : undefined}>Home</NavLink>
+      <ul id="menu" className="menu" >
+
+        {/* HOME */}
+        <li style={{backgroundColor: CONFIG_STYLING_NAVBAR_BACKGROUND_COLOR, borderColor: CONFIG_STYLING_NAVBAR_BACKGROUND_COLOR}}>
+          <NavLink to="/" className={({ isActive }) => isActive ? "active" : undefined} style={{color: CONFIG_STYLING_NAVBAR_TEXT_COLOR}}>Home</NavLink>
         </li>
 
+        {/* INFO LINKS */}
         {CONFIG_GENERAL_HAS_INFO && !isMobile && (
           <div className="dropdown">
             <button className="dropbtn">Info <i className="fa fa-caret-down nav-icon"></i></button>
             <div className="dropdown-content">
               {Object.entries(CONFIG_GENERAL_INFO_LINK_OBJECT).map(([label, url]) => (
-                <a key={label} href={url} target="_blank">{label}</a>
+                <a key={label} href={url} target="_blank"  style={{color: CONFIG_STYLING_NAVBAR_TEXT_COLOR}}>{label}</a>
               ))}
             </div>
           </div>
         )}
         {CONFIG_GENERAL_HAS_INFO && isMobile && (
           Object.entries(CONFIG_GENERAL_INFO_LINK_OBJECT).map(([label, url]) => (
-            <li key={label}>
-              <a href={url} target="_blank">{label}</a>
+            <li key={label} style={{backgroundColor: CONFIG_STYLING_NAVBAR_BACKGROUND_COLOR, borderColor: CONFIG_STYLING_NAVBAR_BACKGROUND_COLOR}}>
+              <a href={url} target="_blank"  style={{color: CONFIG_STYLING_NAVBAR_TEXT_COLOR}}>{label}</a>
             </li>
           ))
         )}
 
+        {/* TOURNAMENT LINKS */}
         {!isMobile && (
           <div className="dropdown">
             <button className="dropbtn">Tournament <i className="fa fa-caret-down nav-icon"></i></button>
             <div className="dropdown-content">
               {Object.entries(CONFIG_GENERAL_TOURNAMENT_LINK_OBJECT).map(([label, url]) => (
                 <li>
-                  <NavLink to={url} className={({ isActive }) => isActive ? "active" : undefined}>{label}</NavLink>
+                  <NavLink to={url} className={({ isActive }) => isActive ? "active" : undefined} style={{color: CONFIG_STYLING_NAVBAR_TEXT_COLOR}}>{label}</NavLink>
                 </li>
               ))}
             </div>
@@ -126,19 +136,20 @@ function RootNavigation(props) {
         )}
         {isMobile && (
           Object.entries(CONFIG_GENERAL_TOURNAMENT_LINK_OBJECT).map(([label, url]) => (
-            <li key={label}>
-              <NavLink to={url} className={({ isActive }) => isActive ? "active" : undefined}>{label}</NavLink>
+            <li key={label} style={{backgroundColor: CONFIG_STYLING_NAVBAR_BACKGROUND_COLOR, borderColor: CONFIG_STYLING_NAVBAR_BACKGROUND_COLOR}}>
+              <NavLink to={url} className={({ isActive }) => isActive ? "active" : undefined} style={{color: CONFIG_STYLING_NAVBAR_TEXT_COLOR}}>{label}</NavLink>
             </li>
           ))
         )}
 
+        {/* ADMIN LINKS */}
         {!isMobile && (
           <div className="dropdown">
             <button className="dropbtn">Admin <i className="fa fa-caret-down nav-icon"></i></button>
             <div className="dropdown-content">
               {Object.entries(CONFIG_GENERAL_ADMIN_LINK_OBJECT).map(([label, url]) => (
                 <li>
-                  <NavLink to={url} className={({ isActive }) => isActive ? "active" : undefined}>{label}</NavLink>
+                  <NavLink to={url} className={({ isActive }) => isActive ? "active" : undefined } style={{color: CONFIG_STYLING_NAVBAR_TEXT_COLOR}}>{label}</NavLink>
                 </li>
               ))}
             </div>
@@ -146,21 +157,21 @@ function RootNavigation(props) {
         )}
         {isMobile && (
           Object.entries(CONFIG_GENERAL_ADMIN_LINK_OBJECT).map(([label, url]) => (
-            <li key={label}>
-              <NavLink to={url} className={({ isActive }) => isActive ? "active" : undefined}>{label}</NavLink>
+            <li key={label} style={{backgroundColor: CONFIG_STYLING_NAVBAR_BACKGROUND_COLOR, borderColor: CONFIG_STYLING_NAVBAR_BACKGROUND_COLOR}}>
+              <NavLink to={url} className={({ isActive }) => isActive ? "active" : undefined} style={{color: CONFIG_STYLING_NAVBAR_TEXT_COLOR}}>{label}</NavLink>
             </li>
           ))
         )}
-
         {/* {CONFIG_GENERAL_HAS_ADMIN && (
           <li>
             <NavLink to="/admin" className={({ isActive }) => isActive ? "active" : undefined}>Admin</NavLink>
           </li>
         )} */}
 
+        {/* REGISTRATION LINKS */}
         {CONFIG_GENERAL_HAS_REGISTRATION && (
-          <li className="navButtonHamburgerToggle">
-            <NavLink to="/register" className={({ isActive }) => isActive ? "active" : undefined}>Register</NavLink>
+          <li className="navButtonHamburgerToggle" style={{backgroundColor: CONFIG_STYLING_NAVBAR_BACKGROUND_COLOR, borderColor: CONFIG_STYLING_NAVBAR_BACKGROUND_COLOR}}>
+            <NavLink to="/register" className={({ isActive }) => isActive ? "active" : undefined} style={{color: CONFIG_STYLING_NAVBAR_TEXT_COLOR}}>Register</NavLink>
           </li>
         )}
         <div className="navButtonHamburgerToggle2">
@@ -176,6 +187,7 @@ function RootNavigation(props) {
             )}
           </li>
         </div>
+
       </ul>
     </section>
   );

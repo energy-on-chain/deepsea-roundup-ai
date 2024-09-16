@@ -20,10 +20,6 @@ import './Footer.css';
 
 function Footer() {
 
-  useEffect(() => {
-    document.documentElement.style.setProperty('--footer-section-divider-highlight-color', CONFIG_STYLING_FOOTER_SECTION_DIVIDER_HIGHLIGHT_COLOR);
-  }, []);
-
   return (
     <AnimatedPage>
       <main>

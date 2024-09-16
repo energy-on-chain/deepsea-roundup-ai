@@ -22,6 +22,16 @@ import {
 } from '../config/generalConfig';
 
 import {
+  CONFIG_STYLING_BANNER_BACKGROUND_COLOR,
+  CONFIG_STYLING_BANNER_TEXT_COLOR,
+  CONFIG_STYLING_POTS_TIMESTAMP_TEXT_COLOR,
+  CONFIG_STYLING_POTS_TITLE_TEXT_COLOR,
+  CONFIG_STYLING_SECTION_BACKGROUND_COLOR,
+  CONFIG_STYLING_SECTION_TEXT_COLOR,
+  CONFIG_STYLING_H2_COLOR,
+} from '../config/stylingConfig';
+
+import {
   CONFIG_HOME_SPECIES_TYPE_LIST_FOR_CATCH_COUNT,
 } from '../config/homeConfig';
 
@@ -362,8 +372,8 @@ function PotsPage() {
       <main>
 
         {/* BANNER */}
-        <section className="section-banner">
-          <h1>Pots</h1>
+        <section style={{ backgroundColor: CONFIG_STYLING_BANNER_BACKGROUND_COLOR }} className="section-banner">
+          <h1 style={{ color: CONFIG_STYLING_BANNER_TEXT_COLOR }}>Pots</h1>
         </section>
 
         {/* SELECT VIEW ENTRIES OR PAYOUTS */}
@@ -443,8 +453,8 @@ function PotsPage() {
               (
                 <div>
                   <br/>
-                  <h1 style={{ fontSize: '30px', marginBottom: '20px' }}>Total Pot Value: {formatCurrency(totalGrossPot)}</h1>
-                  <h3 className="timestamp-text"><em>{timestamp}</em></h3>
+                  <h1 style={{ fontSize: '30px', marginBottom: '20px', color: CONFIG_STYLING_POTS_TITLE_TEXT_COLOR }}>Total Pot Value: {formatCurrency(totalGrossPot)}</h1>
+                  <h3 className="timestamp-text" style={{color: CONFIG_STYLING_POTS_TIMESTAMP_TEXT_COLOR}}><em>{timestamp}</em></h3>
                 </div>
               ) : (
                 <div>
@@ -455,7 +465,7 @@ function PotsPage() {
             {/* Holdover message if there are no catches yet */}
             { (!tournamentHasStarted && displaySelection === "Payouts") &&
               <div>
-                <h2>The {CONFIG_GENERAL_YEAR} tournament will begin soon!</h2>
+                <h2 style={{color: CONFIG_STYLING_POTS_TITLE_TEXT_COLOR}}>The {CONFIG_GENERAL_YEAR} tournament will begin soon!</h2>
               </div>
             }
 
@@ -464,7 +474,7 @@ function PotsPage() {
               <>
                 <br/>
                 <br/>
-                <h1>Loading, one moment please...</h1>
+                <h1 style={{color: CONFIG_STYLING_POTS_TITLE_TEXT_COLOR}}>Loading, one moment please...</h1>
                 <CircularProgress/>
               </>
             }
@@ -478,7 +488,7 @@ function PotsPage() {
                 {/* Board Table Display */}
                 <div className="board-display">
 
-                  <h3 style={{fontStyle: "italic"}} >Scroll bar at bottom if needed</h3>
+                  <h3 style={{fontStyle: "italic", color: CONFIG_STYLING_POTS_TITLE_TEXT_COLOR}} >Scroll bar at bottom if needed</h3>
                   <br/>
 
                   {potEntryData ? (
@@ -519,6 +529,7 @@ function PotsPage() {
                         position: 'sticky',
                         top: 0,
                         zIndex: 2,
+                        color: CONFIG_STYLING_POTS_TITLE_TEXT_COLOR,
                       };
 
                       const teamCellStyle = {
@@ -530,6 +541,7 @@ function PotsPage() {
                         backgroundColor: '#fff',
                         zIndex: 1,
                         fontWeight: 'bold',
+                        color: CONFIG_STYLING_POTS_TITLE_TEXT_COLOR,
                       };
 
                       const tableCellStyle = {
@@ -537,6 +549,7 @@ function PotsPage() {
                         padding: '8px',
                         textAlign: 'center',
                         fontSize: '14px',
+                        color: CONFIG_STYLING_POTS_TITLE_TEXT_COLOR,
                       };
 
                       return (
@@ -585,7 +598,7 @@ function PotsPage() {
                       );
                     })()
                   ) : (
-                    <p>No pot entry data available.</p>
+                    <p style={{color: CONFIG_STYLING_POTS_TITLE_TEXT_COLOR}}>No pot entry data available.</p>
                   )}
                 </div>
 
@@ -651,19 +664,19 @@ function PotsPage() {
 
                         return (
                           <div>
-                            <p style={{ fontSize: '20px' }}><strong>Pot Name:</strong> {entriesPotSelection}</p>
-                            <p style={{ fontSize: '20px' }}><strong>Total Payout:</strong> {formatCurrency(netTotal)}</p>
-                            <p style={{ fontSize: '20px' }}><strong>Teams Entered ({selectedPotTeams.length})</strong></p>
+                            <p style={{ fontSize: '20px', color: CONFIG_STYLING_POTS_TITLE_TEXT_COLOR }}><strong>Pot Name:</strong> {entriesPotSelection}</p>
+                            <p style={{ fontSize: '20px', color: CONFIG_STYLING_POTS_TITLE_TEXT_COLOR }}><strong>Total Payout:</strong> {formatCurrency(netTotal)}</p>
+                            <p style={{ fontSize: '20px', color: CONFIG_STYLING_POTS_TITLE_TEXT_COLOR }}><strong>Teams Entered ({selectedPotTeams.length})</strong></p>
                             <ul>
                               {selectedPotTeams.map((team, index) => (
-                                <p key={index} style={{ fontSize: '18px' }}>{team}</p>
+                                <p key={index} style={{ fontSize: '18px', color: CONFIG_STYLING_POTS_TITLE_TEXT_COLOR}}>{team}</p>
                               ))}
                             </ul>
                           </div>
                         );
                       })()
                     ) : (
-                      <p>No entries found for this pot.</p>
+                      <p style={{color: CONFIG_STYLING_POTS_TITLE_TEXT_COLOR}}>No entries found for this pot.</p>
                     )}
                   </>
                 )}
@@ -700,7 +713,7 @@ function PotsPage() {
                 {entriesTeamSelection && (
                   <>
                     {/* Team Name */}
-                    <p style={{ fontSize: '20px' }}><strong>Team Name:</strong> {entriesTeamSelection}</p>
+                    <p style={{ fontSize: '20px', color: CONFIG_STYLING_POTS_TITLE_TEXT_COLOR }}><strong>Team Name:</strong> {entriesTeamSelection}</p>
 
                     {potEntryData ? (
                       potEntryData
@@ -721,25 +734,25 @@ function PotsPage() {
                           return (
                             <div key={index}>
                               {/* Total Pot Fee */}
-                              <p style={{ fontSize: '20px' }}>
+                              <p style={{ fontSize: '20px', color: CONFIG_STYLING_POTS_TITLE_TEXT_COLOR }}>
                                 <strong>Total Wagered:</strong> {formatCurrency(totalPotFee)}
                               </p>
 
                               {/* Pots Entered */}
-                              <p style={{ fontSize: '20px' }}>
+                              <p style={{ fontSize: '20px', color: CONFIG_STYLING_POTS_TITLE_TEXT_COLOR }}>
                                 <strong>Pots Entered ({potsEntered.length}):</strong>
                               </p>
 
                               <ul>
                                 {potsEntered.map((pot, potIndex) => (
-                                  <p key={potIndex} style={{ fontSize: '18px' }}>{pot}</p>
+                                  <p key={potIndex} style={{ fontSize: '18px', color: CONFIG_STYLING_POTS_TITLE_TEXT_COLOR }}>{pot}</p>
                                 ))}
                               </ul>
                             </div>
                           );
                         })
                     ) : (
-                      <p>No entries found for this team.</p>
+                      <p style={{color: CONFIG_STYLING_POTS_TITLE_TEXT_COLOR}}>No entries found for this team.</p>
                     )}
                   </>
                 )}
@@ -751,7 +764,7 @@ function PotsPage() {
             { (displaySelection === "Payouts") && (payoutsViewSelection === "By Pot") && (payoutsDisplaySelection === "List") && tournamentHasStarted &&
               (!hasLoaded ? (
                 <div>
-                  <h1>Loading...</h1>
+                  <h1 style={{color: CONFIG_STYLING_POTS_TITLE_TEXT_COLOR}}>Loading...</h1>
                   <CircularProgress />
                 </div>
               ) : (
@@ -782,7 +795,7 @@ function PotsPage() {
             { ( (displaySelection === "Payouts") && (payoutsViewSelection === "By Pot") && (payoutsDisplaySelection === "Slideshow") && (tournamentHasStarted) ) &&
               (!hasLoaded ? (
                 <div>
-                  <h1>Loading...</h1>
+                  <h1 style={{color: CONFIG_STYLING_POTS_TITLE_TEXT_COLOR}}>Loading...</h1>
                   <CircularProgress />
                 </div>
               ) : (
@@ -796,7 +809,7 @@ function PotsPage() {
             { ( (displaySelection === "Payouts") && (payoutsViewSelection === "By Pot") && (payoutsDisplaySelection === "Select") && (tournamentHasStarted) ) &&
               (!hasLoaded ? (
                 <div>
-                  <h1>Loading...</h1>
+                  <h1 style={{color: CONFIG_STYLING_POTS_TITLE_TEXT_COLOR}}>Loading...</h1>
                   <CircularProgress />
                 </div>
                 ) : (
@@ -833,12 +846,12 @@ function PotsPage() {
                               density="compact"
                             />
                           ) : (
-                            <h1 key={result.title}>No results yet.</h1>
+                            <h1 key={result.title} style={{color: CONFIG_STYLING_POTS_TITLE_TEXT_COLOR}}>No results yet.</h1>
                           )
                         ))}
                       </div>
                     ) : (
-                      <h1>Please select a category</h1>
+                      <h1 style={{color: CONFIG_STYLING_POTS_TITLE_TEXT_COLOR}}>Please select a category</h1>
                     )}
                   </div>
                 )
@@ -849,7 +862,7 @@ function PotsPage() {
             { ( (displaySelection === "Payouts") && (payoutsViewSelection === "By Team") && (payoutsDisplaySelection === "List") && (tournamentHasStarted) ) &&
             (!hasLoaded ? (
               <div>
-                <h1>Loading...</h1>
+                <h1 style={{color: CONFIG_STYLING_POTS_TITLE_TEXT_COLOR}}>Loading...</h1>
                 <CircularProgress />
               </div>
             ) : (
@@ -869,7 +882,7 @@ function PotsPage() {
             { ( (displaySelection === "Payouts") && (payoutsViewSelection === "By Team") && (payoutsDisplaySelection === "Select") && (tournamentHasStarted) ) &&
             (!hasLoaded ? (
               <div>
-                <h1>Loading...</h1>
+                <h1 style={{color: CONFIG_STYLING_POTS_TITLE_TEXT_COLOR}}>Loading...</h1>
                 <CircularProgress />
               </div>
               ) : (
@@ -897,7 +910,7 @@ function PotsPage() {
                   <br/>  
 
                   {!payoutsTeamSelection && (
-                    <h1>Please select a team</h1>
+                    <h1 style={{color: CONFIG_STYLING_POTS_TITLE_TEXT_COLOR}}>Please select a team</h1>
                   )}
 
                   {payoutsTeamSelection && (
@@ -916,7 +929,7 @@ function PotsPage() {
                           density="compact"
                         />
                       ) : (
-                        <h1>{payoutsTeamSelection} has no payouts.</h1>
+                        <h1 style={{color: CONFIG_STYLING_POTS_TITLE_TEXT_COLOR}}>{payoutsTeamSelection} has no payouts.</h1>
                       )}
                     </>
                   )}
@@ -927,7 +940,7 @@ function PotsPage() {
             {(displaySelection === "Payouts") && (payoutsViewSelection === "By Team") && (payoutsDisplaySelection === "Slideshow") && (tournamentHasStarted) && 
             (!hasLoaded ? (
               <div>
-                <h1>Loading...</h1>
+                <h1 style={{color: CONFIG_STYLING_POTS_TITLE_TEXT_COLOR}}>Loading...</h1>
                 <CircularProgress />
               </div>
             ) : (
