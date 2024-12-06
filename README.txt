@@ -1,29 +1,27 @@
 ###############################################################################
 # PROJECT: Fishing Tournament Template (V3)
-# DATE STARTED: 2-August-2024
-# DESCRIPTION: This is the third iteration of the "angler tourney application"
-# based on customer feedback and lessons learned during the 2024 tournament
-# season. This repo is meant to be "copy pasted" and customized / adapted for 
-# individual tournaments. The potential functionality includes: catch tracking,
-# realtime scoring (leaderboard), fish pots, linked merch sites, online 
-# registration and payment, sponsor advertisement, auctions, and more.
+# IMPLEMENTED FOR: Deepsea Roundup
+# DATE STARTED: 2-December-2024
+# DESCRIPTION: This is the codebase for the Deepsea Roundup annual fishing 
+# tournament, implemented using the v3 angler tourney template. 
 ###############################################################################
 ###############################################################################
 ###############################################################################
 # CHANGELOG
-# v3.0.0
+# v0.0.1 
 # Initial commit of the project. 
+# Firebase projects: deepsea-roundup-v3-staging, deepsea-roundup-v3-prod
 ###############################################################################
 ###############################################################################
 ###############################################################################
-# DEV HOURS: 
-# AS OF: DD MM YYYY
+# DEV HOURS: 0
+# AS OF: 2-December-2024
 ###############################################################################
 ###############################################################################
 ###############################################################################
 # NEW TOURNAMENT SETUP
-1. Clone new github repo for tournament from template 
-  [] Repo: https://github.com/energy-on-chain/fishing-tournament-app-template-v3
+1. Clone new github repo for tournament from template (use chat gpt instructions)
+  [x] Repo: https://github.com/energy-on-chain/fishing-tournament-app-template-v3
 2. Update client artwork (use https://imageresizer.com/)
   [x] Homepage logo for desktop (location="client/src/images/HomePageLogoDesktop.png" maxWidth=1020px)
   [x] Homepage logo for tablet (location="client/src/images/HomePageLogoTablet.png" maxWidth=750px)
@@ -34,17 +32,17 @@
 3. Update the client/public folder
   [x] Add client title to index.html 
 4. Setup project Stripe services
-  [] Get email and password from client
-  [] Add client logo to the "payment receipt" template
+  [x] Get email and password from client
+  [x] Add client logo to the "payment receipt" template
   [] Setup staging webhook(s) for registration, pots
   [] Setup production webhook(s) for registration, pots
-  [] Save project secred info to put into .env file (e.g. private key, webhook key)
+  [] Save project secret info to put into .env file (e.g. private key, webhook key)
 5. Setup project Firebase services
-  [] Authentication (add admin emails and passwords)
-  [] Firestore Database
-  [] Storage (for images)
-  [] Save project secret info to put into .env file
-  [] Set the Storage "Rules" as follows:
+  [x] Authentication (add admin emails and passwords)
+  [x] Firestore Database
+  [x] Storage (for images)
+  [x] Save project secret info to put into .env file
+  [x] Set the Storage "Rules" as follows:
     rules_version = '2';
     // Craft rules based on data in your Firestore database
     // allow write: if firestore.get(
@@ -60,22 +58,22 @@
       }
     }
 6. Setup google cloud services
-  [] Go to the google cloud console for the project and enable Cloud Storage
-  [] Go to the settings tab for your storage bucked (staging and production), then create a new member called "allUsers" who is a "Storage Object Viewer"
+  [x] Go to the google cloud console for the project and enable Cloud Storage
+  [x] Go to the settings tab for your storage bucked (staging and production), then create a new member called "allUsers" who is a "Storage Object Viewer"
 7. Update the .env file in the main project directory
   [] Add client stripe info 
-  [] Add client firebase info
-  [] FIXME: Add google cloud info...?
+  [x] Add client firebase info
+  [x] Add client google cloud info
 8. Update all config files 
   [] adminConfig.js
   [] catchConfig.js
   [] dashboardConfig.js
-  [] generalConfig.js
+  [x] generalConfig.js
   [x] homeConfig.js
   [] leaderboardConfig.js
-  [] newsfeedConfig.js
+  [x] newsfeedConfig.js
   [] potsConfig.js
-  [] registrationConfig.js
+  [x] registrationConfig.js
   [] stylingConfig.js
 9. Deploy to heroku
   [] Enable automatic re-deployment via github push for staging and production
@@ -92,3 +90,10 @@
 - Start redis server: (run in terminal: redis-server, confirm running: redis-cli ping)
 - Start stripe webhook for local dev: (run in terminal: stripe listen --forward-to localhost:3001/api/registration-webhook)
 
+EXTRAS:
+[x] Google Cloud - Go to "Service Accounts" in cloud project console sidebar. Create a json key, then add the created file to the local project main directory. After that, add the json file to your .gitignore file. Finally, add all of the contents to your .env files.
+[] HostGator - Adding the aliases...
+[] Redis - How to use this...
+
+STILL TODO: 
+[] Stripe webhooks (including keys for staging and prod)...

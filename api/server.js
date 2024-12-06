@@ -93,9 +93,13 @@ if (process.env.REACT_APP_NODE_ENV === "staging") {
 };
 
 // REDIS
+const redisUrl = process.env.REDIS_TLS_URL || 'redis://127.0.0.1:6379'; // Use REDIS_URL from environment or default to local Redis
 const redisClient = redis.createClient({
-  host: redisHost, // or your Redis server hostname
-  port: 6379,        // default Redis port
+  url: redisUrl,
+  socket: {
+    tls: (redisUrl.match(/rediss:/) != null),
+    rejectUnauthorized: false,
+  }
 });
 redisClient.on('error', (err) => console.error('Redis Client Error', err));
 redisClient.on('connect', () => console.log('Connected to Redis'));
@@ -110,7 +114,29 @@ redisClient.on('end', () => console.log('Redis client disconnected'));
 })();
 
 // MIDDLEWARE
-app.use(cors({ origin: clientUrl }));
+const allowedOrigins = [
+  clientUrl,
+  serverUrl,
+  'https://www.deepsearoundup.customtournamentsolutions.com',
+  'https://deepsearoundup.customtournamentsolutions.com',
+  'https://deepsea-roundup-v3-staging-980ad25bef47.herokuapp.com',
+  'https://deepsea-roundup-v3-prod-38a284cee946.herokuapp.com'
+];
+// app.use(cors({ origin: clientUrl }));
+app.use(cors({
+  origin: (origin, callback) => {
+    console.log('Origin: ', origin);
+    // Allow requests with no origin (like mobile apps or curl requests)
+    if (!origin) return callback(null, true);
+    
+    if (allowedOrigins.includes(origin)) {
+      callback(null, true); // Origin is allowed
+    } else {
+      callback(new Error('Not allowed by CORS')); // Origin not allowed
+    }
+  },
+  credentials: true // Allow cookies and credentials to be sent in the requests
+}));
 app.use(bodyParser.json({ verify: (req, res, buf, encoding) => { req.rawBody = buf.toString() }}));
 app.use(session({
   store: new RedisStore({ client: redisClient }),

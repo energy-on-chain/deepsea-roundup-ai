@@ -35,8 +35,10 @@ import {
   CONFIG_REGISTRATION_EARLYBIRD_CUTOFF_IN_LOCAL_TIME_IN_MS,
   CONFIG_REGISTRATION_EARLYBIRD_DATE_STRING,
   CONFIG_REGISTRATION_NORMAL_DATE_STRING,
-  CONFIG_REGISTRATION_EARLYBIRD_FEE,
-  CONFIG_REGISTRATION_NORMAL_FEE,
+  CONFIG_REGISTRATION_EARLYBIRD_ADULT_FEE,
+  CONFIG_REGISTRATION_NORMAL_ADULT_FEE,
+  CONFIG_REGISTRATION_EARLYBIRD_JUNIOR_FEE,
+  CONFIG_REGISTRATION_NORMAL_JUNIOR_FEE,
 } from '../config/registrationConfig';
 
 import { 
@@ -67,7 +69,8 @@ function HomePage() {
       } else if (window.innerWidth <= 1024) {
         setLogo(tabletLogo);
       } else {
-        setLogo(desktopLogo);
+        // setLogo(desktopLogo);
+        setLogo(tabletLogo);
       }
     };
 
@@ -101,7 +104,7 @@ function HomePage() {
       .then(res => res.json())
       .then(data => {
         if (data.count == 0) {
-          setNumTeams("TBD");
+          setNumTeams("TBA");
         } else {
           setNumTeams(data.count);
         }
@@ -122,7 +125,7 @@ function HomePage() {
       .then(res => res.json())
       .then(data => {
         if (data.count == 0) {
-          setNumCatches("TBD");
+          setNumCatches("TBA");
         } else {
           setNumCatches(data.count);
         }
@@ -141,7 +144,7 @@ function HomePage() {
       .then(res => res.json())
       .then(data => {
         if (data.totalPotSize == 0) {
-          setPotTotal("TBD");
+          setPotTotal("TBA");
         } else {
           setPotTotal(data.totalPotSize);
         }
@@ -165,9 +168,12 @@ function HomePage() {
         <section style={{backgroundColor: CONFIG_STYLING_HOME_HERO_BACKGROUND_COLOR}} className="section-hero">
           <img src={logo} alt="Tournament Logo" />
           <br/>
+          <br/>
+          <br/>
           <h2 style={{color: CONFIG_STYLING_HOME_HERO_TEXT_COLOR}}>{CONFIG_HOME_TOURNAMENT_DATE_STRING}</h2>
           <div className="tournamentColElement">
-            <HomeCountdownTimer className="countdown-timer-element" targetDate={parseInt(CONFIG_HOME_TOURNAMENT_START_IN_LOCAL_TIME_IN_MS, 10)} />
+            {/*<HomeCountdownTimer className="countdown-timer-element" targetDate={parseInt(CONFIG_HOME_TOURNAMENT_START_IN_LOCAL_TIME_IN_MS, 10)} />*/}
+            {/* <HomeCountdownTimer className="countdown-timer-element" targetDate={parseInt("1721192400000", 10)} /> */}
           </div>
         </section>
         <section 
@@ -189,12 +195,16 @@ function HomePage() {
               {CONFIG_REGISTRATION_HAS_EARLYBIRD_REGISTRATION && (
                 <p style={{color: CONFIG_STYLING_HOME_INFO_TEXT_COLOR}} >
                   <strong>{CONFIG_REGISTRATION_EARLYBIRD_DATE_STRING} </strong>
-                  <span style={{color: CONFIG_STYLING_HOME_INFO_HIGHLIGHTED_TEXT_COLOR}}>{formatCurrency(CONFIG_REGISTRATION_EARLYBIRD_FEE)}</span>
+                  <span style={{color: CONFIG_STYLING_HOME_INFO_HIGHLIGHTED_TEXT_COLOR}}>2025 prices coming soon!</span>
+                  {/* <span style={{color: CONFIG_STYLING_HOME_INFO_HIGHLIGHTED_TEXT_COLOR}}>Adults {formatCurrency(CONFIG_REGISTRATION_EARLYBIRD_ADULT_FEE)} / </span>
+                  <span style={{color: CONFIG_STYLING_HOME_INFO_HIGHLIGHTED_TEXT_COLOR}}>Juniors {formatCurrency(CONFIG_REGISTRATION_EARLYBIRD_JUNIOR_FEE)}</span> */}
                 </p>
               )}
               <p style={{color: CONFIG_STYLING_HOME_INFO_TEXT_COLOR}}>
                 <strong>{CONFIG_REGISTRATION_NORMAL_DATE_STRING} </strong>
-                <span style={{color: CONFIG_STYLING_HOME_INFO_HIGHLIGHTED_TEXT_COLOR}}>{formatCurrency(CONFIG_REGISTRATION_NORMAL_FEE)}</span>
+                <span style={{color: CONFIG_STYLING_HOME_INFO_HIGHLIGHTED_TEXT_COLOR}}>2025 prices coming soon!</span>
+                {/* <span style={{color: CONFIG_STYLING_HOME_INFO_HIGHLIGHTED_TEXT_COLOR}}>Adults {formatCurrency(CONFIG_REGISTRATION_NORMAL_ADULT_FEE)} / </span>
+                <span style={{color: CONFIG_STYLING_HOME_INFO_HIGHLIGHTED_TEXT_COLOR}}>Juniors {formatCurrency(CONFIG_REGISTRATION_NORMAL_JUNIOR_FEE)}</span> */}
               </p>
               <br/>
               <br/>
@@ -204,7 +214,8 @@ function HomePage() {
             <p style={{color: CONFIG_STYLING_HOME_INFO_TEXT_COLOR}} key={index}>{result}</p>
           ))}
           <p style={{color: CONFIG_STYLING_HOME_INFO_TEXT_COLOR}}>
-            <strong>{CONFIG_GENERAL_YEAR} Tournament:</strong> <span style={{color: CONFIG_STYLING_HOME_INFO_HIGHLIGHTED_TEXT_COLOR}}>{numTeams} teams </span> / <span style={{color: CONFIG_STYLING_HOME_INFO_HIGHLIGHTED_TEXT_COLOR}}>{numCatches} {CONFIG_HOME_CATCH_STAT_TYPE}</span> / <span style={{color: CONFIG_STYLING_HOME_INFO_HIGHLIGHTED_TEXT_COLOR}}>{formatCurrency(potTotal)} total pot</span></p>
+            <strong>{CONFIG_GENERAL_YEAR} Tournament:</strong> <span style={{color: CONFIG_STYLING_HOME_INFO_HIGHLIGHTED_TEXT_COLOR}}>Live stats coming soon!</span></p>
+            {/* <strong>{CONFIG_GENERAL_YEAR} Tournament:</strong> <span style={{color: CONFIG_STYLING_HOME_INFO_HIGHLIGHTED_TEXT_COLOR}}>{numTeams} anglers </span> / <span style={{color: CONFIG_STYLING_HOME_INFO_HIGHLIGHTED_TEXT_COLOR}}>{numCatches} {CONFIG_HOME_CATCH_STAT_TYPE}</span> / <span style={{color: CONFIG_STYLING_HOME_INFO_HIGHLIGHTED_TEXT_COLOR}}>{formatCurrency(potTotal)} total pot</span></p> */}
         </section>
         <Footer/>
       </main>

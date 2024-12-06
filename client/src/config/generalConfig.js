@@ -4,7 +4,7 @@
 module.exports = {
 
   // VISUAL
-  CONFIG_GENERAL_TOURNAMENT_NAME: "Billfish Pachanga",
+  CONFIG_GENERAL_TOURNAMENT_NAME: "Deepsea Roundup",
   CONFIG_GENERAL_YEAR: "2025",
   CONFIG_GENERAL_HAS_INFO: true,
   CONFIG_GENERAL_HAS_REGISTRATION: true,
@@ -16,15 +16,15 @@ module.exports = {
   CONFIG_GENERAL_HAS_POTS: true,
   CONFIG_GENERAL_HAS_AUCTION: false,
   CONFIG_GENERAL_LINK_TO_TOURNAMENT_WEBSITE:
-    "https://www.billfishpachanga.com/",
+    "https://deepsearoundup.org/",
   CONFIG_GENERAL_LINK_TO_TOURNAMENT_RULES:
-    "https://www.billfishpachanga.com/rules/",
+    "https://deepsearoundup.org/tournament-rules/",
   CONFIG_GENERAL_INFO_LINK_OBJECT: {
-    "Tournament Site": "https://www.billfishpachanga.com/",
-    Rules: "https://www.billfishpachanga.com/rules/",
+    "Tournament Site": "https://deepsearoundup.org/",
+    Rules: "https://deepsearoundup.org/tournament-rules/",
   },
   CONFIG_GENERAL_TOURNAMENT_LINK_OBJECT: {
-    Register: "/register",
+    // Register: "/register",
     Newsfeed: "/newsfeed",
     Leaderboard: "/leaderboard",
     Pots: "/pots",
@@ -36,7 +36,7 @@ module.exports = {
   },
   // CONTACT INFO
   CONFIG_GENERAL_CONTACT_FOOTER_LOCATION_STRING: "Austin, TX    -    New Orleans, LA", // Contact info
-  CONFIG_GENERAL_CONTACT_FOOTER_PHONE_STRING: "Phone / Text: (903) 235-5195",
+  CONFIG_GENERAL_CONTACT_FOOTER_PHONE_STRING: "Phone / Text: (630) 991-3012",
   CONFIG_GENERAL_CONTACT_FOOTER_EMAIL_STRING:
     "Email: info@customtournamentsolutions.com",
   CONFIG_GENERAL_CONTACT_FOOTER_COMPANY_COPYRIGHT_STRING:
