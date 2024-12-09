@@ -5,7 +5,7 @@ import CloseIcon from "@mui/icons-material/Close";
 import 'react-toastify/dist/ReactToastify.css';
 import { toast } from 'react-toastify';
 
-const EditTeamModal = (props) => {
+const EditAnglerModal = (props) => {
 
   // STATE
   const { year } = useParams();
@@ -327,5 +327,5 @@ const EditTeamModal = (props) => {
   );
 };
 
-export default EditTeamModal;
+export default EditAnglerModal;
 

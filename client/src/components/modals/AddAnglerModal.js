@@ -5,7 +5,7 @@ import { toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import { useMediaQuery, useTheme } from "@mui/material";
 
-const AddTeamModal = (props) => {
+const AddAnglerModal = (props) => {
 
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm')); // Check if the screen size is small (mobile)
@@ -326,5 +326,5 @@ const AddTeamModal = (props) => {
   );
 };
 
-export default AddTeamModal;
+export default AddAnglerModal;
 

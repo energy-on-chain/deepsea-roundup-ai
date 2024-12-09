@@ -4,7 +4,7 @@ import 'react-toastify/dist/ReactToastify.css';
 
 import AnimatedPage from './AnimatedPage';
 import Footer from '../components/Footer';
-import AddTeamModal from '../components/modals/AddTeamModal';
+import AddAnglerModal from '../components/modals/AddAnglerModal';
 import AddSponsorModal from '../components/modals/AddSponsorModal';
 import { loadConfigForYear } from '../config/masterConfig'; // Dynamic config loader
 import './RegisterPage.css';
@@ -47,15 +47,15 @@ function RegisterPage(props) {
   const [configLoaded, setConfigLoaded] = useState(false); // Track if the config has loaded
 
   // Modal state
-  const [isAddTeamModalOpen, setIsAddTeamModalOpen] = useState(false);
+  const [isAddAnglerModalOpen, setIsAddAnglerModalOpen] = useState(false);
   const [isAddSponsorModalOpen, setIsAddSponsorModalOpen] = useState(false);
 
-  const openAddTeamModal = () => {
-    setIsAddTeamModalOpen(true);
+  const openAddAnglerModal = () => {
+    setIsAddAnglerModalOpen(true);
   };
 
-  const closeAddTeamModal = () => {
-    setIsAddTeamModalOpen(false);
+  const closeAddAnglerModal = () => {
+    setIsAddAnglerModalOpen(false);
   };
 
   const openAddSponsorModal = () => {
@@ -122,7 +122,7 @@ function RegisterPage(props) {
     };
 
     fetchConfig();
-    setIsAddTeamModalOpen(false);
+    setIsAddAnglerModalOpen(false);
     setIsAddSponsorModalOpen(false);
   }, [year]);
 
@@ -141,23 +141,27 @@ function RegisterPage(props) {
 
         <section className="section-register">
 
-          <h1 style={{ color: titleTextColor }}>For Anglers ({year})</h1>
-
-          {earlyBird.hasEarlyBird && (
+          <h1 style={{ color: titleTextColor }}>Registration For Anglers ({year})</h1>
+          {isAnglerRegistrationDisabled ? (
+            <h2 style={{ color: subtitleTextColor }}>Coming soon!</h2>
+          ) : (
             <>
-              <h2 style={{ color: subtitleTextColor }}>
-                ${earlyBird.adultEarlybirdFee.toLocaleString()} per adult, ${earlyBird.juniorEarlybirdFee.toLocaleString()} per junior
-              </h2>
-              <h4 style={{ color: subtitleTextColor }}>{earlyBird.date}</h4>
-            </>
-          )}
-
-          {normalFee.adultNormalfee && (
-            <>
-              <h2 style={{ color: subtitleTextColor }}>
-                ${normalFee.adultNormalfee.toLocaleString()} per adult, ${normalFee.juniorNormalfee.toLocaleString()} per junior
-              </h2>
-              <h4 style={{ color: subtitleTextColor }}>{normalFee.date}</h4>
+              {earlyBird.hasEarlyBird && (
+                <>
+                  <h2 style={{ color: subtitleTextColor }}>
+                    ${earlyBird.adultEarlybirdFee.toLocaleString()} per adult, ${earlyBird.juniorEarlybirdFee.toLocaleString()} per junior
+                  </h2>
+                  <h4 style={{ color: subtitleTextColor }}>{earlyBird.date}</h4>
+                </>
+              )}
+              {normalFee.adultNormalfee && (
+                <>
+                  <h2 style={{ color: subtitleTextColor }}>
+                    ${normalFee.adultNormalfee.toLocaleString()} per adult, ${normalFee.juniorNormalfee.toLocaleString()} per junior
+                  </h2>
+                  <h4 style={{ color: subtitleTextColor }}>{normalFee.date}</h4>
+                </>
+              )}
             </>
           )}
 
@@ -168,7 +172,7 @@ function RegisterPage(props) {
               borderColor: isAnglerRegistrationDisabled ? 'black' : buttonBorderColor  // Grey border if disabled
             }} 
             className="home-signup-button" 
-            onClick={openAddTeamModal} 
+            onClick={openAddAnglerModal} 
             disabled={isAnglerRegistrationDisabled} // Disable the button if the cutoff is reached
             type="button"
           >
@@ -176,7 +180,11 @@ function RegisterPage(props) {
           </button>
           <br/>
 
-          <h1 style={{ color: titleTextColor }}>For Sponsors ({year})</h1>
+          <h1 style={{ color: titleTextColor }}>Registration For Sponsors ({year})</h1>
+          {isSponsorRegistrationDisabled &&
+            <h2 style={{ color: subtitleTextColor }}>Coming soon!</h2>
+          }
+          
           <button 
             style={{ 
               backgroundColor: isSponsorRegistrationDisabled ? '#AEBDC4' : buttonBgColor, // Grey background if disabled
@@ -194,13 +202,13 @@ function RegisterPage(props) {
 
           {configLoaded && (
             <>
-              <AddTeamModal
+              <AddAnglerModal
                 year={year}
                 tableName={teamsTableName}
                 isAdmin={false}
-                status={isAddTeamModalOpen}
-                open={openAddTeamModal}
-                close={closeAddTeamModal}
+                status={isAddAnglerModalOpen}
+                open={openAddAnglerModal}
+                close={closeAddAnglerModal}
                 isEarlyBird={isEarlyBird}
                 earlyBirdData={earlyBird}
                 normalData={normalFee}
@@ -217,8 +225,7 @@ function RegisterPage(props) {
           )}
 
           {/* Disclaimers Section */}
-          <br/>
-          <h1 style={{ color: titleTextColor }}>Disclaimers</h1>
+          {/* <h1 style={{ color: titleTextColor }}>Disclaimers</h1> */}
           {disclaimers && Object.keys(disclaimers).length > 0 && (
             <>
               {Object.entries(disclaimers).map(([disclaimerCategory, disclaimerDetails], index) => (

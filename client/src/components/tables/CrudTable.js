@@ -5,9 +5,9 @@ import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/DeleteOutlined';
 import dayjs from 'dayjs';
 
-import AddTeamModal from '../modals/AddTeamModal';
-import EditTeamModal from '../modals/EditTeamModal';
-import DeleteTeamModal from '../modals/DeleteTeamModal';
+import AddAnglerModal from '../modals/AddAnglerModal';
+import EditAnglerModal from '../modals/EditAnglerModal';
+import DeleteAnglerModal from '../modals/DeleteAnglerModal';
 
 import AddCatchModal from '../modals/AddCatchModal';
 import EditCatchModal from '../modals/EditCatchModal';
@@ -78,7 +78,8 @@ function CrudTable(props) {
           CONFIG_STYLING_TABLE_CELL_TEXT_COLOR,
         },
         adminConfig: {
-          CONFIG_ADMIN_TABLE_PROPERTIES_FOR_TEAMS,
+          CONFIG_ADMIN_TABLE_PROPERTIES_FOR_ANGLERS,
+          CONFIG_ADMIN_TABLE_PROPERTIES_FOR_SPONSORS,
           CONFIG_ADMIN_TABLE_PROPERTIES_FOR_CATCHES,
           CONFIG_ADMIN_TABLE_PROPERTIES_FOR_ANNOUNCEMENTS,
           CONFIG_ADMIN_TABLE_PROPERTIES_FOR_POTS,
@@ -87,8 +88,14 @@ function CrudTable(props) {
 
       // Parse columns
       let rawColumns;
-      if (props.tableType === "Teams") {
-        rawColumns = CONFIG_ADMIN_TABLE_PROPERTIES_FOR_TEAMS;
+      if (props.tableType === "Anglers") {
+        rawColumns = CONFIG_ADMIN_TABLE_PROPERTIES_FOR_ANGLERS;
+        console.log("In Anglers CRUD Table...")
+        console.log(rawColumns)
+      } else if (props.tableType === "Sponsors") {
+        rawColumns = CONFIG_ADMIN_TABLE_PROPERTIES_FOR_SPONSORS;
+        console.log("In Anglers CRUD Table...")
+        console.log(rawColumns)
       } else if (props.tableType === "Catches") {
         rawColumns = CONFIG_ADMIN_TABLE_PROPERTIES_FOR_CATCHES;
       } else if (props.tableType === "Announcements") {
@@ -249,8 +256,8 @@ function CrudTable(props) {
     <div style={style}>
 
       {/* DELETE */}
-      { (deleteInfo && props.tableType === "Teams") && 
-        <DeleteTeamModal 
+      { (deleteInfo && props.tableType === "Anglers") && 
+        <DeleteAnglerModal 
           tableType={props.tableType}
           tableProperties={tableProperties}
           deleteInfo={deleteInfo} 
@@ -315,8 +322,8 @@ function CrudTable(props) {
       }
 
       {/* EDIT */}
-      { (editInfo && props.tableType === "Teams") && 
-        <EditTeamModal 
+      { (editInfo && props.tableType === "Anglers") && 
+        <EditAnglerModal 
           tableType={props.tableType}
           tableProperties={tableProperties}
           editInfo={editInfo} 
@@ -391,8 +398,8 @@ function CrudTable(props) {
       <div style={style}>
 
         {/* ADD */}
-        { (props.tableType === "Teams") && 
-          <h2>FIXME: AddTeamModal</h2>
+        { (props.tableType === "Anglers") && 
+          <h2>FIXME: AddAnglerModal</h2>
           // <AddTeamModal 
           //   isAdmin={true}
           //   tableStyle={props.tableStyle}

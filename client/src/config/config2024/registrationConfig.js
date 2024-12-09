@@ -22,7 +22,7 @@ module.exports = {
   ],
   CONFIG_REGISTRATION_HAS_DISCLAIMERS: true,
   CONFIG_REGISTRATION_DISCLAIMERS: {
-    Weather: [
+    Disclaimers: [
       // "It is up to the Tournament Director's discretion to reschedule or cancel due to weather.",
       "By entering this tournament participants agree to abide by all rules and decisions.",
       "All decisions made by the weigh master and/or tournament directors are final.",

@@ -47,27 +47,49 @@ function AdminPage() {
   const [initialState, setInitialState] = useState();
   const [pageSizeOptions, setPageSizeOptions] = useState();
 
-  // STATE - TEAMS
-  const [teamRows, setTeamRows] = useState([]);
-  const [teamRowsHaveLoaded, setTeamRowsHaveLoaded] = useState(false);
-  const [isAddTeamModalOpen, setIsAddTeamModalOpen] = useState(false);
-  const [isDeleteTeamModalOpen, setIsDeleteTeamModalOpen] = useState(false);
-  const [isEditTeamModalOpen, setIsEditTeamModalOpen] = useState(false);
-  const [deleteTeamInfo, setDeleteTeamInfo] = useState();
-  const [editTeamInfo, setEditTeamInfo] = useState();
+  // STATE - TEAMS (ANGLERS)
+  const [anglerRows, setAnglerRows] = useState([]);
+  const [anglerRowsHaveLoaded, setAnglerRowsHaveLoaded] = useState(false);
+  const [isAddAnglerModalOpen, setIsAddAnglerModalOpen] = useState(false);
+  const [isDeleteAnglerModalOpen, setIsDeleteAnglerModalOpen] = useState(false);
+  const [isEditAnglerModalOpen, setIsEditAnglerModalOpen] = useState(false);
+  const [deleteAnglerInfo, setDeleteAnglerInfo] = useState();
+  const [editAnglerInfo, setEditAnglerInfo] = useState();
   const [registrationStats, setRegistrationStats] = useState({
-    totalTeams: 0,
-    checkedInTeams: 0,
+    totalAnglers: 0,
+    checkedInAnglers: 0,
     totalFees: 0,
     totalRegistrationFees: 0,
     totalAddOnFees: 0
   });
-  const openAddTeamModal = () => {setIsAddTeamModalOpen(true)};
-  const closeAddTeamModal = () => {setIsAddTeamModalOpen(false)};
-  const openEditTeamModal = () => {setIsEditTeamModalOpen(true)};
-  const closeEditTeamModal = () => {setIsEditTeamModalOpen(false)};
-  const openDeleteTeamModal = () => {setIsDeleteTeamModalOpen(true)};
-  const closeDeleteTeamModal = () => {setIsDeleteTeamModalOpen(false)};
+  const openAddAnglerModal = () => {setIsAddAnglerModalOpen(true)};
+  const closeAddAnglerModal = () => {setIsAddAnglerModalOpen(false)};
+  const openEditAnglerModal = () => {setIsEditAnglerModalOpen(true)};
+  const closeEditAnglerModal = () => {setIsEditAnglerModalOpen(false)};
+  const openDeleteAnglerModal = () => {setIsDeleteAnglerModalOpen(true)};
+  const closeDeleteAnglerModal = () => {setIsDeleteAnglerModalOpen(false)};
+
+  // STATE - SPONSORS
+  const [sponsorRows, setSponsorRows] = useState([]);
+  const [sponsorRowsHaveLoaded, setSponsorRowsHaveLoaded] = useState(false);
+  const [isAddSponsorModalOpen, setIsAddSponsorModalOpen] = useState(false);
+  const [isDeleteSponsorModalOpen, setIsDeleteSponsorModalOpen] = useState(false);
+  const [isEditSponsorModalOpen, setIsEditSponsorModalOpen] = useState(false);
+  const [deleteSponsorInfo, setDeleteSponsorInfo] = useState();
+  const [editSponsorInfo, setEditSponsorInfo] = useState();
+  const [sponsorStats, setSponsorStats] = useState({
+    totalSponsors: 0,
+    checkedInSponsors: 0,
+    totalFees: 0,
+    totalRegistrationFees: 0,
+    totalAddOnFees: 0
+  });
+  const openAddSponsorModal = () => {setIsAddSponsorModalOpen(true)};
+  const closeAddSponsorModal = () => {setIsAddSponsorModalOpen(false)};
+  const openEditSponsorModal = () => {setIsEditSponsorModalOpen(true)};
+  const closeEditSponsorModal = () => {setIsEditSponsorModalOpen(false)};
+  const openDeleteSponsorModal = () => {setIsDeleteSponsorModalOpen(true)};
+  const closeDeleteSponsorModal = () => {setIsDeleteSponsorModalOpen(false)};
 
   // STATE - CATCHES
   const [catchRows, setCatchRows] = useState([]);
@@ -127,7 +149,7 @@ function AdminPage() {
   // REPORTS
   const [isRegistrationReportLoading, setIsRegistrationReportLoading] = useState(false);
   const [isCatchesSpeciesReportLoading, setIsCatchesSpeciesReportLoading] = useState(false);
-  const [isCatchesTeamReportLoading, setIsCatchesTeamReportLoading] = useState(false);
+  const [isCatchesAnglerReportLoading, setIsCatchesAnglerReportLoading] = useState(false);
   const [isLeaderboardReportLoading, setIsLeaderboardReportLoading] = useState(false);
   const [isPotsReportLoading, setIsPotsReportLoading] = useState(false);
   const [isAwardsReportLoading, setIsAwardsReportLoading] = useState(false);
@@ -177,7 +199,8 @@ function AdminPage() {
           CONFIG_ADMIN_DEFAULT_TAB_NAME_LIST,
           CONFIG_ADMIN_TOURNAMENT_START_DATE_STRING,
           CONFIG_ADMIN_TOURNAMENT_END_DATE_STRING,
-          CONFIG_ADMIN_TABLE_PROPERTIES_FOR_TEAMS,    // display properties
+          CONFIG_ADMIN_TABLE_PROPERTIES_FOR_ANGLERS,    // display properties
+          CONFIG_ADMIN_TABLE_PROPERTIES_FOR_SPONSORS,
           CONFIG_ADMIN_TABLE_PROPERTIES_FOR_CATCHES,
           CONFIG_ADMIN_TABLE_PROPERTIES_FOR_ANNOUNCEMENTS,
           CONFIG_ADMIN_TABLE_PROPERTIES_FOR_POTS,
@@ -197,8 +220,10 @@ function AdminPage() {
         : process.env.REACT_APP_SERVER_URL_STAGING;
 
       // Clear all row data
-      setTeamRows([]);
-      setTeamRowsHaveLoaded(false);
+      setAnglerRows([]);
+      setAnglerRowsHaveLoaded(false);
+      setSponsorRows([]);
+      setSponsorRowsHaveLoaded(false);
       setCatchRows([]);
       setCatchRowsHaveLoaded(false);
       setAnnouncementRows([]);
@@ -212,10 +237,15 @@ function AdminPage() {
       let idName;
       let tempTableProperties;
       switch (tab) {   
-        case 'Teams':
+        case 'Anglers':
           tableName = loadedConfig.generalConfig.CONFIG_GENERAL_FIREBASE_TEAMS_TABLE_NAME;
           idName = loadedConfig.generalConfig.CONFIG_GENERAL_FIREBASE_TEAMS_ID_NAME;
-          tempTableProperties = loadedConfig.adminConfig.CONFIG_ADMIN_TABLE_PROPERTIES_FOR_TEAMS;
+          tempTableProperties = loadedConfig.adminConfig.CONFIG_ADMIN_TABLE_PROPERTIES_FOR_ANGLERS;
+          break;
+        case 'Sponsors':
+          tableName = loadedConfig.generalConfig.CONFIG_GENERAL_FIREBASE_SPONSORS_TABLE_NAME;
+          idName = loadedConfig.generalConfig.CONFIG_GENERAL_FIREBASE_SPONSORS_ID_NAME;
+          tempTableProperties = loadedConfig.adminConfig.CONFIG_ADMIN_TABLE_PROPERTIES_FOR_SPONSORS;
           break;
         case 'Catches':
           tableName = CONFIG_GENERAL_FIREBASE_CATCHES_TABLE_NAME;
@@ -248,7 +278,7 @@ function AdminPage() {
 
           // Registration
           if (loadedConfig.generalConfig.CONFIG_GENERAL_HAS_REGISTRATION) {
-            const [totalTeamsRes, checkedInTeamsRes, totalFeesRes, totalRegistrationFeesRes, totalAddOnFeesRes] = await Promise.all([
+            const [totalAnglersRes, checkedInAnglersRes, totalFeesRes, totalRegistrationFeesRes, totalAddOnFeesRes] = await Promise.all([
               fetch(`${apiUrl}/api/${year}/registration_get_number_of_registered_teams`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -276,16 +306,16 @@ function AdminPage() {
               })
             ]);
 
-            const totalTeams = await totalTeamsRes.json();
-            const checkedInTeams = await checkedInTeamsRes.json();
+            const totalAnglers = await totalAnglersRes.json();
+            const checkedInAnglers = await checkedInAnglersRes.json();
             const totalFees = await totalFeesRes.json();
             const totalRegistrationFees = await totalRegistrationFeesRes.json();
             const totalAddOnFees = await totalAddOnFeesRes.json();
         
             // Update state with fetched data
             setRegistrationStats({
-              totalTeams: totalTeams.totalTeams,
-              checkedInTeams: checkedInTeams.checkedInTeams,
+              totalAnglers: totalAnglers.totalAnglers,
+              checkedInAnglers: checkedInAnglers.checkedInAnglers,
               totalFees: totalFees.totalFees,
               totalRegistrationFees: totalRegistrationFees.totalRegistrationFees,
               totalAddOnFees: totalAddOnFees.totalAddOnFees
@@ -391,9 +421,12 @@ function AdminPage() {
       setPageSizeOptions([5, 10, 25, 100]);
 
       // Set specific tab state
-      if (tab === 'Teams') {
-        setTeamRows(tempRows);
-        setTeamRowsHaveLoaded(true);
+      if (tab === 'Anglers') {
+        setAnglerRows(tempRows);
+        setAnglerRowsHaveLoaded(true);
+      } else if (tab === 'Sponsors') {
+        setSponsorRows(tempRows);
+        setSponsorRowsHaveLoaded(true);
       } else if (tab === 'Catches') {
         setCatchRows(tempRows);
         setCatchRowsHaveLoaded(true);
@@ -408,10 +441,10 @@ function AdminPage() {
       }
   
       // Set all modal states
-      // Teams
-      setIsAddTeamModalOpen(false);   
-      setIsEditTeamModalOpen(false);
-      setIsDeleteTeamModalOpen(false);
+      // Anglers
+      setIsAddAnglerModalOpen(false);   
+      setIsEditAnglerModalOpen(false);
+      setIsDeleteAnglerModalOpen(false);
 
       // Catches
       setIsAddCatchModalOpen(false);   
@@ -532,15 +565,15 @@ function AdminPage() {
     }
   };
 
-  const handleGenerateCatchesReportTeams = async (year) => {
-    setIsCatchesTeamReportLoading(true);
+  const handleGenerateCatchesReportAnglers = async (year) => {
+    setIsCatchesAnglerReportLoading(true);
     try {
-      console.log('In handleGenerateCatchesReport (Teams)...');
-      await fetchAndGenerateCatchesReport(year, "Team", config?.generalConfig?.CONFIG_GENERAL_TOURNAMENT_NAME);
+      console.log('In handleGenerateCatchesReport (Anglers)...');
+      await fetchAndGenerateCatchesReport(year, "Angler", config?.generalConfig?.CONFIG_GENERAL_TOURNAMENT_NAME);
     } catch (error) {
-      console.error("Error generating catches report (Teams):", error);
+      console.error("Error generating catches report (Anglers):", error);
     } finally {
-      setIsCatchesTeamReportLoading(false);
+      setIsCatchesAnglerReportLoading(false);
     }
   };
 
@@ -619,8 +652,8 @@ function AdminPage() {
                               <h2>Registration</h2>
                               {isMobile ? (
                                 <>
-                                  <p><strong>Total Teams Registered:</strong></p>
-                                  <p>{registrationStats.totalTeams} ({registrationStats.checkedInTeams} checked-in)</p>
+                                  <p><strong>Total Anglers Registered:</strong></p>
+                                  <p>{registrationStats.totalAnglers} ({registrationStats.checkedInAnglers} checked-in)</p>
                                   <p><strong>Total Fees Collected:</strong></p>
                                   <p>{formatCurrency(registrationStats.totalFees)}</p>
                                   <p>({formatCurrency(registrationStats.totalRegistrationFees)} registration)</p>
@@ -628,7 +661,7 @@ function AdminPage() {
                                 </>
                               ) : (
                                 <>
-                                  <p><strong>Total Teams Registered:</strong> {registrationStats.totalTeams} ({registrationStats.checkedInTeams} checked-in)</p>
+                                  <p><strong>Total Anglers Registered:</strong> {registrationStats.totalAnglers} ({registrationStats.checkedInAnglers} checked-in)</p>
                                   <p><strong>Total Fees Collected:</strong> {formatCurrency(registrationStats.totalFees)} ({formatCurrency(registrationStats.totalRegistrationFees)} registration, {formatCurrency(registrationStats.totalAddOnFees)} add-ons)</p>
                                 </>
                               )}
@@ -730,12 +763,12 @@ function AdminPage() {
                               </Button>
                               <br /><br />
                               <Button
-                                onClick={() => handleGenerateCatchesReportTeams(config?.generalConfig?.CONFIG_GENERAL_YEAR)}
+                                onClick={() => handleGenerateCatchesReportAnglers(config?.generalConfig?.CONFIG_GENERAL_YEAR)}
                                 color="primary"
                                 variant="contained"
-                                disabled={isCatchesTeamReportLoading}
+                                disabled={isCatchesAnglerReportLoading}
                               >
-                                {isCatchesTeamReportLoading ? "Processing..." : "Download Catch Log (Teams)"}
+                                {isCatchesAnglerReportLoading ? "Processing..." : "Download Catch Log (Anglers)"}
                               </Button>
                               <br /><br />
                             </div>
@@ -786,10 +819,10 @@ function AdminPage() {
                         </div>
                       </TabPanel>
                     );
-                  } else if (tab === "Teams") {
+                  } else if (tab === "Anglers") {
                     return (
                       <TabPanel key={tab} value={tab}>
-                        {!teamRowsHaveLoaded ? (
+                        {!anglerRowsHaveLoaded ? (
                           <CircularProgress />
                         ) : (
                           <div style={style}> 
@@ -804,30 +837,77 @@ function AdminPage() {
                               buttonLabel={`Add ${tab}`}
                               tableProperties={tableProperties}
                               style={style}
-                              rows={teamRows || []}
+                              rows={anglerRows || []}
                               scroll={matches ? desktopScroll : mobileScroll}
                               initialState={initialState}
                               pageSizeOptions={pageSizeOptions}
                               checkboxSelection={true}
 
                               // add
-                              addStatus={isAddTeamModalOpen}
-                              openAddModal={openAddTeamModal}
-                              closeAddModal={closeAddTeamModal}
+                              addStatus={isAddAnglerModalOpen}
+                              openAddModal={openAddAnglerModal}
+                              closeAddModal={closeAddAnglerModal}
 
                               // edit
-                              editStatus={isEditTeamModalOpen}
-                              editInfo={editTeamInfo}
-                              setEditInfo={setEditTeamInfo}
-                              openEditModal={openEditTeamModal}
-                              closeEditModal={closeEditTeamModal}
+                              editStatus={isEditAnglerModalOpen}
+                              editInfo={editAnglerInfo}
+                              setEditInfo={setEditAnglerInfo}
+                              openEditModal={openEditAnglerModal}
+                              closeEditModal={closeEditAnglerModal}
 
                               // delete
-                              deleteStatus={isDeleteTeamModalOpen}
-                              deleteInfo={deleteTeamInfo}
-                              setDeleteInfo={setDeleteTeamInfo}
-                              openDeleteModal={openDeleteTeamModal}
-                              closeDeleteModal={closeDeleteTeamModal}
+                              deleteStatus={isDeleteAnglerModalOpen}
+                              deleteInfo={deleteAnglerInfo}
+                              setDeleteInfo={setDeleteAnglerInfo}
+                              openDeleteModal={openDeleteAnglerModal}
+                              closeDeleteModal={closeDeleteAnglerModal}
+                            />
+                          </div>
+                        )}
+                      </TabPanel>
+                    );
+                  } else if (tab === "Sponsors") {
+                    return (
+                      <TabPanel key={tab} value={tab}>
+                        {!sponsorRowsHaveLoaded ? (
+                          <CircularProgress />
+                        ) : (
+                          <div style={style}> 
+                            <CrudTable
+                              // dates
+                              today={today}
+                              startDate={config?.adminConfig?.CONFIG_ADMIN_TOURNAMENT_START_DATE_STRING}
+                              endDate={config?.adminConfig?.CONFIG_ADMIN_TOURNAMENT_END_DATE_STRING}
+
+                              // table styling
+                              tableType={tab}
+                              buttonLabel={`Add ${tab}`}
+                              tableProperties={tableProperties}
+                              style={style}
+                              rows={sponsorRows || []}
+                              scroll={matches ? desktopScroll : mobileScroll}
+                              initialState={initialState}
+                              pageSizeOptions={pageSizeOptions}
+                              checkboxSelection={true}
+
+                              // add
+                              addStatus={isAddSponsorModalOpen}
+                              openAddModal={openAddSponsorModal}
+                              closeAddModal={closeAddSponsorModal}
+
+                              // edit
+                              editStatus={isEditSponsorModalOpen}
+                              editInfo={editSponsorInfo}
+                              setEditInfo={setEditSponsorInfo}
+                              openEditModal={openEditSponsorModal}
+                              closeEditModal={closeEditSponsorModal}
+
+                              // delete
+                              deleteStatus={isDeleteSponsorModalOpen}
+                              deleteInfo={deleteSponsorInfo}
+                              setDeleteInfo={setDeleteSponsorInfo}
+                              openDeleteModal={openDeleteSponsorModal}
+                              closeDeleteModal={closeDeleteSponsorModal}
                             />
                           </div>
                         )}

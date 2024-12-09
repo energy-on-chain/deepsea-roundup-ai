@@ -7,7 +7,7 @@ import 'react-toastify/dist/ReactToastify.css';
 import { toast } from 'react-toastify';
 import dayjs from 'dayjs';  // Import dayjs for date-time formatting
 
-const DeleteTeamModal = (props) => {
+const DeleteAnglerModal = (props) => {
   const { year } = useParams();
   const [info, setInfo] = useState(null);
   const [isSubmitting, setIsSubmitting] = useState(false);  // Track submission state
@@ -175,5 +175,5 @@ const DeleteTeamModal = (props) => {
   );
 };
 
-export default DeleteTeamModal;
+export default DeleteAnglerModal;
 
