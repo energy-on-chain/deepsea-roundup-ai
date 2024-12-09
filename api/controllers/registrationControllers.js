@@ -25,9 +25,10 @@ const flattenObjectWithPrefix = (obj, prefix = '') => {
 module.exports = ({ clientUrl, serverUrl, stripe, webhookSecret, redisClient }) => {
 
   const registrationGetPastTeamNameList = async (req, res) => {
-    console.log('In api/registration-get-past-team-name-list...');
-
+    console.log('In api/registration_get_past_team_name_list...');
+ 
     try {
+      const year = req.params.year;
       const db = getFirestore();
       const { teamTableNameList } = req.body; // Expecting an array of table names
       let allTeamNames = new Set();
@@ -48,274 +49,253 @@ module.exports = ({ clientUrl, serverUrl, stripe, webhookSecret, redisClient }) 
   };
   
   const registrationCheckoutSession = async (req, res) => {
-    console.log('In api/registration-checkout-session...');
+    console.log('In api/registration_checkout_session...');
   
     try {
-      // Parse the metaDataObject from the request body
-      const parsedMetaData = JSON.parse(req.body.metaDataObject);
-  
-      // Flatten specific fields
-      const flattenedMetaData = {
-        ...flattenObjectWithPrefix(parsedMetaData.requiredDropdownFields, 'requiredDropdownFields'),
-        ...flattenObjectWithPrefix(parsedMetaData.nonRequiredStringFields, 'nonRequiredStringFields'),
-        ...flattenObjectWithPrefix(parsedMetaData.requiredStringFields, 'requiredStringFields'),
-        ...flattenObjectWithPrefix(parsedMetaData.nonRequiredDropdownFields, 'nonRequiredDropdownFields'),
-        ...parsedMetaData // Include the rest of the metadata as-is
-      };
-  
-      // Store flattened metadata and image data (buffers) in Redis
       const metadataKey = `metadata:${uuidv4()}`;
-      
-  
-      // Process image uploads
-      console.log("Processing images now...")
-      const imageBuffers = {};
-
-      if (req.files.requiredImageUploads) {
-        req.files.requiredImageUploads.forEach((element, index) => {
-          imageBuffers[element.originalname] = {
-            buffer: element.buffer.toString('base64'), // Convert buffer to base64
-            originalname: element.originalname,
-            fieldname: element.fieldname,
-            mimetype: element.mimetype,
-          };
-        });
-      }
-      
-      if (req.files.imageUploads) {
-        req.files.imageUploads.forEach((element, index) => {
-          imageBuffers[element.originalname] = {
-            buffer: element.buffer.toString('base64'), // Convert buffer to base64
-            originalname: element.originalname,
-            fieldname: element.fieldname,
-            mimetype: element.mimetype,
-          };
-        });
-      }
-  
-      await redisClient.set(metadataKey, JSON.stringify({
-        ...parsedMetaData,
-        imageBuffers
-      }));
-  
-      // Define line items for registration and add-ons
       let lineItems = [];
+
+      // Debugging: Log req.body and req.files
+      console.log('Request body:', req.body);
+      console.log('Uploaded files:', req.files);
   
-      // Add team registration fee as the first line item
-      lineItems.push({
-        price_data: {
-          currency: 'usd',
-          product_data: {
-            name: parsedMetaData.isEarlybird ? "Team Registration (Earlybird)" : "Team Registration"
-          },
-          unit_amount: parseInt(parsedMetaData.registrationFee) * 100
-        },
-        quantity: 1,
-      });
+      // Extract and parse formData
+      const formData = req.body; // Ensure middleware to parse `multipart/form-data` is configured if using file uploads
+      const { type, year, tableName } = JSON.parse(formData.metaDataObject);
+    
+      if (type === "angler") {
+        console.log("Handling angler case...");
+        const { anglerDetails, adultFee, juniorFee } = JSON.parse(formData.metaDataObject);
   
-      // Add line items for each add-on
-      const addOnQuantities = parsedMetaData.addOnQuantities || {};
-      const addOnPrices = parsedMetaData.addOnProperties;
+        // Save metadata for anglers to Redis
+        await redisClient.set(metadataKey, JSON.stringify({ type, year, tableName, anglerDetails, adultFee, juniorFee }));
   
-      for (const [addOn, quantity] of Object.entries(addOnQuantities)) {
-        if (quantity > 0 && addOnPrices[addOn]) {
+        // Create line items for Stripe
+        anglerDetails.forEach((angler) => {
+          const fee = angler.ageBracket === "Adult" ? adultFee : juniorFee;
           lineItems.push({
             price_data: {
               currency: 'usd',
               product_data: {
-                name: addOn
+                name: `${angler.anglerName} (${angler.ageBracket})`,
+                description: `Division: ${angler.division}`,
               },
-              unit_amount: addOnPrices[addOn].price * 100 // Assuming price is in dollars
+              unit_amount: fee * 100, // Convert to cents
             },
-            quantity: quantity,
+            quantity: 1,
+          });
+        });
+      } else if (type === "sponsor") {
+        console.log("Handling sponsor case...");
+        const { sponsorName, selectedTier, selectedSponsorships, totalFee, tierFeeStructure, selectedSponsorshipsFeeStructure } = JSON.parse(formData.metaDataObject);
+  
+        // Handle sponsor logo if present
+        const imageBuffers = {};
+        if (req.files.sponsorLogo) {
+          console.log("Processing images...");
+          req.files.sponsorLogo.forEach((file) => {
+            imageBuffers[file.originalname] = {
+              buffer: file.buffer.toString('base64'), // Convert buffer to base64
+              originalname: file.originalname,
+              fieldname: file.fieldname,
+              mimetype: file.mimetype,
+            };
           });
         }
+  
+        // Save metadata for sponsor to Redis
+        await redisClient.set(metadataKey, JSON.stringify({ type, year, tableName, sponsorName, selectedTier, selectedSponsorships, totalFee, imageBuffers }));
+  
+        // Create line items for Stripe
+        if (selectedTier && selectedTier !== "None") {
+          const tierFee = tierFeeStructure[selectedTier] || 0; // Extract fee from tierFeeStructure
+          if (tierFee > 0) {
+            lineItems.push({
+              price_data: {
+                currency: 'usd',
+                product_data: {
+                  name: `Sponsorship Tier: ${selectedTier}`,
+                },
+                unit_amount: tierFee * 100, // Convert to cents
+              },
+              quantity: 1,
+            });
+          }
+        }
+  
+        // Add sponsorship fees to line items
+        selectedSponsorships.forEach((sponsorship) => {
+          const sponsorshipFee =
+            selectedSponsorshipsFeeStructure[sponsorship] || 0; // Extract fee from selectedSponsorshipsFeeStructure
+          if (sponsorshipFee > 0) {
+            lineItems.push({
+              price_data: {
+                currency: 'usd',
+                product_data: {
+                  name: `Additional Sponsorship: ${sponsorship}`,
+                },
+                unit_amount: sponsorshipFee * 100, // Convert to cents
+              },
+              quantity: 1,
+            });
+          }
+        });
+
+      } else {
+        throw new Error("Invalid registration type.");
       }
   
-      // Create checkout session
+      // Create Stripe Checkout session
       const session = await stripe.checkout.sessions.create({
         payment_method_types: ['card'],
         mode: 'payment',
         phone_number_collection: { enabled: true },
         line_items: lineItems,
-        metadata: { metadataKey }, // Store the Redis key in Stripe's metadata
-        success_url: `${clientUrl}/registration_success`,
-        cancel_url: `${clientUrl}/registration_error`
+        metadata: { redisKey: metadataKey }, // Store the Redis key in Stripe's metadata
+        success_url: `${clientUrl}/${year}/registration_success`,
+        cancel_url: `${clientUrl}/${year}/registration_error`,
       });
   
+      // Respond with the session URL
       res.json({ url: session.url });
-    } catch (e) {
-      res.status(500).json({ error: e.message });
+    } catch (error) {
+      console.error('Error in registrationCheckoutSession:', error);
+      res.status(500).json({ error: error.message });
     }
-  };  
+  }; 
 
   const registrationWebhook = async (req, res) => {
     console.log('In api/registrationWebhook...');
-
+  
     const payload = req.rawBody.toString();
     const sig = req.headers['stripe-signature'];
-
+  
     let event;
     try {
-        event = stripe.webhooks.constructEvent(payload, sig, webhookSecret);
-        console.log('Successfully created webhook event!');
+      event = stripe.webhooks.constructEvent(payload, sig, webhookSecret);
+      console.log('Successfully created webhook event!');
     } catch (err) {
-        console.log(err);
-        return res.status(400).send(`Error while attempting to create webhook event: ${err.message}`);
+      console.log(err);
+      return res.status(400).send(`Error while attempting to create webhook event: ${err.message}`);
     }
-
+  
     // Send an immediate response to Stripe
     res.status(200).end();
-
+  
     if (event.type === 'checkout.session.completed') {
-        const metadataKey = event.data.object.metadata.metadataKey;
-
-        // Retrieve metadata from Redis
-        const storedMetadata = await redisClient.get(metadataKey);
-        const metadata = JSON.parse(storedMetadata);
-
-        // Perform Firestore operations asynchronously
-        processFirestore(metadata, event.data.object).catch(error => {
-            console.log("Error while trying to write to Firestore: ", error);
-        });
-
+      const metadataKey = event.data.object.metadata.redisKey;
+  
+      // Retrieve metadata from Redis
+      const storedMetadata = await redisClient.get(metadataKey);
+      const metadata = JSON.parse(storedMetadata);
+  
+      // Perform Firestore operations asynchronously
+      try {
+        if (metadata.type === 'angler') {
+          await handleAnglerCase(metadata, event.data.object);
+        } else if (metadata.type === 'sponsor') {
+          await handleSponsorCase(metadata, event.data.object);
+        } else {
+          console.error("Invalid metadata type in webhook.");
+        }
+  
         // Optionally clear the stored metadata in Redis after processing
         await redisClient.del(metadataKey);
-    }
-  };
-
-  const processFirestore = async (metadata, stripeEventData) => {
-    console.log('In processFirestore() function inside registrationWebhook() creating a new team registration record in firebase...');
-
-    const db = getFirestore();
-    const bucket = getStorage().bucket();
-
-    console.log('Metadata:', metadata);
-
-    const customerDetails = stripeEventData.customer_details || {};
-    const email = customerDetails.email || null;
-    const name = customerDetails.name || null;
-    const phone = customerDetails.phone || null;
-
-    if (!email) {
-        throw new Error("Customer email is missing in the Stripe event data.");
-    }
-
-    // Combine addOnProperties and addOnQuantities and add costOfPurchase
-    const combinedAddOns = {};
-    for (const [addOn, properties] of Object.entries(metadata.addOnProperties)) {
-        const quantityPurchased = metadata.addOnQuantities[addOn] || 0;
-        combinedAddOns[addOn] = {
-            ...properties,
-            quantityPurchased,
-            costOfPurchase: quantityPurchased * properties.price, // Calculate cost of purchase
-        };
-    }
-
-    // Flatten required and non-required fields
-    const flattenedFields = {
-        ...metadata.requiredStringFields,
-        ...metadata.requiredIntFields,
-        ...metadata.requiredBooleanFields,
-        ...metadata.requiredDropdownFields,
-        ...metadata.nonRequiredStringFields,
-        ...metadata.nonRequiredIntFields,
-        ...metadata.nonRequiredBooleanFields,
-        ...metadata.nonRequiredDropdownFields,
-    };
-
-    // Handle image uploads using imported field names
-    const requiredImageFields = {};
-    const nonRequiredImageFields = {};
-
-    // Handle required image uploads
-    console.log('metadata.imageBuffers:', metadata.imageBuffers)
-    for (const [originalname, fileData] of Object.entries(metadata.imageBuffers)) {
-      const buffer = Buffer.from(fileData.buffer, 'base64');
-      const sanitizedFilename = originalname.replace(/\s+/g, '-');
-      const filename = `${uuidv4()}-${sanitizedFilename}`;
-      const fileUpload = bucket.file(filename);
-
-      try {
-          await fileUpload.save(buffer, {
-              metadata: {
-                  contentType: fileData.mimetype,
-              },
-          });
-
-          const publicUrl = `https://storage.googleapis.com/${bucket.name}/${filename}`;
-
-          // Determine if the image is required or non-required based on fieldname
-          if (fileData.fieldname === 'requiredImageUploads') {
-              requiredImageFields[originalname] = publicUrl;
-              console.log(`Stored required image: ${originalname} at URL: ${publicUrl}`);
-          } else {
-              nonRequiredImageFields[originalname] = publicUrl;
-              console.log(`Stored non-required image: ${originalname} at URL: ${publicUrl}`);
-          }
       } catch (error) {
-          console.error(`Error storing image ${originalname}:`, error);
+        console.log("Error while trying to write to Firestore: ", error);
       }
     }
-
-    // Prepare final metadata without nested objects and without imageBuffers
-    const finalMetadata = {
-        ...flattenedFields,
-        ...metadata, // This still includes non-nested properties like teamTableName, teamName, etc.
+  };
+  
+  const handleAnglerCase = async (metadata, stripeEventData) => {
+    console.log('Handling angler case in processFirestore...');
+    
+    const db = getFirestore();
+  
+    const { anglerDetails, year, tableName } = metadata;
+    const customerDetails = stripeEventData.customer_details || {};
+  
+    // Create a new entry in the Firebase database for every single angler
+    for (const angler of anglerDetails) {
+      const anglerData = {
+        ...angler,
+        year,
+        tableName,
+        registrationFee: angler.ageBracket === "Adult" ? metadata.adultFee : metadata.juniorFee,
+        email: customerDetails.email || null,
+        phone: customerDetails.phone || null,
+        registrationTimestamp: new Date().toISOString(),
+        paymentStatus: stripeEventData.payment_status,
+      };
+  
+      try {
+        const docRef = await db.collection(`anglers${year}`).add(anglerData);
+        console.log(`Angler ${angler.anglerName} added with ID: ${docRef.id}`);
+      } catch (error) {
+        console.error(`Error adding angler ${angler.anglerName}:`, error);
+      }
+    }
+  };
+  
+  const handleSponsorCase = async (metadata, stripeEventData) => {
+    console.log('Handling sponsor case in processFirestore...');
+    
+    const db = getFirestore();
+    const bucket = getStorage().bucket();
+  
+    const { sponsorName, year, tableName, selectedTier, selectedSponsorships, totalFee, imageBuffers } = metadata;
+    const customerDetails = stripeEventData.customer_details || {};
+  
+    // Upload sponsor logo to Google Cloud Storage if provided
+    let logoUrl = null;
+    if (imageBuffers && Object.keys(imageBuffers).length > 0) {
+      const [fileName, fileData] = Object.entries(imageBuffers)[0]; // Assuming one logo per sponsor
+      const buffer = Buffer.from(fileData.buffer, 'base64');
+      const sanitizedFilename = fileName.replace(/\s+/g, '-');
+      const filename = `${uuidv4()}-${sanitizedFilename}`;
+      const fileUpload = bucket.file(filename);
+  
+      try {
+        await fileUpload.save(buffer, {
+          metadata: {
+            contentType: fileData.mimetype,
+          },
+        });
+        logoUrl = `https://storage.googleapis.com/${bucket.name}/${filename}`;
+        console.log(`Sponsor logo uploaded to URL: ${logoUrl}`);
+      } catch (error) {
+        console.error(`Error uploading sponsor logo ${fileName}:`, error);
+      }
+    }
+  
+    // Create a new entry in the Firebase database for the sponsor
+    const sponsorData = {
+      sponsorName,
+      year,
+      tableName,
+      selectedTier,
+      selectedSponsorships,
+      totalFee,
+      logoUrl,
+      email: customerDetails.email || null,
+      phone: customerDetails.phone || null,
+      registrationTimestamp: new Date().toISOString(),
+      paymentStatus: stripeEventData.payment_status,
     };
-
-    // Separate each required and non-required image field into its own field
-    for (const [imageName, imageUrl] of Object.entries(requiredImageFields)) {
-      finalMetadata[imageName] = imageUrl;
+  
+    try {
+      const docRef = await db.collection(`sponsors${year}`).add(sponsorData);
+      console.log(`Sponsor ${sponsorName} added with ID: ${docRef.id}`);
+    } catch (error) {
+      console.error(`Error adding sponsor ${sponsorName}:`, error);
     }
-
-    for (const [imageName, imageUrl] of Object.entries(nonRequiredImageFields)) {
-      finalMetadata[imageName] = imageUrl;
-    }
-
-    // Separate each addOnCharge into its own field
-    for (const [addOn, addOnData] of Object.entries(combinedAddOns)) {
-      finalMetadata[addOn] = addOnData;
-    }
-
-    // Exclude original `required...`, `nonRequired...`, `imageBuffers`, and `addOnQuantities`
-    delete finalMetadata.requiredStringFields;
-    delete finalMetadata.requiredIntFields;
-    delete finalMetadata.requiredBooleanFields;
-    delete finalMetadata.requiredDropdownFields;
-    delete finalMetadata.nonRequiredStringFields;
-    delete finalMetadata.nonRequiredIntFields;
-    delete finalMetadata.nonRequiredBooleanFields;
-    delete finalMetadata.nonRequiredDropdownFields;
-    delete finalMetadata.imageBuffers;
-    delete finalMetadata.addOnQuantities;
-    delete finalMetadata.teamTableName;
-    delete finalMetadata.addOnProperties;
-
-    // Add the team document and get the document reference
-    const teamDocRef = await db.collection(metadata.teamTableName).add({
-        teamName: finalMetadata.teamName,
-        registrationFee: finalMetadata.registrationFee,
-        hasCheckedIn: finalMetadata.hasCheckedIn,
-        isEarlybird: finalMetadata.isEarlybird,
-        registrationTimestampInLocalTime: new Date().toLocaleString(),
-        teamEmail: email,
-        teamCardholderName: name,
-        teamPhone: phone,
-        teamPaymentStatus: stripeEventData.payment_status,
-        ...finalMetadata,  // Save all additional fields including flattened fields and image URLs
-    });
-
-    // Now add the teamId using the newly created doc number in firebase
-    await teamDocRef.update({ teamId: teamDocRef.id });
-
-    console.log('Successfully saved a new team registration record in firebase');
-};
+  };  
 
   const registrationGetNumberOfRegisteredTeams = async (req, res) => {
     try {
+      const year = req.params.year;
       const db = getFirestore();
-      const snapshot = await db.collection(req.body.teamTableName).get();
+      const snapshot = await db.collection(`teams${year}`).get();
       const totalTeams = snapshot.size; // Count the number of documents
       res.json({ totalTeams });
     } catch (error) {
@@ -326,8 +306,9 @@ module.exports = ({ clientUrl, serverUrl, stripe, webhookSecret, redisClient }) 
 
   const registrationGetNumberOfCheckedInTeams = async (req, res) => {
     try {
+      const year = req.params.year;
       const db = getFirestore();
-      const snapshot = await db.collection(req.body.teamTableName).where('hasCheckedIn', '==', true).get();
+      const snapshot = await db.collection(`teams${year}`).where('hasCheckedIn', '==', true).get();
       const checkedInTeams = snapshot.size; // Count the number of documents where hasCheckedIn is true
       res.json({ checkedInTeams });
     } catch (error) {
@@ -338,8 +319,9 @@ module.exports = ({ clientUrl, serverUrl, stripe, webhookSecret, redisClient }) 
   
   const registrationGetTotalFeesCollected = async (req, res) => {
     try {
+      const year = req.params.year;
       const db = getFirestore();
-      const snapshot = await db.collection(req.body.teamTableName).get();
+      const snapshot = await db.collection(`teams${year}`).get();
   
       let totalFees = 0;
       snapshot.forEach(doc => {
@@ -355,8 +337,9 @@ module.exports = ({ clientUrl, serverUrl, stripe, webhookSecret, redisClient }) 
   
   const registrationGetTotalRegistrationFeesCollected = async (req, res) => {
     try {
+      const year = req.params.year;
       const db = getFirestore();
-      const snapshot = await db.collection(req.body.teamTableName).get();
+      const snapshot = await db.collection(`teams${year}`).get();
   
       let totalRegistrationFees = 0;
       snapshot.forEach(doc => {
@@ -372,8 +355,9 @@ module.exports = ({ clientUrl, serverUrl, stripe, webhookSecret, redisClient }) 
   
   const registrationGetTotalAddOnFeesCollected = async (req, res) => {
     try {
+      const year = req.params.year;
       const db = getFirestore();
-      const snapshot = await db.collection(req.body.teamTableName).get();
+      const snapshot = await db.collection(`teams${year}`).get();
   
       let totalAddOnFees = 0;
       snapshot.forEach(doc => {
