@@ -88,7 +88,7 @@
 # DEV NOTES
 - Start react: (run in client and api terminals: nvm use 21.6.0)
 - Start redis server: (run in terminal: redis-server, confirm running: redis-cli ping)
-- Start stripe webhook for local dev: (run in terminal: stripe listen --forward-to localhost:3001/api/registration-webhook)
+- Start stripe webhook for local dev: (run in terminal: stripe listen --forward-to localhost:3001/api/registration_webhook)
 
 EXTRAS:
 [x] Google Cloud - Go to "Service Accounts" in cloud project console sidebar. Create a json key, then add the created file to the local project main directory. After that, add the json file to your .gitignore file. Finally, add all of the contents to your .env files.

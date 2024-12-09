@@ -180,7 +180,7 @@ const AddTeamModal = (props) => {
   return (
     <Dialog open={props.status} onClose={handleClose} fullWidth maxWidth="lg">
       <DialogTitle>
-        Register New Angler(s)
+        Register New {props.year} Angler(s)
         <IconButton style={{ float: "right" }} onClick={handleClose}>
           <CloseIcon />
         </IconButton>

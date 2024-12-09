@@ -3,17 +3,22 @@
 /////////////////////////////////////////////////////////////////////////////
 module.exports = {
   CONFIG_REGISTRATION_HAS_EARLYBIRD_REGISTRATION: true,
-  CONFIG_REGISTRATION_EARLYBIRD_CUTOFF_IN_LOCAL_TIME_IN_MS: "1751346000000",    // 00:00 on July 1st, 2025 (CST)
+  // CONFIG_REGISTRATION_EARLYBIRD_CUTOFF_IN_LOCAL_TIME_IN_MS: "1719810000000",    // 00:00 on July 1st, 2024 (CST)
+  // CONFIG_ANGLER_REGISTRATION_CUTOFF_IN_LOCAL_TIME_IN_MS: "1721023200000",    // 01:00 on July 15th, 2024 (CST)
+  // CONFIG_SPONSOR_REGISTRATION_CUTOFF_IN_LOCAL_TIME_IN_MS: "1721023200000",    // 01:00 on July 15th, 2024 (CST)
+  CONFIG_REGISTRATION_EARLYBIRD_CUTOFF_IN_LOCAL_TIME_IN_MS: "1751346000000",    // 00:00 on July 1st, 2025 (CST) 
+  CONFIG_ANGLER_REGISTRATION_CUTOFF_IN_LOCAL_TIME_IN_MS: "1752555600000",    // 00:00 on July 14th, 2025 (CST)    
+  CONFIG_SPONSOR_REGISTRATION_CUTOFF_IN_LOCAL_TIME_IN_MS: "1752555600000",    // 00:00 on July 14th, 2025 (CST)    
   CONFIG_REGISTRATION_EARLYBIRD_DATE_STRING:
-    "Earlybird registration (cutoff date TBA):",
+    "Pre-registration (before July 1st, 2025):",
   CONFIG_REGISTRATION_EARLYBIRD_ADULT_FEE: 130,
   CONFIG_REGISTRATION_EARLYBIRD_JUNIOR_FEE: 110,
   CONFIG_REGISTRATION_NORMAL_DATE_STRING:
-    "Normal registration (cutoff date TBA):",
+    "Normal registration (after July 1st, 2025):",
   CONFIG_REGISTRATION_NORMAL_ADULT_FEE: 150,
   CONFIG_REGISTRATION_NORMAL_JUNIOR_FEE: 130,
   CONFIG_REGISTRATION_PAST_TEAMS_TABLES_FOR_AUTOCOMPLETE_NAME_LIST: [
-    "teams2024",
+    "anglers2024",
   ],
   CONFIG_REGISTRATION_HAS_DISCLAIMERS: true,
   CONFIG_REGISTRATION_DISCLAIMERS: {
@@ -23,36 +28,8 @@ module.exports = {
       "All decisions made by the weigh master and/or tournament directors are final.",
     ],
     // Refunds: [
-      // "It is the intent of the tournament committee to refund 50% of entry fees if the tournament is cancelled.",
+    //   "It is the intent of the tournament committee to refund 50% of entry fees if the tournament is cancelled.",
     // ],
-  },
-  CONFIG_REGISTRATION_ADDITIONAL_REQUIRED_STRING_FIELDS: [
-    "Hometown"
-  ],
-  CONFIG_REGISTRATION_ADDITIONAL_REQUIRED_INT_FIELDS: [
-    // "Age",
-    // "Boat Length (ft)",
-  ],
-  CONFIG_REGISTRATION_ADDITIONAL_REQUIRED_BOOLEAN_FIELDS: [
-    // "Over 21?"
-  ],
-  CONFIG_REGISTRATION_ADDITIONAL_REQUIRED_DROPDOWN_FIELDS: {
-    "Gender": ["Male", "Female"],
-    "Division": ["Offshore", "Bay/Surf", "Flyfishing", "Kayak"],
-    "Age Bracket": ["Adult", "Junior"],
-    "Over 21?": ["Yes", "No"],
-  },
-  CONFIG_REGISTRATION_ADDITIONAL_NON_REQUIRED_STRING_FIELDS: [
-    "Boat Name"
-  ],
-  CONFIG_REGISTRATION_ADDITIONAL_NON_REQUIRED_INT_FIELDS: [
-    // "Age"
-  ],
-  CONFIG_REGISTRATION_ADDITIONAL_NON_REQUIRED_BOOLEAN_FIELDS: [
-    // "Under 21?"
-  ],
-  CONFIG_REGISTRATION_ADDITIONAL_NON_REQUIRED_DROPDOWN_FIELDS: {
-    // "Gender": ["Male", "Female"],
   },
   CONFIG_SPONSOR_REGISTRATION_TIERS: {
     "Platinum Tier": 10000,

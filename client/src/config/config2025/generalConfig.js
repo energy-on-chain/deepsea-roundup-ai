@@ -24,14 +24,14 @@ module.exports = {
     Rules: "https://deepsearoundup.org/tournament-rules/",
   },
   CONFIG_GENERAL_TOURNAMENT_LINK_OBJECT: {
-    // Register: "/register",
-    Newsfeed: "/newsfeed",
-    Leaderboard: "/leaderboard",
-    Pots: "/pots",
-    // "Auction": "/auction",
+    // Register: "/2025/register",
+    Newsfeed: "/2025/newsfeed",
+    Leaderboard: "/2025/leaderboard",
+    Pots: "/2025/pots",
+    // "Auction": "/2025/auction",
   },
   CONFIG_GENERAL_ADMIN_LINK_OBJECT: {
-    Settings: "/admin",
+    Settings: "/2025/admin",
     Dashboard: "/dashboard",
   },
   // CONTACT INFO
@@ -47,10 +47,10 @@ module.exports = {
   CONFIG_GENERAL_CONTACT_INFO_ADMIN_EMAIL_2: "matthew@deepwaterdigital.tech",
 
   // FIREBASE
-  CONFIG_GENERAL_FIREBASE_TEAMS_TABLE_NAME: "teams2025", // Firebase
-  CONFIG_GENERAL_FIREBASE_TEAMS_ID_NAME: "teamId",
-  CONFIG_GENERAL_FIREBASE_TEAMS_TABLE_NAME: "sponsors2025",
-  CONFIG_GENERAL_FIREBASE_TEAMS_ID_NAME: "sponsorId",
+  CONFIG_GENERAL_FIREBASE_TEAMS_TABLE_NAME: "anglers2025", // Firebase
+  CONFIG_GENERAL_FIREBASE_TEAMS_ID_NAME: "anglersId",
+  CONFIG_GENERAL_FIREBASE_SPONSORS_TABLE_NAME: "sponsors2025",
+  CONFIG_GENERAL_FIREBASE_SPONSORS_ID_NAME: "sponsorId",
   CONFIG_GENERAL_FIREBASE_CATCHES_TABLE_NAME: "catches2025",
   CONFIG_GENERAL_FIREBASE_CATCHES_ID_NAME: "catchId",
   CONFIG_GENERAL_FIREBASE_ANNOUNCEMENTS_TABLE_NAME: "announcements2025",
@@ -59,26 +59,5 @@ module.exports = {
   CONFIG_GENERAL_FIREBASE_POTS_ID_NAME: "potId",
   CONFIG_GENERAL_FIREBASE_AUCTION_TABLE_NAME: "auction2025",
   CONFIG_GENERAL_FIREBASE_AUCTION_ID_NAME: "auctionId",
-  CONFIG_GENERAL_FIREBASE_ANNOUNCEMENTS_TABLE_NAME: "announcements2025",
-  firebaseStagingConfig: {
-    apiKey: process.env.REACT_APP_FIREBASE_API_KEY_STAGING,
-    authDomain: process.env.REACT_APP_FIREBASE_AUTH_DOMAIN_STAGING,
-    projectId: process.env.REACT_APP_FIREBASE_PROJECT_ID_STAGING,
-    storageBucket: process.env.REACT_APP_FIREBASE_STORAGE_BUCKET_STAGING,
-    messagingSenderId:
-      process.env.REACT_APP_FIREBASE_MESSAGING_SENDER_ID_STAGING,
-    appId: process.env.REACT_APP_FIREBASE_APP_ID_STAGING,
-    measurementId: process.env.REACT_APP_FIREBASE_MEASUREMENT_ID_STAGING,
-  },
-  firebaseProductionConfig: {
-    apiKey: process.env.REACT_APP_FIREBASE_API_KEY_PRODUCTION,
-    authDomain: process.env.REACT_APP_FIREBASE_AUTH_DOMAIN_PRODUCTION,
-    projectId: process.env.REACT_APP_FIREBASE_PROJECT_ID_PRODUCTION,
-    storageBucket: process.env.REACT_APP_FIREBASE_STORAGE_BUCKET_PRODUCTION,
-    messagingSenderId:
-      process.env.REACT_APP_FIREBASE_MESSAGING_SENDER_ID_PRODUCTION,
-    appId: process.env.REACT_APP_FIREBASE_APP_ID_PRODUCTION,
-    measurementId: process.env.REACT_APP_FIREBASE_MEASUREMENT_ID_PRODUCTION,
-  },
 };
 

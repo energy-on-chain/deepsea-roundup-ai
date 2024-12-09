@@ -26,7 +26,7 @@ module.exports = {
     {
       logo: './DeepseaRoundupLogo2025.jpg',
       title: "Deepsea Roundup 2025",
-      dates: "Dates Coming Soon!",
+      dates: "July 10th - 13th 2025",
       home: "/2025/home",
       register: "/2025/register",
       leaderboard: "/2025/leaderboard",

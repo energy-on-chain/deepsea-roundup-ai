@@ -7,7 +7,7 @@
   justify-content: center;
   align-items: center;
   /* background-color: #0281C5; */
-  background-color: #288DAF;
+  background-color: #01143D;
 	padding-top: 75px;
 	padding-bottom: 75px;
 }
@@ -176,7 +176,7 @@
   border: 1px solid transparent;
   white-space: normal;
   /* background-color: #0281C5; */
-  background-color: #288DAF;
+  background-color: #01143D;
 	border-color: #333333;
   padding: 31px 31px;
   margin: 25px;
@@ -207,9 +207,9 @@
   background-image: none;
   border: 1px solid transparent;
   white-space: normal;
-  /* background-color: #288DAF; */
+  /* background-color: #01143D; */
   background-color: #0281C5;
-	border-color: #288DAF;
+	border-color: #01143D;
   padding: 31px 31px;
   margin: 25px;
   font-size: 25px;

@@ -202,7 +202,7 @@ const AddSponsorModal = (props) => {
       {config ? (
         <>
           <DialogTitle>
-            Register A New Sponsor
+            Register A New {props.year} Sponsor
             <IconButton onClick={handleClose} style={{ float: 'right' }}>
               <CloseIcon color="primary" />
             </IconButton>

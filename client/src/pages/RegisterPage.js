@@ -141,7 +141,7 @@ function RegisterPage(props) {
 
         <section className="section-register">
 
-          <h1 style={{ color: titleTextColor }}>For Anglers</h1>
+          <h1 style={{ color: titleTextColor }}>For Anglers ({year})</h1>
 
           {earlyBird.hasEarlyBird && (
             <>
@@ -176,7 +176,7 @@ function RegisterPage(props) {
           </button>
           <br/>
 
-          <h1 style={{ color: titleTextColor }}>For Sponsors</h1>
+          <h1 style={{ color: titleTextColor }}>For Sponsors ({year})</h1>
           <button 
             style={{ 
               backgroundColor: isSponsorRegistrationDisabled ? '#AEBDC4' : buttonBgColor, // Grey background if disabled

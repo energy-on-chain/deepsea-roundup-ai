@@ -219,7 +219,7 @@ module.exports = ({ clientUrl, serverUrl, stripe, webhookSecret, redisClient }) 
     for (const angler of anglerDetails) {
       const anglerData = {
         ...angler,
-        year,
+        hasCheckedIn: false,
         tableName,
         registrationFee: angler.ageBracket === "Adult" ? metadata.adultFee : metadata.juniorFee,
         email: customerDetails.email || null,
@@ -230,7 +230,9 @@ module.exports = ({ clientUrl, serverUrl, stripe, webhookSecret, redisClient }) 
   
       try {
         const docRef = await db.collection(`anglers${year}`).add(anglerData);
+        await docRef.update({ anglerId: docRef.id });
         console.log(`Angler ${angler.anglerName} added with ID: ${docRef.id}`);
+        // FIXME: add a property called "anglerId" to the document where docRef.id is the value
       } catch (error) {
         console.error(`Error adding angler ${angler.anglerName}:`, error);
       }
@@ -271,7 +273,6 @@ module.exports = ({ clientUrl, serverUrl, stripe, webhookSecret, redisClient }) 
     // Create a new entry in the Firebase database for the sponsor
     const sponsorData = {
       sponsorName,
-      year,
       tableName,
       selectedTier,
       selectedSponsorships,
@@ -285,6 +286,7 @@ module.exports = ({ clientUrl, serverUrl, stripe, webhookSecret, redisClient }) 
   
     try {
       const docRef = await db.collection(`sponsors${year}`).add(sponsorData);
+      await docRef.update({ sponsorId: docRef.id });
       console.log(`Sponsor ${sponsorName} added with ID: ${docRef.id}`);
     } catch (error) {
       console.error(`Error adding sponsor ${sponsorName}:`, error);
