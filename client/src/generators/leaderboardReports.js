@@ -1,7 +1,7 @@
 import jsPDF from 'jspdf';
 import 'jspdf-autotable';
 import dayjs from 'dayjs';
-import { loadConfigForYear } from '../config/masterConfig'; // Dynamic config loader
+import { loadConfigForYear } from '../config/masterConfig';
 
 const addPageNumbers = (doc) => {
   const pageCount = doc.internal.getNumberOfPages();
@@ -24,6 +24,7 @@ const formatCurrency = (value) => {
 export const generateLeaderboardReport = async (year, tournamentName) => {
   const doc = new jsPDF('landscape');
   const currentDate = dayjs().format('MMMM D, YYYY h:mm A [CST]');
+  const REPORT_NUM_PLACES = 20; // Set fixed number of places for report
 
   // Load dynamic config for the specific year
   const config = await loadConfigForYear(year);
@@ -38,23 +39,25 @@ export const generateLeaderboardReport = async (year, tournamentName) => {
   // Fetch and process leaderboard data
   try {
     // Build queries for leaderboard categories dynamically from config
-    const queries = config.leaderboardConfig.CONFIG_LEADERBOARD_CATEGORIES.map(item => ({
-      title: item.title,
-      subtitle: item.subtitle || "",
-      numPlaces: item.numPlaces,
-      url: item.url,
-      body: JSON.stringify({
-        catchYear: config.generalConfig.CONFIG_GENERAL_FIREBASE_CATCHES_TABLE_NAME, // Dynamic table name
-        numPlaces: item.numPlaces,
-        isReport: true,  // Fetch all rows for the report
-        ...(item.inputs && item.inputs.length > 0
-          ? item.inputs.reduce((acc, input) => ({ ...acc, ...input }), {})
-          : {})
-      }),
-      desktopColumns: item.desktopColumns,
-      mobileColumns: item.mobileColumns
-    }));
+    const queries = config.leaderboardConfig.CONFIG_LEADERBOARD_CATEGORIES
+      .filter(item => item.display) // Only include categories marked for display
+      .map(item => ({
+        title: item.title,
+        subtitle: item.subtitle || "",
+        url: item.url,
+        body: JSON.stringify({
+          catchYear: config.generalConfig.CONFIG_GENERAL_FIREBASE_CATCHES_TABLE_NAME,
+          anglerYear: config.generalConfig.CONFIG_GENERAL_FIREBASE_TEAMS_TABLE_NAME,
+          numPlaces: REPORT_NUM_PLACES, // Override numPlaces for report
+          isReport: true,
+          ...(item.inputs && item.inputs.length > 0
+            ? item.inputs.reduce((acc, input) => ({ ...acc, ...input }), {})
+            : {})
+        }),
+        desktopColumns: item.desktopColumns,
+      }));
 
+    // Fetch all data with increased number of places
     const res = await Promise.all(queries.map(query =>
       fetch(`${apiUrl}/api/${year}/${query.url}`, {
         method: 'POST',
@@ -64,43 +67,79 @@ export const generateLeaderboardReport = async (year, tournamentName) => {
         .then(result => ({
           title: query.title,
           subtitle: query.subtitle,
-          rows: Object.values(result).map((item, i) => ({
-            ...item,
-            id: i
-          })),
+          rows: Array.isArray(result) ? result : Object.values(result),
           desktopColumns: query.desktopColumns,
         }))
     ));
 
     // Generate the PDF
     res.forEach((category, index) => {
-      if (index > 0) doc.addPage();
+      if (index > 0) {
+        doc.addPage();
+      }
 
+      // Add category title and timestamp
       doc.setFontSize(16);
       doc.setFont('helvetica', 'bold');
-      doc.text(`Leaderboard for ${category.title} - ${tournamentName} ${year}`, 10, 10);
-      doc.text(`Report generated on ${currentDate}`, 10, 18);
+      doc.text(`${category.title}`, 10, 10);
+      doc.setFontSize(12);
+      doc.text(`Generated on ${currentDate}`, 10, 20);
 
-      // Generate table columns based on category desktopColumns
+      if (category.subtitle) {
+        doc.setFontSize(12);
+        doc.setFont('helvetica', 'italic');
+        doc.text(category.subtitle, 10, 30);
+      }
+
+      // Generate table data
       const tableColumns = category.desktopColumns.map(col => col.headerName);
-      const tableRows = category.rows.map(row => category.desktopColumns.map(col => row[col.field] || 'N/A'));
+      const tableRows = category.rows
+        .slice(0, REPORT_NUM_PLACES) // Ensure we only show up to REPORT_NUM_PLACES rows
+        .map(row => category.desktopColumns.map(col => {
+          // Handle special formatting for certain field types
+          if (col.field === 'dateTime' || col.isDateTime) {
+            return dayjs(row[col.field]).format('MM/DD/YYYY HH:mm:ss');
+          }
+          return row[col.field]?.toString() || 'N/A';
+        }));
 
+      // Add the table
       doc.autoTable({
-        startY: 30,
+        startY: category.subtitle ? 35 : 25,
         head: [tableColumns],
         body: tableRows,
         theme: 'striped',
-        styles: { fontSize: 10, halign: 'center', valign: 'middle', overflow: 'linebreak' },
-        headStyles: { fillColor: '#02133E', textColor: '#ffffff', halign: 'center' },
+        styles: {
+          fontSize: 10,
+          cellPadding: 2,
+          overflow: 'linebreak',
+          halign: 'center',
+          valign: 'middle'
+        },
+        headStyles: {
+          fillColor: '#02133E',
+          textColor: '#ffffff',
+          halign: 'center',
+          fontSize: 10,
+          fontStyle: 'bold'
+        },
+        columnStyles: {
+          0: { cellWidth: 20 }, // Place column
+          1: { cellWidth: 'auto' }, // Dynamic width for other columns
+        },
+        margin: { right: 10, left: 10 },
       });
     });
 
     // Add page numbers
     addPageNumbers(doc);
 
+    // Save the PDF
     doc.save(`${tournamentName} ${year} Leaderboard Report.pdf`);
+
   } catch (error) {
     console.error("Error generating leaderboard report:", error);
+    throw error; // Re-throw to handle in the UI
   }
 };
 

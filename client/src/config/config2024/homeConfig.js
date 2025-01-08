@@ -10,11 +10,8 @@ module.exports = {
     // "2024 Tournament: 410 anglers / 343 catches / $37,160 total pot",
   ],
   CONFIG_HOME_SPECIES_TYPE_LIST_FOR_CATCH_COUNT: [
-    "Catch & Release", 
-    "Offhsore",
-    "Bay/Surf",
-    "Flyfish",
-    "Kayak"
+    "Billfish",
+    "Meatfish",
   ],
   CONFIG_HOME_CATCH_STAT_TYPE: "catches",
 };

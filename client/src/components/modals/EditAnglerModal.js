@@ -1,325 +1,212 @@
 import React, { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
-import { InputLabel, Button, Dialog, DialogContent, DialogTitle, IconButton, Stack, TextField, Select, MenuItem, CircularProgress } from "@mui/material";
-import CloseIcon from "@mui/icons-material/Close";
+import {
+  InputLabel,
+  Button,
+  Dialog,
+  DialogContent,
+  DialogTitle,
+  IconButton,
+  Stack,
+  TextField,
+  Select,
+  MenuItem,
+  CircularProgress,
+} from '@mui/material';
+import CloseIcon from '@mui/icons-material/Close';
 import 'react-toastify/dist/ReactToastify.css';
 import { toast } from 'react-toastify';
+import { loadConfigForYear } from '../../config/masterConfig';
 
 const EditAnglerModal = (props) => {
-
-  // STATE
   const { year } = useParams();
-  const [teamName, setTeamName] = useState('');
-  const [email, setEmail] = useState('');
-  const [phone, setPhone] = useState('');
-  const [hasCheckedIn, setHasCheckedIn] = useState(null);
-  const [originalImages, setOriginalImages] = useState({}); 
-  const [newImages, setNewImages] = useState({}); 
+  const [config, setConfig] = useState(null);
+  const [isLoadingConfig, setIsLoadingConfig] = useState(true);
+
+  const [formData, setFormData] = useState({});
   const [duplicateNameList, setDuplicateNameList] = useState([]);
-  const [isLoading, setIsLoading] = useState(true); // Track loading state
-  const [isSubmitting, setIsSubmitting] = useState(false); // Track submission state
-  const [isSubmitted, setIsSubmitted] = useState(false); // Track if form was submitted
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // INITIALIZE
+  // Load configuration on mount
   useEffect(() => {
-    fetchData();
-    setTeamName(props.editInfo['teamName']);
-    setEmail(props.editInfo['teamEmail']);
-    setPhone(props.editInfo['teamPhone']);
-    setHasCheckedIn(props.editInfo['hasCheckedIn']);
-    initializeImages(props.editInfo); // Initialize image previews when modal opens
-  }, [props.editInfo]);
-
-  const fetchData = async () => {
-    try {
-      let apiUrl = process.env.REACT_APP_NODE_ENV === "staging"
-        ? process.env.REACT_APP_SERVER_URL_STAGING
-        : process.env.REACT_APP_SERVER_URL_PRODUCTION;
-
-      // Fetch current year's team names for duplicate check
-      const response = await fetch(`${apiUrl}/api/${year}/admin_get_database_list`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ tableName: `teams${year}` }), // Fetching the current year team list
-      });
-
-      const data = await response.json();
-      const currentYearTeamNames = Object.keys(data).map(teamKey => data[teamKey].teamName); // Assuming team names are under 'teamName'
-
-      // Set the list of duplicate names for validation
-      setDuplicateNameList(currentYearTeamNames);
-    } catch (error) {
-      console.error("Error fetching team names:", error);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  // HANDLERS
-  const initializeImages = (data) => {
-    const previews = {};
-    Object.keys(data).forEach((key) => {
-      const value = data[key];
-      if (typeof value === 'string' && value.startsWith('https://storage.googleapis.com/')) {
-        previews[key] = {
-          file: null,
-          fieldName: key,
-          url: value,
-          fileName: null,
-          fileExtension: null,
-        };
-      }
-    });
-  
-    const nonRequiredImageFields = props?.editInfo?.nonRequiredImageFields || [];
-    nonRequiredImageFields.forEach((field) => {
-      if (!previews[field]) {
-        previews[field] = {
-          file: null,
-          fieldName: field,
-          url: '',
-          fileName: null,
-          fileExtension: null,
-        };
-      }
-    });
-  
-    setOriginalImages(previews);
-  };
-
-  const handleClose = () => {
-    setTeamName('');
-    setEmail('');
-    setPhone('');
-    setHasCheckedIn(null);
-    setOriginalImages({});
-    setNewImages({});
-    setDuplicateNameList([]);
-    setIsSubmitting(false);
-    setIsSubmitted(false);
-    props.close();
-  };
-
-  const delayRefresh = () => {
-    setTimeout(() => {
-      window.location.reload();
-    }, 2000);
-  };
-
-  const validateEmail = (email) => {
-    return email.match(
-      /^(([^<>()[\]\\.,;:\s@\"]+(\.[^<>()[\]\\.,;:\s@\"]+)*)|(\".+\"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/
-    );
-  };
-
-  const validatePhone = (phone) => {
-    return phone.match(
-      /^(\+?\d{1,2}\s?)?(\(?\d{3}\)?[\s.-]?)?\d{3}[\s.-]?\d{4}$/
-    );
-  };
-
-  const validateUserInput = () => {
-    if (isLoading) {
-      toast.warning("Please wait while the team data is loading.");
-      return false;
-    }
-
-    let inputIsValid = true;
-
-    if(!teamName) {
-      toast.warning("Please enter a team name.");
-      inputIsValid = false;
-      return false;
-    }
-
-    // Check for duplicate team names, but ignore if it's the original name
-    if (teamName !== props.editInfo['teamName'] && duplicateNameList.includes(teamName)) {
-      toast.warning("This team name is already registered. Please choose another name.");
-      inputIsValid = false;
-      return false;
-    }
-
-    if (!validateEmail(email)) {
-      toast.warning('Please enter a valid email address (e.g. person@email.com)');
-      inputIsValid = false;
-      return false;
-    }
-
-    if (!validatePhone(phone)) {
-      toast.warning('Please enter a valid phone number (e.g. 123-456-7890, +1 123-456-7890, etc.)');
-      inputIsValid = false;
-      return false;
-    }
-
-    return inputIsValid;
-  };
-
-  const handleImageChange = (e, fieldName) => {
-    if (e.target.files[0]) {
-      const file = e.target.files[0];
-      const fileExtension = file.name.substring(file.name.lastIndexOf('.'));
-      const newFile = new File([file], fieldName, {
-        type: file.type,
-      });
-  
-      setNewImages((prevImages) => ({
-        ...prevImages,
-        [fieldName]: {
-          file: newFile,
-          fieldName: fieldName,
-          url: URL.createObjectURL(newFile),
-          fileName: fieldName,
-          fileExtension: fileExtension,
-        },
-      }));
-    }
-  };
-
-  const handleEdit = async () => {
-    if (validateUserInput()) {
-      setIsSubmitting(true); // Set submitting state
+    const fetchConfig = async () => {
+      setIsLoadingConfig(true);
       try {
-        let apiUrl = process.env.REACT_APP_NODE_ENV === "staging"
+        const loadedConfig = await loadConfigForYear(year);
+        setConfig(loadedConfig?.adminConfig?.CONFIG_ADMIN_TABLE_PROPERTIES_FOR_ANGLERS || []);
+        initializeFormData(props.editInfo, loadedConfig?.adminConfig?.CONFIG_ADMIN_TABLE_PROPERTIES_FOR_ANGLERS);
+      } catch (error) {
+        console.error('Error loading configuration:', error);
+      } finally {
+        setIsLoadingConfig(false);
+      }
+    };
+
+    fetchConfig();
+  }, [year, props.editInfo]);
+
+  const initializeFormData = (editInfo, tableProperties) => {
+    const initialData = {};
+    tableProperties?.forEach((property) => {
+      if (property.field === 'over21' || property.field === 'hasCheckedIn') {
+        initialData[property.field] = editInfo[property.field] !== undefined ? String(editInfo[property.field]) : '';
+      } else {
+        initialData[property.field] = editInfo[property.field] || '';
+      }
+    });
+    setFormData(initialData);
+  };
+
+  // Fetch duplicate names
+  useEffect(() => {
+    const fetchDuplicateNames = async () => {
+      try {
+        const apiUrl = process.env.REACT_APP_NODE_ENV === 'staging'
           ? process.env.REACT_APP_SERVER_URL_STAGING
           : process.env.REACT_APP_SERVER_URL_PRODUCTION;
 
-        const formData = new FormData();
-        formData.append('potYear', props.potYear);
-        formData.append('catchYear', props.catchYear);
-        formData.append('teamYear', props.teamYear);
-        formData.append('teamId', props.editInfo.teamId);
-        formData.append('teamName', teamName);
-        formData.append('teamEmail', email);
-        formData.append('teamPhone', phone);
-        formData.append('hasCheckedIn', JSON.stringify(hasCheckedIn));
-
-        Object.keys(newImages).forEach((fieldName) => {
-          formData.append('newImages', newImages[fieldName].file);
-        });
-
-        await fetch(`${apiUrl}/api/${year}/admin_edit_team`, {
+        const response = await fetch(`${apiUrl}/api/${year}/admin_get_database_list`, {
           method: 'POST',
-          body: formData,
-        }).then(response => {
-          if (response.ok) {
-            toast.success('The team and associated data were successfully updated! Redirecting...');
-            setIsSubmitted(true); // Mark as submitted
-            delayRefresh();
-          } else {
-            return response.json().then(data => {
-              throw new Error(data.error || 'Unknown error');
-            });
-          }
-        }).catch(error => {
-          toast.error('There was an error while attempting to update the team: ' + error.message);
-          setIsSubmitting(false); // Reset submitting state
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ tableName: `anglers${year}` }),
         });
 
+        const data = await response.json();
+        const names = Object.keys(data).map((key) => data[key].anglerName);
+        setDuplicateNameList(names);
       } catch (error) {
-        console.log('There was an error while attempting to edit this database entry: ' + error);
-        setIsSubmitting(false); // Reset submitting state
+        console.error('Error fetching duplicate names:', error);
+      }
+    };
+
+    fetchDuplicateNames();
+  }, [year]);
+
+  const handleInputChange = (field, value) => {
+    setFormData((prevData) => ({
+      ...prevData,
+      [field]: value,
+    }));
+  };
+
+  const validateForm = () => {
+    const requiredFields = config?.filter((field) => field.isRequired);
+    for (const field of requiredFields) {
+      if (!formData[field.field]) {
+        toast.warning(`Please enter ${field.headerName}.`);
+        return false;
       }
     }
+
+    if (formData.anglerName !== props.editInfo.anglerName && duplicateNameList.includes(formData.anglerName)) {
+      toast.warning('This angler name is already registered. Please choose another name.');
+      return false;
+    }
+
+    return true;
+  };
+
+  const handleEdit = async () => {
+    if (!validateForm()) return;
+
+    setIsSubmitting(true);
+    try {
+      const apiUrl = process.env.REACT_APP_NODE_ENV === 'staging'
+        ? process.env.REACT_APP_SERVER_URL_STAGING
+        : process.env.REACT_APP_SERVER_URL_PRODUCTION;
+
+      const submitData = {
+        ...formData,
+        over21: formData.over21 === 'true',
+        hasCheckedIn: formData.hasCheckedIn === 'true',
+      };
+
+      await fetch(`${apiUrl}/api/${year}/admin_edit_angler`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(submitData),
+      });
+
+      toast.success('Angler successfully updated.');
+      props.close();
+      window.location.reload(); // Refresh the page
+    } catch (error) {
+      toast.error('Error updating angler: ' + error.message);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleClose = () => {
+    setFormData({});
+    setDuplicateNameList([]);
+    props.close();
+  };
+
+  if (isLoadingConfig) {
+    return <CircularProgress />;
+  }
+
+  const dropdownFields = {
+    division: ['Offshore', 'Bay/Surf', 'Flyfishing', 'Kayak'],
+    gender: ['Male', 'Female'],
+    ageBracket: ['Junior', 'Adult'],
+    over21: ['true', 'false'], // Boolean values as strings
+    hasCheckedIn: ['true', 'false'], // Boolean values as strings
   };
 
   return (
     <Dialog open={props.status} onClose={handleClose} fullWidth maxWidth="sm">
-      <form onSubmit={(e) => { e.preventDefault(); handleClose(); }}>
-        <DialogTitle>Edit Team Information<IconButton onClick={handleClose} style={{float:'right'}}><CloseIcon color="primary"></CloseIcon></IconButton></DialogTitle>
+      <form onSubmit={(e) => e.preventDefault()}>
+        <DialogTitle>
+          Edit Angler Information
+          <IconButton onClick={handleClose} style={{ float: 'right' }}>
+            <CloseIcon color="primary" />
+          </IconButton>
+        </DialogTitle>
         <DialogContent>
-          <Stack spacing={2} margin={2}>
-            <InputLabel><strong>ID:</strong> {props.editInfo['teamId']}</InputLabel>
-
-            <TextField
-              label="Team Name"
-              variant="outlined"
-              value={teamName}
-              onChange={(e) => setTeamName(e.target.value)}
-              fullWidth
-              required
-            />
-
-            <TextField
-              label="Email"
-              variant="outlined"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              fullWidth
-              required
-            />
-
-            <TextField
-              label="Phone"
-              variant="outlined"
-              value={phone}
-              onChange={(e) => setPhone(e.target.value)}
-              fullWidth
-              required
-            />
-
-            <InputLabel id="has-checked-in-label">Has Checked-In?</InputLabel>
-            <Select
-              labelId="has-checked-in-label"
-              value={hasCheckedIn}
-              onChange={(e) => setHasCheckedIn(e.target.value === 'true')}
-              fullWidth
+          <Stack spacing={2}>
+            {config
+              ?.filter((field) => field.isEditable)
+              .map((field) => {
+                if (dropdownFields[field.field]) {
+                  return (
+                    <div key={field.field}>
+                      <InputLabel>{field.headerName}</InputLabel>
+                      <Select
+                        value={formData[field.field] || ''}
+                        onChange={(e) => handleInputChange(field.field, e.target.value)}
+                        fullWidth
+                      >
+                        {dropdownFields[field.field].map((option) => (
+                          <MenuItem key={option} value={option}>
+                            {option === 'true' ? 'Yes' : option === 'false' ? 'No' : option}
+                          </MenuItem>
+                        ))}
+                      </Select>
+                    </div>
+                  );
+                } else {
+                  return (
+                    <TextField
+                      key={field.field}
+                      label={field.headerName}
+                      value={formData[field.field] || ''}
+                      onChange={(e) => handleInputChange(field.field, e.target.value)}
+                      fullWidth
+                    />
+                  );
+                }
+              })}
+            <Button
+              color="primary"
+              variant="contained"
+              onClick={handleEdit}
+              disabled={isSubmitting}
+              startIcon={isSubmitting ? <CircularProgress size={20} /> : null}
             >
-              <MenuItem value="true">Yes</MenuItem>
-              <MenuItem value="false">No</MenuItem>
-            </Select>
-
-            <br/>
-
-            {Object.keys(originalImages).map((fieldName, index) => (
-              <div key={`non-required-image-${index}`} style={{ display: 'flex', alignItems: 'center', marginBottom: '10px' }}>
-                <label htmlFor={`upload-button-${fieldName}`} style={{ cursor: 'pointer', background: '#d3d3d3', padding: '10px 20px', borderRadius: '4px', marginRight: '10px' }}>
-                  {originalImages[fieldName]?.url ? `Replace ${fieldName}` : `Upload ${fieldName}`}
-                </label>
-                <input
-                  id={`upload-button-${fieldName}`}
-                  type="file"
-                  style={{ display: 'none' }}
-                  onChange={(e) => handleImageChange(e, fieldName)}
-                />
-                { newImages[fieldName] ? (
-                  <img
-                    src={newImages[fieldName].url}
-                    alt={`${fieldName} Preview`}
-                    style={{ maxWidth: '100px', maxHeight: '100px', marginRight: '10px' }}
-                  />
-                ) : originalImages[fieldName]?.url ? (
-                  <img
-                    src={originalImages[fieldName].url}
-                    alt={`${fieldName} Preview`}
-                    style={{ maxWidth: '100px', maxHeight: '100px', marginRight: '10px' }}
-                  />
-                ) : (
-                  <div>No image uploaded yet</div>
-                )}
-              </div>
-            ))}
-
-            
-            
-            {/* Submit button */}
-            {!isSubmitted ? (
-              <Button
-                color="primary"
-                variant="contained"
-                onClick={handleEdit}
-                disabled={isSubmitting || isSubmitted} // Disable if submitting or already submitted
-                startIcon={isSubmitting ? <CircularProgress size={20} /> : null}
-              >
-                {isSubmitting ? "Submitting..." : "Submit"}
-              </Button>
-            ) : (
-              <h3>Submitted!</h3>
-            )}
-
-
-
+              {isSubmitting ? 'Submitting...' : 'Submit'}
+            </Button>
           </Stack>
         </DialogContent>
       </form>

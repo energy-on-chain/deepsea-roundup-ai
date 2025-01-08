@@ -7,13 +7,14 @@ import 'react-toastify/dist/ReactToastify.css';
 import { toast } from 'react-toastify';
 import dayjs from 'dayjs';  // Import dayjs for date-time formatting
 
-const DeleteAnglerModal = (props) => {
+const DeleteSponsorModal = (props) => {
   const { year } = useParams();
   const [info, setInfo] = useState(null);
   const [isSubmitting, setIsSubmitting] = useState(false);  // Track submission state
   const [isSubmitted, setIsSubmitted] = useState(false);    // Track if form is submitted
 
   useEffect(() => {
+    console.log('Delete sponsor data:', props)
     setInfo(props.deleteInfo);
   }, [props.deleteInfo]);
 
@@ -50,18 +51,13 @@ const DeleteAnglerModal = (props) => {
         ? process.env.REACT_APP_SERVER_URL_STAGING
         : process.env.REACT_APP_SERVER_URL_PRODUCTION;
 
-      const response = await fetch(`${apiUrl}/api/${year}/admin_delete_angler`, {
+      const response = await fetch(`${apiUrl}/api/${year}/admin_delete_sponsor`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          anglerId: info.anglerId,
-          tableName: props.tableName,
-          anglerYear: props.anglerYear,
+          sponsorId: info.sponsorId,
           sponsorYear: props.sponsorYear,
-          catchYear: props.catchYear,
-          potYear: props.potYear,
-          auctionYear: props.auctionYear,
-          announcementYear: props.announcementYear,
+          tableName: props.tableName,
         })
       });
 
@@ -69,13 +65,13 @@ const DeleteAnglerModal = (props) => {
         throw new Error('Network response was not ok');
       }
 
-      toast.success('The angler was successfully deleted! Redirecting...');
+      toast.success('The sponsor was successfully deleted! Redirecting...');
       setIsSubmitted(true);  // Mark as submitted after successful deletion
       delayRefresh();
 
     } catch (error) {
       console.log('There was an error while attempting to delete this database entry: ' + error);
-      toast.error('There was an error while attempting to delete the angler. Page will refresh now. Please try again.');
+      toast.error('There was an error while attempting to delete the sponsor. Page will refresh now. Please try again.');
       setIsSubmitting(false);  // Reset submitting state if an error occurs
     }
   }
@@ -93,7 +89,7 @@ const DeleteAnglerModal = (props) => {
         <Dialog open={props.status} onClose={handleClose} fullWidth maxWidth="sm">
           <form action="/" method="POST" onSubmit={(e) => { e.preventDefault(); handleClose(); }}>
             <DialogTitle>
-              Delete {props.year} Angler
+              Delete {props.year} {props.tableType}
               <IconButton onClick={handleClose} style={{ float: 'right' }}><CloseIcon color="primary"></CloseIcon></IconButton>
             </DialogTitle>
             <DialogContent>
@@ -119,7 +115,7 @@ const DeleteAnglerModal = (props) => {
                         if (typeof value === 'string' && value.startsWith('https://storage.googleapis.com/')) {
                           return (
                             <div key={index} style={{ textAlign: 'left' }}>
-                              <InputLabel><strong>{formatLabel(property.field)}:</strong></InputLabel>
+                              <InputLabel><strong>Logo:</strong></InputLabel>
                               <img 
                                 src={value} 
                                 alt={`${property.field} Preview`} 
@@ -173,5 +169,5 @@ const DeleteAnglerModal = (props) => {
   );
 };
 
-export default DeleteAnglerModal;
+export default DeleteSponsorModal;
 

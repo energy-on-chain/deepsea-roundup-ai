@@ -1,29 +1,34 @@
 import React, { useState, useEffect } from 'react';
+import { useParams, useSearchParams } from 'react-router-dom';
 import { InputLabel, Typography, Select, MenuItem, Button, CircularProgress, FormControl, Dialog, DialogContent, DialogTitle, IconButton, Stack, TextField } from "@mui/material";
 import CloseIcon from "@mui/icons-material/Close";
 import { toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import { useMediaQuery, useTheme } from "@mui/material";
+import { loadConfigForYear } from '../../config/masterConfig'; // Dynamic config loader
 
 const AddAnglerModal = (props) => {
+
+  console.log(props.normalData)
+  console.log(props.isEarlyBird)
+  console.log(props.earlyBird)
+
+  const { year: yearFromParams } = useParams(); // Get year from URL params
+  const [searchParams] = useSearchParams(); // Get search params
+  const yearFromSearch = searchParams.get('year');
+  const year = props.year || yearFromParams || yearFromSearch || new Date().getFullYear();
 
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm')); // Check if the screen size is small (mobile)
 
   const [numberOfAnglers, setNumberOfAnglers] = useState(0);
+  const [email, setEmail] = useState("");
+  const [phone, setPhone] = useState("");
   const [anglerDetails, setAnglerDetails] = useState([]);
-  const [isEarlyBird, setIsEarlyBird] = useState(false);
   const [earlyBirdData, setEarlyBirdData] = useState({});
   const [normalData, setNormalData] = useState({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSubmitted, setIsSubmitted] = useState(false);   // Track if form has been submitted successfully
-
-  useEffect(() => {
-    console.log("EarlyBird value is:", props.isEarlyBird)
-    setIsEarlyBird(props.isEarlyBird);
-    setEarlyBirdData(props.earlyBirdData);
-    setNormalData(props.normalData);
-  }, [props.isEarlyBird, props.earlyBirdData, props.normalData]);
 
   const handleNumberOfAnglersChange = (e) => {
     const count = parseInt(e.target.value, 10);
@@ -50,6 +55,8 @@ const AddAnglerModal = (props) => {
 
   const handleClose = () => {
     setNumberOfAnglers(0);
+    setEmail("");
+    setPhone("");
     setAnglerDetails([]);
     setIsSubmitting(false);
     props.close();
@@ -59,13 +66,13 @@ const AddAnglerModal = (props) => {
     const adults = anglerDetails.filter((a) => a.ageBracket === "Adult").length;
     const juniors = anglerDetails.filter((a) => a.ageBracket === "Junior").length;
 
-    const adultFee = isEarlyBird
-      ? adults * earlyBirdData.adultEarlybirdFee
-      : adults * normalData.adultNormalfee;
+    const adultFee = props.isEarlyBird
+      ? adults * props.earlyBirdData.adultEarlybirdFee
+      : adults * props.normalData.adultNormalfee;
 
-    const juniorFee = isEarlyBird
-      ? juniors * earlyBirdData.juniorEarlybirdFee
-      : juniors * normalData.juniorNormalfee;
+    const juniorFee = props.isEarlyBird
+      ? juniors * props.earlyBirdData.juniorEarlybirdFee
+      : juniors * props.normalData.juniorNormalfee;
 
     return { total: adultFee + juniorFee, adultFee, juniorFee };
   };
@@ -81,20 +88,44 @@ const AddAnglerModal = (props) => {
     }).format(value);
   };
 
+  const validateEmail = (email) => {
+    return email.match(
+      /^(([^<>()[\]\\.,;:\s@\"]+(\.[^<>()[\]\\.,;:\s@\"]+)*)|(\".+\"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/
+    );
+  };
+
+  const validatePhone = (phone) => {
+    return phone.match(
+      /^(\+?\d{1,2}\s?)?(\(?\d{3}\)?[\s.-]?)?\d{3}[\s.-]?\d{4}$/
+    );
+  };
+
   const validateAnglerDetails = () => {
     let isValid = true;
+
+    if (props.isAdmin && !validateEmail(email)) {
+      toast.warning("A valid email address is required.");
+      isValid = false;
+    }
+
+    if (props.isAdmin && !validatePhone(phone)) {
+      toast.warning("A valid phone number is required.");
+      isValid = false;
+    }
 
     anglerDetails.forEach((angler, index) => {
       if (!angler.anglerName) {
         toast.warning(`Angler ${index + 1}: Full name is required.`);
         isValid = false;
       }
-      if (!angler.hometown) {
-        toast.warning(`Angler ${index + 1}: Hometown is required.`);
-        isValid = false;
-      }
+      // if (!angler.hometown) {
+      //   toast.warning(`Angler ${index + 1}: Hometown is required.`);
+      //   isValid = false;
+      // }
       if (!angler.boatName && angler.division === "Offshore") {
-        toast.warning(`Angler ${index + 1}: Boat name required for offshore division.`);
+        toast.warning(
+          `Angler ${index + 1}: Boat name is required for the offshore division.`
+        );
         isValid = false;
       }
     });
@@ -118,43 +149,52 @@ const AddAnglerModal = (props) => {
         apiUrl = process.env.REACT_APP_SERVER_URL_PRODUCTION;
     }
 
-    const adultFee = isEarlyBird ? earlyBirdData.adultEarlybirdFee : normalData.adultNormalfee;
-    const juniorFee = isEarlyBird ? earlyBirdData.juniorEarlybirdFee : normalData.juniorNormalfee;
+    const adultFee = props.isEarlyBird ? props.earlyBirdData.adultEarlybirdFee : props.normalData.adultNormalfee;
+    const juniorFee = props.isEarlyBird ? props.earlyBirdData.juniorEarlybirdFee : props.normalData.juniorNormalfee;
 
-    const metaDataObject = {
-      type: "angler",
-      year: props.year,
-      tableName: props.tableName,
-      anglerDetails: anglerDetails,
-      adultFee: adultFee,
-      juniorFee: juniorFee,
-    };
+    let metaDataObject;
+    if (props.isAdmin) {
+      metaDataObject = {
+        type: "angler",
+        year: props.year,
+        tableName: props.tableName,
+        email: email,
+        phone: phone,
+        anglerDetails: anglerDetails,
+        adultFee: adultFee,
+        juniorFee: juniorFee,
+      };
+    } else {
+      metaDataObject = {
+        type: "angler",
+        year: props.year,
+        tableName: props.tableName,
+        anglerDetails: anglerDetails,
+        adultFee: adultFee,
+        juniorFee: juniorFee,
+      };
+    }
 
     const formData = new FormData();
     formData.append('metaDataObject', JSON.stringify(metaDataObject)); // Append the metaDataObject as a JSON string
 
     if (props.isAdmin) { // register as admin, non-payment case
 
-      // FIXME: 
-      // try {
-      //   const response = await fetch(`${apiUrl}/api/${year}/admin_add_team`, {
-      //     method: 'POST',
-      //     body: formData,
-      //   });
-
-      //   if (response.ok) {
-      //     toast.success("Successfully added a new team! Page refreshing...");
-      //     setIsSubmitted(true);
-      //     delayRefresh();
-      //   } else {
-      //     const errorResponse = await response.json(); // Parse JSON response body
-      //     const errorMessage = errorResponse.error || 'Error saving team to database as administrator.';
-      //     throw new Error(errorMessage);
-      //   }
-      // } catch (error) {
-      //   toast.error(`${error}`);
-      //   setIsSubmitting(false); // Re-enable the button if there's an error
-      // }
+      fetch(`${apiUrl}/api/${props.year}/registration_by_admin`, {
+        method: 'POST',
+        body: formData,
+      }).then(res => {
+        if (res.ok) {
+          return res.json();
+        } else {
+          return res.json().then(json => Promise.reject(json));
+        }
+      }).then(({ url }) => {
+        setIsSubmitted(true);
+        window.location.reload();
+      }).catch(e => {
+        console.error(e.error);
+      });
 
     } else {
 
@@ -188,6 +228,28 @@ const AddAnglerModal = (props) => {
       <DialogContent>
         <br />
         <Stack spacing={3}>
+
+          {props.isAdmin && 
+            <>
+              <TextField
+              label="Email"
+              variant="outlined"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              fullWidth
+              required
+            />
+            <TextField
+              label="Phone"
+              variant="outlined"
+              value={phone}
+              onChange={(e) => setPhone(e.target.value)}
+              fullWidth
+              required
+            />
+            </>
+          }
+
           {/* Number of Anglers */}
           <FormControl fullWidth>
             <InputLabel>Number of Anglers</InputLabel>
@@ -287,35 +349,22 @@ const AddAnglerModal = (props) => {
             Total Registration Fees: {formatCurrency(total)}
           </Typography>
           <Typography sx={{ marginLeft: 2 }}>
-            Adults ({anglerDetails.filter((a) => a.ageBracket === "Adult").length} x {formatCurrency(isEarlyBird ? earlyBirdData.adultEarlybirdFee : normalData.adultNormalfee)}{isEarlyBird ? "each, early bird" : " each"}): {formatCurrency(adultFee)}
+            Adults ({anglerDetails.filter((a) => a.ageBracket === "Adult").length} x {formatCurrency(props.isEarlyBird ? props.earlyBirdData.adultEarlybirdFee : props.normalData.adultNormalfee)}{props.isEarlyBird ? "each, early bird" : " each"}): {formatCurrency(adultFee)}
           </Typography>
           <Typography sx={{ marginLeft: 2 }}>
-            Juniors ({anglerDetails.filter((a) => a.ageBracket === "Junior").length} x {formatCurrency(isEarlyBird ? earlyBirdData.juniorEarlybirdFee : normalData.juniorNormalfee)}{isEarlyBird ? "each, early bird" : " each"}): {formatCurrency(juniorFee)}
+            Juniors ({anglerDetails.filter((a) => a.ageBracket === "Junior").length} x {formatCurrency(props.isEarlyBird ? props.earlyBirdData.juniorEarlybirdFee : props.normalData.juniorNormalfee)}{props.isEarlyBird ? "each, early bird" : " each"}): {formatCurrency(juniorFee)}
           </Typography>
 
-          {/* Submit Button */}
-          { !isSubmitted ? ( // Only show the button if the form has not been submitted
-            props.isAdmin ? (
-              <Button 
-                color="primary" 
-                variant="contained" 
-                onClick={handleFormSubmission} 
-                disabled={isSubmitting}
-                startIcon={isSubmitting ? <CircularProgress size={20} /> : null}
-              >
-                {isSubmitting ? "Submitting..." : "Register team (with no online payment)"}
-              </Button>
-            ) : (
-              <Button 
-                color="primary" 
-                variant="contained" 
-                disabled={isSubmitting} 
-                onClick={handleFormSubmission}
-                startIcon={isSubmitting ? <CircularProgress size={20} /> : null}
-              >
-                {isSubmitting ? "Submitting..." : "Go to payment"}
-              </Button>
-            )
+          {!isSubmitted ? (
+            <Button
+              color="primary"
+              variant="contained"
+              disabled={numberOfAnglers === 0 || isSubmitting} // Enabled if anglers > 0
+              onClick={handleFormSubmission}
+              startIcon={isSubmitting ? <CircularProgress size={20} /> : null}
+            >
+              {isSubmitting ? "Submitting..." : props.isAdmin ? "Register team (no payment)" : "Go to payment"}
+            </Button>
           ) : (
             <h3>Submitted!</h3>
           )}

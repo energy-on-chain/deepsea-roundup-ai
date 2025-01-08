@@ -23,30 +23,6 @@ const flattenObjectWithPrefix = (obj, prefix = '') => {
 
 // Endpoints
 module.exports = ({ clientUrl, serverUrl, stripe, webhookSecret, redisClient }) => {
-
-  const registrationGetPastTeamNameList = async (req, res) => {
-    console.log('In api/registration_get_past_team_name_list...');
- 
-    try {
-      const year = req.params.year;
-      const db = getFirestore();
-      const { teamTableNameList } = req.body; // Expecting an array of table names
-      let allTeamNames = new Set();
-
-      for (const tableName of teamTableNameList) {
-        const snapshot = await db.collection(tableName).get();
-        snapshot.forEach(doc => {
-          allTeamNames.add(doc.data().teamName);
-        });
-      }
-
-      // Convert Set to array and send response
-      res.json({ teamNames: Array.from(allTeamNames) });
-    } catch (error) {
-      console.error("Error fetching past team names: ", error);
-      res.status(500).json({ error: "Internal Server Error" });
-    }
-  };
   
   const registrationCheckoutSession = async (req, res) => {
     console.log('In api/registration_checkout_session...');
@@ -221,6 +197,7 @@ module.exports = ({ clientUrl, serverUrl, stripe, webhookSecret, redisClient }) 
         ...angler,
         hasCheckedIn: false,
         tableName,
+        sponsorName: "None",
         registrationFee: angler.ageBracket === "Adult" ? metadata.adultFee : metadata.juniorFee,
         email: customerDetails.email || null,
         phone: customerDetails.phone || null,
@@ -293,11 +270,163 @@ module.exports = ({ clientUrl, serverUrl, stripe, webhookSecret, redisClient }) 
     }
   };  
 
-  const registrationGetNumberOfRegisteredTeams = async (req, res) => {
+  const registrationByAdmin = async (req, res) => {
+    console.log('In api/registration_by_admin...');
+  
+    const db = getFirestore();
+    const bucket = getStorage().bucket();
+  
+    try {
+      // Extract and parse formData
+      const metaDataObject = JSON.parse(req.body.metaDataObject); // JSON metadata sent in the form
+      const { type, year, tableName, email, phone } = metaDataObject;
+  
+      if (type === "angler") {
+        console.log("Handling angler case...");
+        const { anglerDetails, adultFee, juniorFee } = metaDataObject;
+  
+        for (const angler of anglerDetails) {
+          const anglerData = {
+            ...angler,
+            hasCheckedIn: false,
+            tableName,
+            sponsorName: "None",
+            registrationFee: angler.ageBracket === "Adult" ? adultFee : juniorFee,
+            email: email || "Admin Registered",
+            phone: phone || "Admin Registered",
+            registrationTimestamp: new Date().toISOString(),
+            paymentStatus: "Admin Registered",
+          };
+  
+          try {
+            const docRef = await db.collection(`anglers${year}`).add(anglerData);
+            await docRef.update({ anglerId: docRef.id });
+            console.log(`Angler ${angler.anglerName} added with ID: ${docRef.id}`);
+          } catch (error) {
+            console.error(`Error adding angler ${angler.anglerName}:`, error);
+          }
+        }
+      } else if (type === "sponsor") {
+        console.log("Handling sponsor case...");
+        const { sponsorName, selectedTier, selectedSponsorships, totalFee } = metaDataObject;
+  
+        // Handle logo upload
+        let logoUrl = null;
+        if (req.file) {
+          const buffer = req.file.buffer;
+          const sanitizedFilename = `${uuidv4()}-${req.file.originalname.replace(/\s+/g, '-')}`;
+          const fileUpload = bucket.file(sanitizedFilename);
+  
+          try {
+            await fileUpload.save(buffer, {
+              metadata: {
+                contentType: req.file.mimetype,
+              },
+            });
+            logoUrl = `https://storage.googleapis.com/${bucket.name}/${sanitizedFilename}`;
+            console.log(`Sponsor logo uploaded to URL: ${logoUrl}`);
+          } catch (error) {
+            console.error(`Error uploading sponsor logo:`, error);
+          }
+        }
+  
+        const sponsorData = {
+          sponsorName,
+          tableName,
+          selectedTier,
+          selectedSponsorships,
+          totalFee,
+          logoUrl,
+          email: email || "Admin Registered",
+          phone: phone || "Admin Registered",
+          registrationTimestamp: new Date().toISOString(),
+          paymentStatus: "Admin Registered",
+        };
+  
+        try {
+          const docRef = await db.collection(`sponsors${year}`).add(sponsorData);
+          await docRef.update({ sponsorId: docRef.id });
+          console.log(`Sponsor ${sponsorName} added with ID: ${docRef.id}`);
+        } catch (error) {
+          console.error(`Error adding sponsor ${sponsorName}:`, error);
+        }
+      } else {
+        throw new Error("Invalid registration type.");
+      }
+  
+      res.status(200).json({ message: 'Registration successful' });
+    } catch (error) {
+      console.error('Error in registrationByAdmin:', error);
+      res.status(500).json({ error: 'Failed to process registration' });
+    }
+  };  
+
+  const registrationGetPastTeamNameList = async (req, res) => {
+    console.log('In api/registration_get_past_team_name_list...');
+ 
     try {
       const year = req.params.year;
       const db = getFirestore();
-      const snapshot = await db.collection(`teams${year}`).get();
+      const { teamTableNameList } = req.body; // Expecting an array of table names
+      let allTeamNames = new Set();
+
+      for (const tableName of teamTableNameList) {
+        const snapshot = await db.collection(tableName).get();
+        snapshot.forEach(doc => {
+          allTeamNames.add(doc.data().teamName);
+        });
+      }
+
+      // Convert Set to array and send response
+      res.json({ teamNames: Array.from(allTeamNames) });
+    } catch (error) {
+      console.error("Error fetching past team names: ", error);
+      res.status(500).json({ error: "Internal Server Error" });
+    }
+  };
+
+  const registrationGetNumberOfRegisteredSponsors = async (req, res) => {
+    console.log('In api/registration_get_number_of_registered_sponsors')
+    try {
+      const year = req.params.year;
+      const db = getFirestore();
+      console.log('year', year)
+      const snapshot = await db.collection(`sponsors${year}`).get();
+      const totalSponsors = snapshot.size; // Count the number of documents
+      console.log('returning num sponsors:', totalSponsors)
+      res.json({ totalSponsors });
+    } catch (error) {
+      console.error("Error fetching total registered sponsors: ", error);
+      res.status(500).json({ error: "Internal Server Error" });
+    }
+  };
+
+  const registrationGetTotalSponsorDonationsCollected = async (req, res) => {
+    console.log('In api/registration_get_total_sponsor_donations_collected')
+    try {
+      const year = req.params.year;
+      const db = getFirestore();
+      const snapshot = await db.collection(`sponsors${year}`).get();
+  
+      let totalDonationFees = 0;
+      snapshot.forEach(doc => {
+        totalDonationFees += doc.data().totalFee || 0;
+      });
+  
+      console.log('sponsor donation:', totalDonationFees)
+      res.json({ totalDonationFees });
+    } catch (error) {
+      console.error("Error fetching total sponsor donations collected: ", error);
+      res.status(500).json({ error: "Internal Server Error" });
+    }
+  };
+
+  const registrationGetNumberOfRegisteredTeams = async (req, res) => {
+    console.log('In api/registraiton_get_number_of_registered_teams')
+    try {
+      const year = req.params.year;
+      const db = getFirestore();
+      const snapshot = await db.collection(`anglers${year}`).get();
       const totalTeams = snapshot.size; // Count the number of documents
       res.json({ totalTeams });
     } catch (error) {
@@ -307,10 +436,11 @@ module.exports = ({ clientUrl, serverUrl, stripe, webhookSecret, redisClient }) 
   };
 
   const registrationGetNumberOfCheckedInTeams = async (req, res) => {
+    console.log('In api/registraiton_get_number_of_checked_in_teams')
     try {
       const year = req.params.year;
       const db = getFirestore();
-      const snapshot = await db.collection(`teams${year}`).where('hasCheckedIn', '==', true).get();
+      const snapshot = await db.collection(`anglers${year}`).where('hasCheckedIn', '==', true).get();
       const checkedInTeams = snapshot.size; // Count the number of documents where hasCheckedIn is true
       res.json({ checkedInTeams });
     } catch (error) {
@@ -319,35 +449,19 @@ module.exports = ({ clientUrl, serverUrl, stripe, webhookSecret, redisClient }) 
     }
   };
   
-  const registrationGetTotalFeesCollected = async (req, res) => {
-    try {
-      const year = req.params.year;
-      const db = getFirestore();
-      const snapshot = await db.collection(`teams${year}`).get();
-  
-      let totalFees = 0;
-      snapshot.forEach(doc => {
-        totalFees += doc.data().totalFeePaidAtCheckout || 0;
-      });
-  
-      res.json({ totalFees });
-    } catch (error) {
-      console.error("Error fetching total fees collected: ", error);
-      res.status(500).json({ error: "Internal Server Error" });
-    }
-  };
-  
   const registrationGetTotalRegistrationFeesCollected = async (req, res) => {
+    console.log('In api/registraiton_get_total_registration_fees_collected')
     try {
       const year = req.params.year;
       const db = getFirestore();
-      const snapshot = await db.collection(`teams${year}`).get();
+      const snapshot = await db.collection(`anglers${year}`).get();
   
       let totalRegistrationFees = 0;
       snapshot.forEach(doc => {
         totalRegistrationFees += doc.data().registrationFee || 0;
       });
   
+      console.log('Returning total registration fees collected:', totalRegistrationFees)
       res.json({ totalRegistrationFees });
     } catch (error) {
       console.error("Error fetching total registration fees collected: ", error);
@@ -355,38 +469,16 @@ module.exports = ({ clientUrl, serverUrl, stripe, webhookSecret, redisClient }) 
     }
   };
   
-  const registrationGetTotalAddOnFeesCollected = async (req, res) => {
-    try {
-      const year = req.params.year;
-      const db = getFirestore();
-      const snapshot = await db.collection(`teams${year}`).get();
-  
-      let totalAddOnFees = 0;
-      snapshot.forEach(doc => {
-        const addOns = doc.data();
-        Object.keys(addOns).forEach(key => {
-          if (addOns[key] && addOns[key].costOfPurchase) {
-            totalAddOnFees += addOns[key].costOfPurchase;
-          }
-        });
-      });
-  
-      res.json({ totalAddOnFees });
-    } catch (error) {
-      console.error("Error fetching total add-on fees collected: ", error);
-      res.status(500).json({ error: "Internal Server Error" });
-    }
-  };
-  
   return {
-    registrationGetPastTeamNameList,
     registrationCheckoutSession,
     registrationWebhook,
+    registrationByAdmin,
+    registrationGetPastTeamNameList,
+    registrationGetNumberOfRegisteredSponsors,
+    registrationGetTotalSponsorDonationsCollected,
     registrationGetNumberOfRegisteredTeams,
     registrationGetNumberOfCheckedInTeams,
-    registrationGetTotalFeesCollected,
     registrationGetTotalRegistrationFeesCollected,
-    registrationGetTotalAddOnFeesCollected,
     upload
   };
 };

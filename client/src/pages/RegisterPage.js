@@ -104,7 +104,7 @@ function RegisterPage(props) {
 
         const currentTime = new Date().getTime();
         console.log('currentTime', currentTime)
-        console.log('config value', registrationConfig.CONFIG_REGISTRATION_EARLYBIRD_CUTOFF_IN_LOCAL_TIME_IN_MS)
+        console.log('config value', registrationConfig)
         if (currentTime > registrationConfig.CONFIG_REGISTRATION_EARLYBIRD_CUTOFF_IN_LOCAL_TIME_IN_MS){
           setIsEarlyBird(false);
         } else {

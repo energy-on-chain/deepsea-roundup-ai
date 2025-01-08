@@ -4,6 +4,7 @@ import { InputLabel, Button, Dialog, DialogContent, DialogTitle, IconButton, Sta
 import CloseIcon from "@mui/icons-material/Close";
 import 'react-toastify/dist/ReactToastify.css';
 import { toast } from 'react-toastify';
+import dayjs from 'dayjs';
 
 const DeleteCatchModal = (props) => {
   const { year } = useParams();
@@ -64,11 +65,20 @@ const DeleteCatchModal = (props) => {
   };
 
   const formatLocalDateTime = (utcDateTime) => {
-    const dateObj = new Date(utcDateTime);
-    const localDate = dateObj.toLocaleDateString(); // Convert to local date string
-    const localTime = dateObj.toLocaleTimeString(); // Convert to local time string
-    return { localDate, localTime };
-  };
+    if (!utcDateTime || typeof utcDateTime !== 'string') {
+      return { localDate: "N/A", localTime: "N/A" };
+    }
+  
+    const parsedDate = dayjs(utcDateTime);
+    if (!parsedDate.isValid()) {
+      return { localDate: "N/A", localTime: "N/A" };
+    }
+  
+    return {
+      localDate: parsedDate.format('MMM D, YYYY'),
+      localTime: parsedDate.format('hh:mm A'),
+    };
+  };  
 
   return (
     <div>
@@ -81,8 +91,9 @@ const DeleteCatchModal = (props) => {
                 <div>
                   <InputLabel id="catch-id-label"><strong>Catch ID:</strong>  {catchInfo["catchId"]}</InputLabel>
                   <InputLabel id="species-label"><strong>Species:</strong>  {catchInfo["species"]}</InputLabel>
-                  <InputLabel id="species-type-label"><strong>Type:</strong>  {catchInfo["speciesType"]}</InputLabel>
-                  <InputLabel id="name-label"><strong>Team:</strong>  {catchInfo["teamName"]}</InputLabel>
+                  <InputLabel id="species-type-label"><strong>Division:</strong>  {catchInfo["division"]}</InputLabel>
+                  <InputLabel id="species-type-label"><strong>Type:</strong>  {catchInfo["type"]}</InputLabel>
+                  <InputLabel id="name-label"><strong>Angler:</strong>  {catchInfo["anglerName"]}</InputLabel>
                   <InputLabel id="length-label"><strong>Length:</strong>  {catchInfo["length"]} in</InputLabel>
                   <InputLabel id="girth-label"><strong>Girth:</strong>  {catchInfo["girth"]} in</InputLabel>
                   <InputLabel id="weight-label"><strong>Weight:</strong>  {catchInfo["weight"]} lbs</InputLabel>

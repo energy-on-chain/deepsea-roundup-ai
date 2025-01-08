@@ -8,7 +8,7 @@ exports.getRegistrantCountForHomepage = async (req, res) => {
 
     let counter = 0;
     const db = getFirestore();
-    const snapshot = await db.collection(`teams${year}`).get(); 
+    const snapshot = await db.collection(`anglers${year}`).get(); 
 
     // Count number of teams
     snapshot.forEach(() => counter++);
@@ -36,7 +36,7 @@ exports.getCatchCountForHomepage = async (req, res) => {
     // Filter catches based on speciesType
     snapshot.forEach(doc => {
       const data = doc.data();
-      if (speciesTypeList.includes(data.speciesType)) {
+      if (speciesTypeList.includes(data.type)) {
         counter++;
       }
     });

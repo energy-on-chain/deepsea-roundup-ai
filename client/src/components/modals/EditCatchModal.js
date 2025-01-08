@@ -43,7 +43,7 @@ const EditCatchModal = (props) => {
         setCatchPhotoUrl(props.editInfo.catchPhoto);
 
         const speciesMatch = config.catchConfig.CONFIG_CATCHES_SPECIES_LIST.find(
-          (species) => species.label === props.editInfo.species
+          (species) => species.species === props.editInfo.species
         );
         setSpeciesConfig(speciesMatch || {});
       }
@@ -176,8 +176,8 @@ const EditCatchModal = (props) => {
           <Stack spacing={2} margin={2}>
             
             <InputLabel><strong>Species: </strong>{props.editInfo.species}</InputLabel>
-            <InputLabel><strong>Type: </strong>{props.editInfo.speciesType}</InputLabel>
-            <InputLabel><strong>Caught By: </strong>{props.editInfo.teamName}</InputLabel>
+            <InputLabel><strong>Type: </strong>{props.editInfo.type}</InputLabel>
+            <InputLabel><strong>Caught By: </strong>{props.editInfo.anglerName}</InputLabel>
 
             {/* DateTime */}
             {speciesConfig?.dateTimeIsRequired &&
@@ -190,6 +190,17 @@ const EditCatchModal = (props) => {
                   maxDate={dayjs(day2)}
                 />
               </LocalizationProvider>
+            }
+
+            {/* Weight */}
+            {speciesConfig?.weightIsRequired &&
+              <TextField
+                type="number"
+                label="Weight (by 1/10 lb)"
+                value={weight || ''}
+                onChange={handleWeightSelection}
+                InputProps={{ inputProps: { step: 0.1, min: 0.1 } }}
+              />
             }
 
             {/* Length */}
@@ -211,17 +222,6 @@ const EditCatchModal = (props) => {
                 value={girth || ''}
                 onChange={(e) => setGirth(e.target.value)}
                 InputProps={{ inputProps: { step: 0.125, min: 0.125 } }}
-              />
-            }
-
-            {/* Weight */}
-            {speciesConfig?.weightIsRequired &&
-              <TextField
-                type="number"
-                label="Weight (by 1/10 lb)"
-                value={weight || ''}
-                onChange={handleWeightSelection}
-                InputProps={{ inputProps: { step: 0.1, min: 0.1 } }}
               />
             }
 

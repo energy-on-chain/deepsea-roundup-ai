@@ -20,12 +20,15 @@ const AddCatchModal = (props) => {
   const [day2, setDay2] = useState();
   const [today, setToday] = useState();
 
-  const [teamId, setTeamId] = useState();
-  const [teamName, setTeamName] = useState();
+  const [anglerId, setAnglerId] = useState();
+  const [anglerName, setAnglerName] = useState();
   const [numCatches, setNumCatches] = useState(0);
-  const [teamIsSelected, setTeamIsSelected] = useState(false);
-  const [registeredTeamList, setRegisteredTeamList] = useState([]);
-  const [registeredTeamNameList, setRegisteredTeamNameList] = useState([]);
+  const [anglerIsSelected, setAnglerIsSelected] = useState(false);
+  const [anglerDivision, setAnglerDivision] = useState(null);
+  const [anglerAgeBracket, setAnglerAgeBracket] = useState(null);
+  const [anglerBoatName, setAnglerBoatName] = useState(null);
+  const [registeredAnglerList, setRegisteredAnglerList] = useState([]);
+  const [registeredAnglerNameList, setRegisteredAnglerNameList] = useState([]);
   const [catchData, setCatchData] = useState([]);
   const [speciesList, setSpeciesList] = useState([]);
   const [isSubmitting, setIsSubmitting] = useState(false);  // New state to track submission
@@ -52,30 +55,30 @@ const AddCatchModal = (props) => {
         ? process.env.REACT_APP_SERVER_URL_PRODUCTION
         : process.env.REACT_APP_SERVER_URL_STAGING;
 
-      fetch(`${apiUrl}/api/${year}/admin_get_database_list`, {    // get list of registered teams
+      fetch(`${apiUrl}/api/${year}/admin_get_database_list`, {    // get list of registered anglers
         method: 'POST',    
         headers: {
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify({tableName: `teams${year}`})
+        body: JSON.stringify({tableName: `anglers${year}`})
       })
       .then(res => res.json())
       .then(data => {
         var tempList = [];
         var tempNameList = [];
-        Object.keys(data).map((teamKey, i) => {
+        Object.keys(data).map((anglerKey, i) => {
           let tempObject = {};
           let tempNameObject = {};
-          tempObject[teamKey] = data[teamKey]
-          tempNameObject["teamKey"] = teamKey;
-          tempNameObject["teamData"] = data[teamKey];
-          tempNameObject["label"]= data[teamKey].teamName;
+          tempObject[anglerKey] = data[anglerKey]
+          tempNameObject["anglerKey"] = anglerKey;
+          tempNameObject["anglerData"] = data[anglerKey];
+          tempNameObject["label"]= data[anglerKey].anglerName;
           tempList.push(tempObject);
           tempNameList.push(tempNameObject);
         })
 
-        setRegisteredTeamList(tempList);
-        setRegisteredTeamNameList(tempNameList);
+        setRegisteredAnglerList(tempList);
+        setRegisteredAnglerNameList(tempNameList);
         setToday(props.today);
         setDay1(props.startDate);
         setDay2(props.endDate);
@@ -93,11 +96,11 @@ const AddCatchModal = (props) => {
   };
 
   const handleClose = () => {
-    setRegisteredTeamList([]);
-    setTeamId();
-    setTeamName();
-    setTeamId();
-    setTeamIsSelected(false);
+    setRegisteredAnglerList([]);
+    setAnglerId();
+    setAnglerName();
+    setAnglerId();
+    setAnglerIsSelected(false);
     setNumCatches(0);
     setCatchData([]);
     setIsSubmitting(false);
@@ -117,8 +120,8 @@ const AddCatchModal = (props) => {
   
     catchData.forEach((entry, i) => {
   
-      if (!entry.teamId) {
-        toast.warning(`Please select a team for catch#${i + 1}`);
+      if (!entry.anglerId) {
+        toast.warning(`Please select a angler for catch#${i + 1}`);
         inputIsValid = false;
       }
   
@@ -157,6 +160,9 @@ const AddCatchModal = (props) => {
   };
   
   const handleChangeNumberOfCatches = (e) => {
+
+    const currentDateTime = dayjs().toISOString(); // Get the current date and time in ISO format
+
     setNumCatches(e.target.value);
     if (e.target.value > 0) {
       const catchDataList = [];
@@ -164,11 +170,12 @@ const AddCatchModal = (props) => {
         catchDataList.push(
           {
             id: i,
-            teamId: teamId,
-            teamName: teamName,
-            speciesType: "",
+            anglerId: anglerId,
+            anglerName: anglerName,
             species: "",
-            dateTime: undefined,
+            division: anglerDivision,
+            type: "",
+            dateTime: currentDateTime,
             length: 0,
             girth: 0,
             weight: 0,
@@ -188,10 +195,12 @@ const AddCatchModal = (props) => {
     console.log(catchEntry);
 
     let points = 0;
-    const { pointsCalculationMethod, weight, length } = catchEntry;
+    const { pointsCalculationMethod, weight, length, species } = catchEntry;
   
     if (pointsCalculationMethod === "flat") {
-      points = catchEntry.points;  // Assume points are predefined
+      let filteredSpeciesList = speciesList.filter((species) => species.division === anglerDivision) 
+      let speciesInfo = filteredSpeciesList.find((element) => element.species === species);
+      points = speciesInfo.points;  // Assume points are predefined
     } else if (pointsCalculationMethod.includes("weight")) {
       if (pointsCalculationMethod === "weightRoundUp") {
         points = Math.ceil(weight);
@@ -213,51 +222,61 @@ const AddCatchModal = (props) => {
     return points;
   };  
 
-  const handleTeamSelection = (event, value) => {
-    setTeamId(value["teamKey"]);
-    setTeamName(value["teamData"]["teamName"]);
-    setTeamIsSelected(true);
-  
-    let updatedCatchData = catchData.map(catchEntry => ({
-      ...catchEntry,
-      teamId: value["teamKey"],
-      teamName: value["teamData"]["teamName"]
-    }));
-  
-    setCatchData(updatedCatchData);
-  };
+  const handleAnglerSelection = (event, value) => {
+    if (value) {
+      setAnglerId(value["anglerKey"]);
+      setAnglerName(value["anglerData"]["anglerName"]);
+      setAnglerDivision(value["anglerData"]["division"]); // Store the angler's division
+      setAnglerAgeBracket(value["anglerData"]["ageBracket"]); // Store the angler's division
+      setAnglerBoatName(value["anglerData"]["boatName"]); 
+      setAnglerIsSelected(true);
+    
+      let updatedCatchData = catchData.map(catchEntry => ({
+        ...catchEntry,
+        anglerId: value["anglerKey"],
+        anglerName: value["anglerData"]["anglerName"],
+      }));
+    
+      setCatchData(updatedCatchData);
+    } else {
+      setAnglerDivision(null); // Reset division if no angler is selected
+      setAnglerAgeBracket(null);
+      setAnglerBoatName(null);
+      setAnglerIsSelected(false);
+    }
+  };  
 
-  const handleSpeciesSelection = (event, value) => {
+  const handleSpeciesSelection = (event, value, index) => {
+    if (!value) return;
+  
     let newCatchData = [...catchData];
-    let index = parseInt(event.target.id.replace("select-angler-species-box-", "")[0]);
+
+    const filteredSpeciesList = speciesList.filter((species) => species.division === anglerDivision) 
+    const speciesInfo = filteredSpeciesList.find((species) => species.species === value.label);
+    // const speciesInfo = speciesList.find((species) => species.species === value.label);
   
-    let defaultPoints = handlePointsCalculation({...value, weight: 0, length: 0, girth: 0});
-  
-    newCatchData[index] = {
-      ...newCatchData[index],
-      species: value["label"],
-      speciesType: value["category"],
-      dateTime: value["dateTimeIsRequired"] ? null : dayjs(),  // Set to null if required, else to current dateTime
-      length: 0,  // Reset these values
-      girth: 0,   // Reset these values
-      weight: 0,  // Reset these values
-      catchPhoto: null,
-      catchPhotoPreview: null,
-      pointsCalculationMethod: value["pointsCalculationMethod"],
-      points: defaultPoints,
-      weightIsRequired: value["weightIsRequired"],
-      lengthIsRequired: value["lengthIsRequired"],
-      girthIsRequired: value["girthIsRequired"],
-      dateTimeIsRequired: value["dateTimeIsRequired"],
-      photoIsRequired: value["photoIsRequired"],
-    };
+    if (speciesInfo) {
+      newCatchData[index] = {
+        ...newCatchData[index],
+        species: speciesInfo.species,
+        division: speciesInfo.division,
+        type: speciesInfo.type,
+        pointsCalculationMethod: speciesInfo.pointsCalculationMethod,
+        weightIsRequired: speciesInfo.weightIsRequired,
+        lengthIsRequired: speciesInfo.lengthIsRequired,
+        girthIsRequired: speciesInfo.girthIsRequired,
+        dateTimeIsRequired: speciesInfo.dateTimeIsRequired,
+        photoIsRequired: speciesInfo.photoIsRequired,
+      };
+    }
   
     setCatchData(newCatchData);
-  };
+  };  
   
   const handleDateTimeSelection = (index, event) => {
     let newCatchData = [...catchData];
     newCatchData[index].dateTime = event ? event.toISOString() : null;  // Use event to set the date or null
+    newCatchData[index].points = handlePointsCalculation(newCatchData[index]);
     setCatchData(newCatchData);
   }
 
@@ -333,16 +352,23 @@ const AddCatchModal = (props) => {
           <Grid item xs={12} sm={4} md={4} lg={4} xl={4}>
             <Autocomplete
               disablePortal
-              id={"select-angler-species-box-" + index}
-              value={(catchData[index].species) || null}
-              options={speciesList}
-              groupBy={(option) => option.category}
+              id={`select-angler-species-box-${index}`}
+              value={catchData[index]?.species || null}
+              options={speciesList
+                .filter((species) => anglerDivision === null || species.division === anglerDivision) // Filter by division
+                .map((species) => ({
+                  label: species.species,
+                  type: species.type,
+                  division: species.division,
+                }))
+              }
+              groupBy={(option) => option.type}
               renderInput={(params) => <TextField {...params} label="Select species" />}
-              onChange={handleSpeciesSelection}
+              onChange={(event, value) => handleSpeciesSelection(event, value, index)}
             />
           </Grid>
           <Grid item xs={12} sm={4} md={4} lg={4} xl={4}>
-            { catchData[index].speciesType && <InputLabel>Species Type: {catchData[index].speciesType}</InputLabel> }
+            { catchData[index].type && <InputLabel>Species Type: {catchData[index].type}</InputLabel> }
           </Grid>
           <Grid item xs={12} sm={4} md={4} lg={4} xl={4}>
             { catchData[index].points ? (
@@ -492,10 +518,11 @@ const AddCatchModal = (props) => {
   
       // Append each catch's data and photo (if present) to FormData
       catchData.forEach((item, index) => {
-        formData.append(`catchData[${index}][teamId]`, item.teamId);
-        formData.append(`catchData[${index}][teamName]`, item.teamName);
-        formData.append(`catchData[${index}][speciesType]`, item.speciesType);
+        formData.append(`catchData[${index}][anglerId]`, item.anglerId);
+        formData.append(`catchData[${index}][anglerName]`, item.anglerName);
         formData.append(`catchData[${index}][species]`, item.species);
+        formData.append(`catchData[${index}][division]`, item.division);
+        formData.append(`catchData[${index}][type]`, item.type);
         // Check if dateTime is a valid Day.js object before calling toISOString()
         formData.append(
           `catchData[${index}][dateTime]`,
@@ -555,17 +582,21 @@ const AddCatchModal = (props) => {
         <DialogContent>
         {/* <DialogContent style={{ height: '200px', overflowY: 'auto' }}> */}
             <Stack xs spacing={2} margin={2}>
-              <InputLabel required id="angler-label">Select team</InputLabel>
+              <InputLabel required id="angler-label">Select angler</InputLabel>
               <Autocomplete
                 disablePortal
                 id="select-angler-autocomplete-box"
-                options={registeredTeamNameList}
-                renderInput={(params) => <TextField {...params} label="Team name"/>}
-                onChange={handleTeamSelection}
+                options={registeredAnglerNameList}
+                renderInput={(params) => <TextField {...params} label="Angler name"/>}
+                onChange={handleAnglerSelection}
               />
 
-            {teamIsSelected && (
+            {anglerIsSelected && (
               <>
+                <InputLabel id="angler-division-label"><strong>Division:</strong>  {anglerDivision}</InputLabel>
+                <InputLabel id="angler-division-label"><strong>Age Bracket:</strong>  {anglerAgeBracket}</InputLabel>
+                <InputLabel id="angler-boat-name-label"><strong>Boat Name:</strong>  {anglerBoatName}</InputLabel>
+
                 <InputLabel required id="num-catches-label">Select number of catches to add</InputLabel>
                 <Select labelId="num-catches-label" id="num-catches" value={numCatches} onChange={handleChangeNumberOfCatches}>
                   {[...Array(11).keys()].map(i => <MenuItem key={i} value={i}>{i}</MenuItem>)}

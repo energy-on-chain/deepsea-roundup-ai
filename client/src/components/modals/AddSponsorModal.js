@@ -17,6 +17,8 @@ const AddSponsorModal = (props) => {
   const [isSubmitted, setIsSubmitted] = useState(false);   // Track if form has been submitted successfully
 
   const [sponsorName, setSponsorName] = useState('');
+  const [email, setEmail] = useState();
+  const [phone, setPhone] = useState();
   const [selectedTier, setSelectedTier] = useState('None');
   const [selectedSponsorships, setSelectedSponsorships] = useState([]);
   const [totalFee, setTotalFee] = useState(0);
@@ -87,8 +89,30 @@ const AddSponsorModal = (props) => {
       uploadButton.value = ''; // Clear the input value
     }
   };  
+
+  const validateEmail = (email) => {
+    return email.match(
+      /^(([^<>()[\]\\.,;:\s@\"]+(\.[^<>()[\]\\.,;:\s@\"]+)*)|(\".+\"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/
+    );
+  };
+
+  const validatePhone = (phone) => {
+    return phone.match(
+      /^(\+?\d{1,2}\s?)?(\(?\d{3}\)?[\s.-]?)?\d{3}[\s.-]?\d{4}$/
+    );
+  };
   
   const validateInput = () => {
+
+    if (props.isAdmin && !validateEmail(email)) {
+      toast.warning(`Valid email address is required.`);
+      return false;
+    };
+
+    if (props.isAdmin && !validatePhone(phone)) {
+      toast.warning(`Valid phone number is required.`);
+      return false;
+    };
 
     if (!sponsorName) {
       toast.warning("You include a sponsor name.");
@@ -110,6 +134,8 @@ const AddSponsorModal = (props) => {
 
   const handleClose = () => {
     setSponsorName('');
+    setEmail();
+    setPhone();
     setSelectedTier('None');
     setSelectedSponsorships([]);
     setTotalFee(0);
@@ -135,17 +161,34 @@ const AddSponsorModal = (props) => {
         apiUrl = process.env.REACT_APP_SERVER_URL_PRODUCTION;
     }
 
-    const metaDataObject = {
-      type: "sponsor",
-      year: props.year,
-      tableName: props.tableName,
-      sponsorName: sponsorName,
-      selectedTier: selectedTier,
-      selectedSponsorships: selectedSponsorships,
-      totalFee: totalFee,
-      tierFeeStructure: config.registrationConfig.CONFIG_SPONSOR_REGISTRATION_TIERS,
-      selectedSponsorshipsFeeStructure: config.registrationConfig.CONFIG_SPONSOR_REGISTRATION_ADDITIONAL_SPONSORSHIPS,
-    };
+    let metaDataObject;
+    if (props.isAdmin) {
+      metaDataObject = {
+        type: "sponsor",
+        year: props.year,
+        tableName: props.tableName,
+        sponsorName: sponsorName,
+        email: email,
+        phone: phone,
+        selectedTier: selectedTier,
+        selectedSponsorships: selectedSponsorships,
+        totalFee: totalFee,
+        tierFeeStructure: config.registrationConfig.CONFIG_SPONSOR_REGISTRATION_TIERS,
+        selectedSponsorshipsFeeStructure: config.registrationConfig.CONFIG_SPONSOR_REGISTRATION_ADDITIONAL_SPONSORSHIPS,
+      };
+    } else {
+      metaDataObject = {
+        type: "sponsor",
+        year: props.year,
+        tableName: props.tableName,
+        sponsorName: sponsorName,
+        selectedTier: selectedTier,
+        selectedSponsorships: selectedSponsorships,
+        totalFee: totalFee,
+        tierFeeStructure: config.registrationConfig.CONFIG_SPONSOR_REGISTRATION_TIERS,
+        selectedSponsorshipsFeeStructure: config.registrationConfig.CONFIG_SPONSOR_REGISTRATION_ADDITIONAL_SPONSORSHIPS,
+      };
+    }
 
     const formData = new FormData();
     formData.append('metaDataObject', JSON.stringify(metaDataObject)); // Append the metaDataObject as a JSON string
@@ -155,26 +198,21 @@ const AddSponsorModal = (props) => {
 
     if (props.isAdmin) { // register as admin, non-payment case
 
-      // FIXME: 
-      // try {
-      //   const response = await fetch(`${apiUrl}/api/${year}/admin_add_team`, {
-      //     method: 'POST',
-      //     body: formData,
-      //   });
-
-      //   if (response.ok) {
-      //     toast.success("Successfully added a new team! Page refreshing...");
-      //     setIsSubmitted(true);
-      //     delayRefresh();
-      //   } else {
-      //     const errorResponse = await response.json(); // Parse JSON response body
-      //     const errorMessage = errorResponse.error || 'Error saving team to database as administrator.';
-      //     throw new Error(errorMessage);
-      //   }
-      // } catch (error) {
-      //   toast.error(`${error}`);
-      //   setIsSubmitting(false); // Re-enable the button if there's an error
-      // }
+      fetch(`${apiUrl}/api/${props.year}/registration_by_admin`, {
+        method: 'POST',
+        body: formData,
+      }).then(res => {
+        if (res.ok) {
+          return res.json();
+        } else {
+          return res.json().then(json => Promise.reject(json));
+        }
+      }).then(({ url }) => {
+        setIsSubmitted(true);
+        window.location.reload();
+      }).catch(e => {
+        console.error(e.error);
+      });
 
     } else {
 
@@ -218,6 +256,27 @@ const AddSponsorModal = (props) => {
                 onChange={(e) => setSponsorName(e.target.value)}
                 fullWidth
               />
+
+              {props.isAdmin && 
+                <>
+                  <TextField
+                  label="Email"
+                  variant="outlined"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  fullWidth
+                  required
+                />
+                <TextField
+                  label="Phone"
+                  variant="outlined"
+                  value={phone}
+                  onChange={(e) => setPhone(e.target.value)}
+                  fullWidth
+                  required
+                />
+                </>
+              }
             </Stack>
             <br/>
 
@@ -347,7 +406,7 @@ const AddSponsorModal = (props) => {
                 onClick={handleSubmit}
                 disabled={!agreedToRules || totalFee === 0}
               >
-                Go to Payment
+                {props.isAdmin ? "Add sponsor (No Stripe)" : "Go to Payment"}
               </Button>
             </Stack>
           </DialogContent>

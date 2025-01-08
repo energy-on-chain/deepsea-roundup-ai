@@ -73,7 +73,7 @@ function HomePage() {
     } = configs.generalConfig;
 
     const {
-      CONFIG_REGISTRATION_CUTOFF_IN_LOCAL_TIME_IN_MS,
+      CONFIG_ANGLER_REGISTRATION_CUTOFF_IN_LOCAL_TIME_IN_MS,
     } = configs.registrationConfig;
 
     const apiUrl = process.env.REACT_APP_NODE_ENV === "staging"
@@ -82,7 +82,7 @@ function HomePage() {
 
     // Check if the current time is past the cutoff, and disable registration if so
     const currentTime = new Date().getTime();
-    if (currentTime > CONFIG_REGISTRATION_CUTOFF_IN_LOCAL_TIME_IN_MS) {
+    if (currentTime > CONFIG_ANGLER_REGISTRATION_CUTOFF_IN_LOCAL_TIME_IN_MS) {
       setIsRegistrationDisabled(true); // Disable the registration button
     }
 
@@ -235,7 +235,7 @@ function HomePage() {
           ))}
           <p style={{color: CONFIG_STYLING_HOME_INFO_TEXT_COLOR}}>
             <strong>{configs.generalConfig.CONFIG_GENERAL_YEAR} Tournament: </strong>
-            <span style={{color: CONFIG_STYLING_HOME_INFO_HIGHLIGHTED_TEXT_COLOR}}> {numTeams} teams </span> /
+            <span style={{color: CONFIG_STYLING_HOME_INFO_HIGHLIGHTED_TEXT_COLOR}}> {numTeams} anglers </span> /
             <span style={{color: CONFIG_STYLING_HOME_INFO_HIGHLIGHTED_TEXT_COLOR}}> {numCatches} {CONFIG_HOME_CATCH_STAT_TYPE}</span> /
             <span style={{color: CONFIG_STYLING_HOME_INFO_HIGHLIGHTED_TEXT_COLOR}}> {formatCurrency(potTotal)} total pot</span>
           </p>

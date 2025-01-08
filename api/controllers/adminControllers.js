@@ -31,9 +31,6 @@ module.exports = ({redisClient}) => {
 
       const { year } = req.params;
       let tableName = req.body.tableName;
-      console.log('initial tableName', tableName);
-      tableName = tableName.replace(/\d+$/, year);
-      console.log('final tableName', tableName);
 
       const db = getFirestore();
       const documentObject = {};
@@ -41,7 +38,25 @@ module.exports = ({redisClient}) => {
       snapshot.forEach(document => {
         documentObject[document.id] = document.data();
       });
-      console.log(documentObject)
+      res.send(documentObject);
+    } catch (e) {
+      res.status(500).json({ error: e.message });
+    }
+  };
+
+  const adminGetAnglerList = async (req, res) => {
+    console.log('In api/admin_get_angler_list...');
+  
+    try {
+
+      const { year } = req.params;
+
+      const db = getFirestore();
+      const documentObject = {};
+      const snapshot = await db.collection(`anglers${year}`).get();
+      snapshot.forEach(document => {
+        documentObject[document.id] = document.data();
+      });
       res.send(documentObject);
     } catch (e) {
       res.status(500).json({ error: e.message });
@@ -54,7 +69,6 @@ module.exports = ({redisClient}) => {
     try {
 
       let tableName = req.body.tableName;
-      console.log('tableName', tableName);
 
       const db = getFirestore();
       const documentObject = {};
@@ -62,411 +76,163 @@ module.exports = ({redisClient}) => {
       snapshot.forEach(document => {
         documentObject[document.id] = document.data();
       });
-      console.log(documentObject)
       res.send(documentObject);
     } catch (e) {
       res.status(500).json({ error: e.message });
     }
   };
   
-  // Teams
-  const adminAddTeam = async (req, res) => {
-    console.log('In api/admin_add_team...');
-  
-    try {
-      const year = req.params.year;
-      // Parse the metaDataObject from the request body
-      console.log(req.body.metaDataObject);
-      const parsedMetaData = JSON.parse(req.body.metaDataObject);
-
-      // Duplicate check
-      const db = getFirestore();
-      const { teamName } = parsedMetaData;  // Get the team name from metadata
-      const teamQuerySnapshot = await db.collection(`teams${year}`).where('teamName', '==', teamName).get();
-      if (!teamQuerySnapshot.empty) {
-        return res.status(400).json({ error: `Team with name "${teamName}" already exists.` });
-      }
-
-      // Flatten specific fields
-      const flattenedMetaData = {
-        ...flattenObjectWithPrefix(parsedMetaData.requiredDropdownFields, 'requiredDropdownFields'),
-        ...flattenObjectWithPrefix(parsedMetaData.nonRequiredStringFields, 'nonRequiredStringFields'),
-        ...flattenObjectWithPrefix(parsedMetaData.requiredStringFields, 'requiredStringFields'),
-        ...flattenObjectWithPrefix(parsedMetaData.nonRequiredDropdownFields, 'nonRequiredDropdownFields'),
-        ...parsedMetaData // Include the rest of the metadata as-is
-      };
-
-      // Process image uploads
-      console.log("Processing images now...");
-      const imageBuffers = {};
-
-      if (req.files.requiredImageUploads) {
-        req.files.requiredImageUploads.forEach((element) => {
-          imageBuffers[element.originalname] = {
-            buffer: element.buffer.toString('base64'), // Convert buffer to base64
-            // originalname: element.originalname,
-            // fieldname: element.fieldname,
-            fieldName: element.fieldName,
-            fileName: element.fileName,
-            fileExtension: element.fileExtension, 
-            mimetype: element.mimetype,
-          };
-        });
-      }
-      
-      if (req.files.imageUploads) {
-        req.files.imageUploads.forEach((element) => {
-          imageBuffers[element.originalname] = {
-            buffer: element.buffer.toString('base64'), // Convert buffer to base64
-            // originalname: element.originalname,
-            // fieldname: element.fieldname,
-            fieldName: element.fieldName,
-            fileName: element.fileName,
-            fileExtension: element.fileExtension, 
-            mimetype: element.mimetype,
-          };
-        });
-      }
-
-      // Prepare metadata for Firebase
-      const metadata = {
-        ...parsedMetaData,
-        imageBuffers, 
-        year: `${year}`
-      };
-
-      // Save the metadata to Firebase and handle images in Google Cloud Storage
-      await processAddTeamFirestore(metadata);
-
-      res.status(200).json({ message: "Team added successfully" });
-      
-    } catch (e) {
-      console.error("Error in adminAddTeam:", e);
-      res.status(500).json({ error: e.message });
-    }
-  };
-
-  const processAddTeamFirestore = async (metadata) => {
-    console.log('In processAddTeamFirestore() function inside adminAddTeam() creating a new team registration record in firebase...');
-
-    const db = getFirestore();
-    const bucket = getStorage().bucket();
-
-    console.log('Metadata:', metadata);
-
-    // Combine addOnProperties and addOnQuantities and add costOfPurchase
-    const combinedAddOns = {};
-    for (const [addOn, properties] of Object.entries(metadata.addOnProperties)) {
-      const quantityPurchased = metadata.addOnQuantities[addOn] || 0;
-      combinedAddOns[addOn] = {
-        ...properties,
-        quantityPurchased,
-        costOfPurchase: quantityPurchased * properties.price, // Calculate cost of purchase
-      };
-    }
-
-    // Flatten required and non-required fields
-    const flattenedFields = {
-      ...metadata.requiredStringFields,
-      ...metadata.requiredIntFields,
-      ...metadata.requiredBooleanFields,
-      ...metadata.requiredDropdownFields,
-      ...metadata.nonRequiredStringFields,
-      ...metadata.nonRequiredIntFields,
-      ...metadata.nonRequiredBooleanFields,
-      ...metadata.nonRequiredDropdownFields,
-    };
-
-    // Handle image uploads using imported field names
-    const requiredImageFields = {};
-    const nonRequiredImageFields = {};
-
-    // Handle required image uploads
-    console.log('metadata.imageBuffers:', metadata.imageBuffers);
-    for (const [originalname, fileData] of Object.entries(metadata.imageBuffers)) {
-      const buffer = Buffer.from(fileData.buffer, 'base64');
-      const sanitizedFilename = originalname.replace(/\s+/g, '-');
-      const filename = `${uuidv4()}-${sanitizedFilename}`;
-      const fileUpload = bucket.file(filename);
-
-      try {
-        await fileUpload.save(buffer, {
-          metadata: {
-            contentType: fileData.mimetype,
-          },
-        });
-
-        const publicUrl = `https://storage.googleapis.com/${bucket.name}/${filename}`;
-
-        // Determine if the image is required or non-required based on fieldname
-        if (fileData.fieldName === 'requiredImageUploads') {
-          requiredImageFields[originalname] = publicUrl;
-          console.log(`Stored required image: ${originalname} at URL: ${publicUrl}`);
-        } else {
-          nonRequiredImageFields[originalname] = publicUrl;
-          console.log(`Stored non-required image: ${originalname} at URL: ${publicUrl}`);
-        }
-      } catch (error) {
-        console.error(`Error storing image ${originalname}:`, error);
-      }
-    }
-
-    // Prepare final metadata without nested objects and without imageBuffers
-    const finalMetadata = {
-      ...flattenedFields,
-      ...metadata, // This still includes non-nested properties like teamTableName, teamName, etc.
-    };
-
-    // Separate each required and non-required image field into its own field
-    for (const [imageName, imageUrl] of Object.entries(requiredImageFields)) {
-      finalMetadata[imageName] = imageUrl;
-    }
-
-    for (const [imageName, imageUrl] of Object.entries(nonRequiredImageFields)) {
-      finalMetadata[imageName] = imageUrl;
-    }
-
-    // Separate each addOnCharge into its own field
-    for (const [addOn, addOnData] of Object.entries(combinedAddOns)) {
-      finalMetadata[addOn] = addOnData;
-    }
-
-    // Exclude original `required...`, `nonRequired...`, `imageBuffers`, and `addOnQuantities`
-    delete finalMetadata.requiredStringFields;
-    delete finalMetadata.requiredIntFields;
-    delete finalMetadata.requiredBooleanFields;
-    delete finalMetadata.requiredDropdownFields;
-    delete finalMetadata.nonRequiredStringFields;
-    delete finalMetadata.nonRequiredIntFields;
-    delete finalMetadata.nonRequiredBooleanFields;
-    delete finalMetadata.nonRequiredDropdownFields;
-    delete finalMetadata.imageBuffers;
-    delete finalMetadata.addOnQuantities;
-    delete finalMetadata.teamTableName;
-    delete finalMetadata.addOnProperties;
-
-    // Add the team document and get the document reference
-    const teamDocRef = await db.collection(`teams${metadata.year}`).add({
-      teamName: finalMetadata.teamName,
-      registrationFee: finalMetadata.registrationFee,
-      hasCheckedIn: finalMetadata.hasCheckedIn,
-      isEarlybird: finalMetadata.isEarlybird,
-      registrationTimestampInLocalTime: new Date().toLocaleString(),
-      ...finalMetadata,  // Save all additional fields including flattened fields and image URLs
-      teamCardholderName: "Admin",
-      teamEmail: "info@customtournamentsolutions.com",
-      teamPaymentStatus: "paid",
-      teamPhone: "+15555555555",
-
-    });
-
-    // Now add the teamId using the newly created doc number in firebase
-    await teamDocRef.update({ teamId: teamDocRef.id });
-
-    console.log('Successfully saved a new team registration record in firebase');
-  };
-
-  const adminEditTeam = async (req, res) => {
-    console.log('In api/admin_edit_team...');
-  
+  // Anglers
+  const adminEditAngler = async (req, res) => {
     try {
       const { year } = req.params;
       const db = getFirestore();
-      const bucket = getStorage().bucket();
-      const { potYear, catchYear, teamId, teamYear, teamName, teamEmail, teamPhone } = req.body;
-      let { hasCheckedIn } = req.body;
-
-      // Duplicate check
-      // const teamQuerySnapshot = await db.collection(`teams${year}`).where('teamName', '==', teamName).get();
-      // if (!teamQuerySnapshot.empty) {
-      //   return res.status(400).json({ error: `Team with name "${teamName}" already exists.` });
-      // }
-
-      // Convert hasCheckedIn back to a boolean
-      hasCheckedIn = (hasCheckedIn === 'true');
   
-      // Get the team document
-      const teamDocRef = db.collection(`teams${year}`).doc(teamId);
-      const teamDoc = await teamDocRef.get();
+      const formData = { ...req.body };
+      formData.hasCheckedIn = formData.hasCheckedIn === true || formData.hasCheckedIn === 'true';
   
-      if (!teamDoc.exists) {
-        return res.status(404).json({ error: 'Team not found' });
+      const { anglerId } = formData;
+      delete formData.anglerId;
+  
+      const anglerDocRef = db.collection(`anglers${year}`).doc(anglerId);
+      const anglerDoc = await anglerDocRef.get();
+  
+      if (!anglerDoc.exists) {
+        return res.status(404).json({ error: 'Angler not found' });
       }
   
-      const teamData = teamDoc.data();
-      const updatedFields = {
-        teamName,
-        teamEmail,
-        teamPhone,
-        hasCheckedIn
-      };
+      const existingAnglerData = anglerDoc.data();
+      const updatedFields = Object.keys(formData).reduce((acc, key) => {
+        if (existingAnglerData[key] !== formData[key]) {
+          acc[key] = formData[key];
+        }
+        return acc;
+      }, {});
   
-      // Handle image replacements
-      const imageBuffers = {};
-      const newImageFields = {};
-
-      if (req.files.newImages) {
-
-        req.files.newImages.forEach((element) => {
-
-          // Delete images that have been replaced
-          let oldImageUrl = teamData[element.originalname];
-          if (oldImageUrl) {
-            try {
-              // await bucket.file(oldImageUrl).delete();
-              const filePath = decodeURIComponent(oldImageUrl.split('/').slice(4).join('/'));
-              bucket.file(filePath).delete();
-              console.log(`Deleted old image: ${filePath}`);
-            } catch (error) {
-              console.error(`Error deleting old image: ${oldImageUrl}`, error);
+      // Update angler document
+      await anglerDocRef.update(formData);
+  
+      // Update catches if there are changes in relevant fields
+      if (Object.keys(updatedFields).length > 0) {
+        const catchesRef = db.collection(`catches${year}`);
+        const snapshot = await catchesRef.where('anglerId', '==', anglerId).get();
+  
+        const updatePromises = [];
+        snapshot.forEach(doc => {
+          const catchData = doc.data();
+          const catchUpdate = {};
+          Object.keys(updatedFields).forEach(key => {
+            if (catchData.hasOwnProperty(key)) {
+              catchUpdate[key] = updatedFields[key];
             }
+          });
+  
+          if (Object.keys(catchUpdate).length > 0) {
+            updatePromises.push(doc.ref.update(catchUpdate));
           }
-
-          // Create buffers for new images
-          imageBuffers[element.originalname] = {
-            buffer: element.buffer.toString('base64'), // Convert buffer to base64
-            fieldName: element.originalname,
-            mimetype: element.mimetype,
-          };
-
-          // Save new images to firebase storage
-          for (const [originalname, fileData] of Object.entries(imageBuffers)) {
-            const buffer = Buffer.from(fileData.buffer, 'base64');
-            const sanitizedFilename = originalname.replace(/\s+/g, '-');
-            const filename = `${uuidv4()}-${sanitizedFilename}`;
-            const fileUpload = bucket.file(filename);
-      
-            try {
-
-              // await fileUpload.save(buffer, {
-              fileUpload.save(buffer, {
-                metadata: {
-                  contentType: fileData.mimetype,
-                },
-              });
-      
-              const publicUrl = `https://storage.googleapis.com/${bucket.name}/${filename}`;
-              newImageFields[originalname] = publicUrl;
-              console.log(`Stored new image: ${originalname} at URL: ${publicUrl}`);
-
-            } catch (error) {
-              console.error(`Error storing image ${originalname}:`, error);
-            }
-          }
-
-        })
+        });
+  
+        await Promise.all(updatePromises);
       }
-
-      // Update the team document with the new data and new image URLs
-      await teamDocRef.update({
-        ...updatedFields,
-        ...newImageFields, // Update the document with new image URLs if available
-      });
-
-      // Update the team name in all matching catches
-      const catchQuerySnapshot = await db.collection(`catches${year}`).where('teamId', '==', teamId).get();
-      const catchUpdatePromises = [];
-      catchQuerySnapshot.forEach(doc => {
-        catchUpdatePromises.push(doc.ref.update({ teamName: teamName }));
-      });
-      await Promise.all(catchUpdatePromises);
-
-      // Update the team name in all matching pots
-      const potQuerySnapshot = await db.collection(`pots${year}`).where('teamId', '==', teamId).get();
-      const potUpdatePromises = [];
-      potQuerySnapshot.forEach(doc => {
-        potUpdatePromises.push(doc.ref.update({ teamName }));
-      });
-      await Promise.all(potUpdatePromises);
-    
-      console.log(`Team ${teamId} updated successfully in ${teamYear} collection`);
+  
+      // Handle pot records updates
+      const potsRef = db.collection(`pots${year}`);
+      
+      // Update pot names if angler or boat name changed
+      if (updatedFields.anglerName || updatedFields.boatName) {
+        const oldName = existingAnglerData.anglerName || existingAnglerData.boatName;
+        const newName = formData.anglerName || formData.boatName;
+        
+        const potSnapshot = await potsRef.where('name', '==', oldName).get();
+        const potUpdatePromises = potSnapshot.docs.map(doc => 
+          doc.ref.update({ name: newName })
+        );
+        await Promise.all(potUpdatePromises);
+      }
+  
+      // Delete pot records if eligibility changed
+      if (formData.ageBracket === 'Junior' || updatedFields.division) {
+        const anglerName = formData.anglerName || existingAnglerData.anglerName;
+        const potSnapshot = await potsRef.where('name', '==', anglerName).get();
+        
+        const potDeletePromises = potSnapshot.docs.map(async doc => {
+          const potData = doc.data();
+          if (potData.totalOffshoreFee > 0 || potData.totalBaySurfFee > 0) {
+            return doc.ref.delete();
+          }
+        });
+        await Promise.all(potDeletePromises);
+      }
+  
       res.sendStatus(200);
-    } catch (e) {
-      console.log("There was an error in admin_edit_team...");
-      console.log(e);
-      res.status(500).json({ error: e.message });
+    } catch (error) {
+      console.error('Error updating angler:', error);
+      res.status(500).json({ error: error.message });
     }
   };
   
-  const adminDeleteTeam = async (req, res) => {
-    console.log('In api/admin_delete_team...');
-  
+  const adminDeleteAngler = async (req, res) => {
     try {
-      const year = req.params.year;
+      const { year } = req.params;
       const db = getFirestore();
-      const bucket = getStorage().bucket();
-      const teamId = req.body.teamId;
-      const teamYear = req.body.teamYear;
-      const catchYear = req.body.catchYear;
-      const potYear = req.body.potYear;
+      const { anglerId, tableName } = req.body;
   
-      // Get the team document
-      const teamDocRef = db.collection(`teams${year}`).doc(teamId);
-      const teamDoc = await teamDocRef.get();
+      const anglerDocRef = db.collection(tableName).doc(anglerId);
+      const anglerDoc = await anglerDocRef.get();
   
-      if (!teamDoc.exists) {
-        return res.status(404).json({ error: 'Team not found' });
+      if (!anglerDoc.exists) {
+        return res.status(404).json({ error: 'Angler not found' });
       }
   
-      const teamData = teamDoc.data();
+      const anglerData = anglerDoc.data();
   
-      // Find all image URLs in the team data
-      const imageFields = Object.values(teamData).filter(value => typeof value === 'string' && value.startsWith('https://storage.googleapis.com/'));
-  
-      // Delete each image from Firebase Storage
-      const deletePromises = imageFields.map(async (imageUrl) => {
-        try {
-          // Extract the file path from the URL (remove the "https://storage.googleapis.com/[bucket_name]/")
-          const filePath = decodeURIComponent(imageUrl.split('/').slice(4).join('/')); // Decoding the path to handle any URL encoding
-          const file = bucket.file(filePath);
-          await file.delete();
-          console.log(`Deleted image: ${filePath}`);
-        } catch (error) {
-          console.error(`Error deleting image ${imageUrl}:`, error);
+      // Handle team pot records if angler has a boat name
+      if (anglerData.boatName) {
+        const anglersSnapshot = await db.collection(tableName)
+          .where('boatName', '==', anglerData.boatName)
+          .get();
+        
+        // If this is the last angler with this boat name
+        if (anglersSnapshot.size <= 1) {
+          const teamPotsSnapshot = await db.collection(`pots${year}`)
+            .where('name', '==', anglerData.boatName)
+            .get();
+          const teamPotDeletePromises = teamPotsSnapshot.docs.map(doc => doc.ref.delete());
+          await Promise.all(teamPotDeletePromises);
         }
-      });
+      }
   
-      // Wait for all image deletions to complete
-      await Promise.all(deletePromises);
+      // Delete angler's individual pot records
+      const potsRef = db.collection(`pots${year}`);
+      const potSnapshot = await potsRef.where('name', '==', anglerData.anglerName).get();
+      const potDeletePromises = potSnapshot.docs.map(doc => doc.ref.delete());
   
-      // Delete the team document
-      await teamDocRef.delete();
-      console.log(`Team ${teamId} deleted successfully from ${teamYear} collection`);
+      // Delete angler's catches
+      const catchesRef = db.collection(`catches${year}`);
+      const catchSnapshot = await catchesRef.where('anglerId', '==', anglerId).get();
+      const catchDeletePromises = catchSnapshot.docs.map(doc => doc.ref.delete());
   
-      // Delete all catches with the specified teamId
-      const catchQuerySnapshot = await db.collection(`catches${year}`).where('teamId', '==', teamId).get();
-      const catchDeletePromises = [];
-      catchQuerySnapshot.forEach(doc => {
-        catchDeletePromises.push(doc.ref.delete());
-      });
-      await Promise.all(catchDeletePromises);
-      console.log(`All catches with teamId ${teamId} deleted successfully from ${catchYear} collection`);
-
-      // Delete all pots with the specified teamId
-      const potQuerySnapshot = await db.collection(`pots${year}`).where('teamId', '==', teamId).get();
-      const potDeletePromises = [];
-      potQuerySnapshot.forEach(doc => {
-        potDeletePromises.push(doc.ref.delete());
-      });
-      await Promise.all(potDeletePromises);
-      console.log(`All pots with teamId ${teamId} deleted successfully from ${potYear} collection`);
-
+      // Delete all records
+      await Promise.all([
+        anglerDocRef.delete(),
+        ...potDeletePromises,
+        ...catchDeletePromises
+      ]);
   
       res.sendStatus(200);
     } catch (e) {
-      console.log("There was an error in delete_team...");
-      console.log(e);
+      console.log('There was an error while deleting an angler...', e);
       res.status(500).json({ error: e.message });
     }
-  }; 
-  
-  const adminGetRegisteredTeamDataForReport = async (req, res) => {
+  };
+
+  const adminGetRegisteredAnglerDataForReport = async (req, res) => {
     console.log('In api/admin_get_registered_team_data_for_report...');
   
     try {
       const year = req.params.year;
       const db = getFirestore();
-      const teamCollection = db.collection(`teams${year}`);  // Assuming the team year is passed in the request body
+      const teamCollection = db.collection(`anglers${year}`);  // Assuming the team year is passed in the request body
       const snapshot = await teamCollection.get();
       
       const teams = {};
@@ -480,6 +246,147 @@ module.exports = ({redisClient}) => {
       res.status(500).json({ error: "Failed to fetch registered team data" });
     }
   };
+
+  // Sponsors
+  const adminEditSponsor = async (req, res) => {
+    console.log('In api/admin_edit_sponsor...');
+    try {
+      const { year } = req.params;
+  
+      const db = getFirestore();
+      const bucket = getStorage().bucket();
+      let { sponsorId, logoUrl: newLogoUrl } = req.body; // Get existing logoUrl from body if provided
+  
+      // Handle cases where sponsorId is an array
+      if (Array.isArray(sponsorId)) {
+        sponsorId = sponsorId[0]; // Use the first value
+      }
+  
+      // Validate sponsorId
+      if (!sponsorId || typeof sponsorId !== 'string') {
+        console.log('Invalid or missing sponsorId:', sponsorId);
+        return res.status(400).json({ error: 'Invalid or missing sponsorId.' });
+      }
+  
+      // Fetch sponsor document
+      const sponsorDocRef = db.collection(`sponsors${year}`).doc(sponsorId);
+      const sponsorDoc = await sponsorDocRef.get();
+  
+      if (!sponsorDoc.exists) {
+        console.log('Sponsor not found.');
+        return res.status(404).json({ error: 'Sponsor not found.' });
+      }
+  
+      const sponsorData = sponsorDoc.data();
+  
+      // Extract updated fields from the request body
+      const updatedFields = { ...req.body };
+      delete updatedFields.sponsorId;
+  
+      // Handle logo file upload, if provided
+      if (req.files?.logo && req.files.logo.length > 0) {
+        const logoFile = req.files.logo[0];
+        const filename = `${uuidv4()}-${logoFile.originalname.replace(/\s+/g, '-')}`;
+        const fileUpload = bucket.file(filename);
+  
+        // Delete the old logo from Firebase Storage if it exists
+        if (sponsorData.logoUrl) {
+          try {
+            const oldFilePath = decodeURIComponent(
+              sponsorData.logoUrl.split('/').slice(4).join('/') // Extract file path from the URL
+            );
+            await bucket.file(oldFilePath).delete();
+            console.log(`Deleted old logo: ${oldFilePath}`);
+          } catch (error) {
+            console.error(`Error deleting old logo: ${sponsorData.logoUrl}`, error);
+          }
+        }
+  
+        // Upload the new logo to Firebase Storage
+        await fileUpload.save(logoFile.buffer, {
+          metadata: { contentType: logoFile.mimetype },
+        });
+  
+        // Generate the public URL for the uploaded file
+        const logoUrl = `https://storage.googleapis.com/${bucket.name}/${filename}`;
+        updatedFields.logoUrl = logoUrl;
+  
+        console.log(`Logo uploaded successfully: ${logoUrl}`);
+      } else {
+        console.log('No new logo file provided.');
+        if (!newLogoUrl && sponsorData.logoUrl) {
+          try {
+            // If no new logo is provided and the current logoUrl exists, delete it
+            const oldFilePath = decodeURIComponent(
+              sponsorData.logoUrl.split('/').slice(4).join('/') // Extract file path from the URL
+            );
+            await bucket.file(oldFilePath).delete();
+            console.log(`Deleted old logo from storage: ${oldFilePath}`);
+            updatedFields.logoUrl = ''; // Clear the logoUrl field
+          } catch (error) {
+            console.error(`Error deleting old logo: ${sponsorData.logoUrl}`, error);
+          }
+        }
+      }
+  
+      // Update the sponsor document
+      await sponsorDocRef.update(updatedFields);
+  
+      console.log(`Sponsor ${sponsorId} updated successfully.`);
+      res.status(200).json({ message: 'Sponsor updated successfully.' });
+    } catch (error) {
+      console.error('Error updating sponsor:', error);
+      res.status(500).json({ error: error.message });
+    }
+  };  
+
+  const adminDeleteSponsor = async (req, res) => {
+    console.log('In api/admin_delete_sponsor...');
+  
+    try {
+      const year = req.params.year;
+      const db = getFirestore();
+      const bucket = getStorage().bucket();
+      const sponsorId = req.body.sponsorId;
+      const tableName = req.body.tableName;
+      const sponsorYear = req.body.sponsorYear;
+
+      // Get the team document
+      const sponsorDocRef = db.collection(tableName).doc(sponsorId);
+      const sponsorDoc = await sponsorDocRef.get();
+  
+      if (!sponsorDoc.exists) {
+        return res.status(404).json({ error: 'Angler not found' });
+      }
+  
+      const sponsorData = sponsorDoc.data();
+  
+      // Delete all sponsor images from firebase storage
+      const imageFields = Object.values(sponsorData).filter(value => typeof value === 'string' && value.startsWith('https://storage.googleapis.com/'));
+      const deletePromises = imageFields.map(async (imageUrl) => {
+        try {
+          // Extract the file path from the URL (remove the "https://storage.googleapis.com/[bucket_name]/")
+          const filePath = decodeURIComponent(imageUrl.split('/').slice(4).join('/')); // Decoding the path to handle any URL encoding
+          const file = bucket.file(filePath);
+          await file.delete();
+          console.log(`Deleted image: ${filePath}`);
+        } catch (error) {
+          console.error(`Error deleting image ${imageUrl}:`, error);
+        }
+      });
+      await Promise.all(deletePromises);    // Wait for all image deletions to complete
+  
+      // Delete the angler document
+      await sponsorDocRef.delete();
+      console.log(`Sponsor ${sponsorId} deleted successfully from ${tableName} collection`);
+  
+      res.sendStatus(200);
+    } catch (e) {
+      console.log("There was an error while deleting a sponsor...");
+      console.log(e);
+      res.status(500).json({ error: e.message });
+    }
+  }; 
   
   // Catches
   const adminAddCatch = async (req, res) => {
@@ -505,7 +412,6 @@ module.exports = ({redisClient}) => {
         const file = req.files.find(file => file.fieldname === `catchPhoto_${index}`);
 
         if (file) {
-          console.log('There is a file!', file);
           const filename = `${uuidv4()}-${file.originalname}`;  // Generate unique filename
           const fileUpload = bucket.file(filename);
 
@@ -520,10 +426,11 @@ module.exports = ({redisClient}) => {
   
         // Save catch data to Firestore, including the catch photo URL if applicable
         const catchDocRef = await db.collection(`catches${year}`).add({
-          teamId: item.teamId,
-          teamName: item.teamName,
-          speciesType: item.speciesType,
+          anglerId: item.anglerId,
+          anglerName: item.anglerName,
           species: item.species,
+          division: item.division,
+          type: item.type,
           dateTime: item.dateTime,
           length: item.length,
           girth: item.girth,
@@ -548,7 +455,6 @@ module.exports = ({redisClient}) => {
   
   const adminEditCatch = async (req, res) => {
     console.log('In api/admin_edit_catch...');
-    console.log('req.files', req.files);
   
     try {
       const year = req.params.year;
@@ -688,24 +594,24 @@ module.exports = ({redisClient}) => {
     }
   };
 
-  const adminGetTotalCatchCountBySpecies = async (req, res) => {
-    console.log('In api/admin_get_total_catch_count_by_species...');
+  const adminGetTotalCatchCountByDivision = async (req, res) => {
+    console.log('In api/admin_get_total_catch_count_by_division...');
     
     try {
       const year = req.params.year;
       const db = getFirestore();
       const catchYear = req.body.catchYear;
-      const speciesType = req.body.speciesType;  // Pass the species type
+      const division = req.body.division;  // Pass the species type
   
-      // Query to get documents where the speciesType matches
-      const snapshot = await db.collection(`catches${year}`).where("speciesType", "==", speciesType).get();
+      // Query to get documents where the division matches
+      const snapshot = await db.collection(`catches${year}`).where("division", "==", division).get();
       
-      const speciesCount = snapshot.size;  // Number of matching documents
-      res.status(200).json({ speciesCount });
+      const divisionCount = snapshot.size;  // Number of matching documents
+      res.status(200).json({ divisionCount });
       
     } catch (error) {
-      console.error("Error getting fish count by species:", error);
-      res.status(500).json({ error: "Failed to get fish count by species" });
+      console.error("Error getting fish count by division:", error);
+      res.status(500).json({ error: "Failed to get fish count by division" });
     }
   };
 
@@ -728,7 +634,6 @@ module.exports = ({redisClient}) => {
   
   const adminEditAnnouncement = async (req, res) => {
     try {
-      console.log("Request Body:", req.body); // Log the request body to verify it's correct
       const year = req.params.year;
       const db = getFirestore();
       const { updatedAnnouncement, announcementYear } = req.body;
@@ -769,60 +674,96 @@ module.exports = ({redisClient}) => {
     try {
       const year = req.params.year;
       const db = getFirestore();
-      const { potYear, teamId, teamName, boardSelections } = req.body;
-  
+      const { potYear, name, boardType, boardSelections } = req.body;
+
       // Validate required fields
-      if (!potYear || !teamId || !teamName || !boardSelections) {
+      if (!potYear || !name || !boardType || !boardSelections) {
         return res.status(400).json({ error: 'Missing required fields.' });
       }
-  
-      // Calculate total fees
-      const totalPotFee = boardSelections.reduce((acc, selection) => acc + selection.totalFee, 0);
-  
-      // Prepare data with individual board fees
+
+      // Initialize board fees with zero values using exact property names
+      const boardFees = {
+        'totalCatch&ReleaseFee': 0,
+        'totalOffshoreFee': 0,
+        'totalBaySurfFee': 0
+      };
+
+      // Calculate total fees and set individual board fees
+      let totalPotFee = 0;
+      boardSelections.forEach(selection => {
+        let boardFeeKey;
+        switch(selection.board) {
+          case 'Catch & Release':
+            boardFeeKey = 'totalCatch&ReleaseFee';
+            break;
+          case 'Offshore':
+            boardFeeKey = 'totalOffshoreFee';
+            break;
+          case 'Bay/Surf':
+            boardFeeKey = 'totalBaySurfFee';
+            break;
+        }
+        boardFees[boardFeeKey] = selection.totalFee;
+        totalPotFee += selection.totalFee;
+      });
+
+      // Create unique potId
+      const potId = `pot_${year}_${Date.now()}`;
+
+      // Prepare pot data matching table properties
       const potData = {
-        teamId,
-        teamName,
-        potYear,
-        boardSelections,  // No need to parse, it's already an object
-        totalPotFee,
-        ...boardSelections.reduce((acc, selection) => {
-          const key = `total${selection.board.replace(/ /g, '')}Fee`;
-          acc[key] = selection.totalFee;
-          return acc;
-        }, {}),
+        potId,          // unique identifier
+        name,           // boat name or angler name
+        board: boardType,
+        ...boardFees,   // individual board fees (with zeros for unused boards)
+        totalPotFee,    // total of all board fees
+        boardSelections: JSON.stringify(boardSelections), // store full selection data
         timestamp: new Date().toISOString(),
       };
-  
+
       // Add pot data to Firestore
-      const potDocRef = await db.collection(`pots${year}`).add(potData);
-  
-      // Update document with potId
-      await potDocRef.update({ potId: potDocRef.id });
-  
+      const potDocRef = await db.collection(`pots${year}`).doc(potId);
+      await potDocRef.set(potData);
+
       res.status(200).json({ message: 'Pot entry added successfully' });
     } catch (error) {
-      console.error('Error in adminAddPot:', error);
-      res.status(500).json({ error: 'Failed to add pot entry. Please try again.' });
+      console.error('Error adding pot entry:', error);
+      res.status(500).json({ error: 'Failed to add pot entry.' });
     }
   };
 
   const adminAddPotCheckForDuplicateEntries = async (req, res) => {
-    const { potYear, teamId } = req.body;
-  
+    console.log('In admin_add_pot_check_for_duplicate_entries...')
+    const { potYear, participantId, boardType } = req.body;
     try {
       const year = req.params.year;
       const db = getFirestore();
-      const snapshot = await db.collection(`pots${year}`).where('teamId', '==', teamId).get();
   
-      if (!snapshot.empty) {
-        return res.status(200).json({ exists: true });
-      } else {
-        return res.status(200).json({ exists: false });
-      }
+      const snapshot = await db.collection(`pots${year}`)
+        .where('name', '==', participantId)
+        .get();
+
+  
+      const exists = snapshot.docs.some(doc => {
+        const data = doc.data();
+        console.log('req.body', req.body)
+        console.log('data returned', data)
+        switch(boardType) {
+          case 'Catch & Release':
+            return data['totalCatch&ReleaseFee'] > 0;
+          case 'Offshore':
+            return data.totalOffshoreFee > 0;
+          case 'Bay/Surf':
+            return data.totalBaySurfFee > 0;
+          default:
+            return false;
+        }
+      });
+  
+      return res.status(200).json({ exists });
     } catch (error) {
-      console.error('Error checking for duplicate teamId:', error);
-      return res.status(500).json({ error: 'Failed to check for duplicate teamId' });
+      console.error('Error checking for duplicate entry:', error);
+      return res.status(500).json({ error: 'Failed to check for duplicate entry' });
     }
   };
   
@@ -830,27 +771,60 @@ module.exports = ({redisClient}) => {
     try {
       const year = req.params.year;
       const db = getFirestore();
-      const { potYear, potId, teamId, teamName, boardSelections } = req.body;
+      const { potId, name, potYear, boardSelections } = req.body;
   
-      // Find the pot entry by teamId and update it
-      const potRef = db.collection(`pots${year}`).doc(potId);
-      await potRef.update({
-        boardSelections,
-        totalPotFee: boardSelections.reduce((acc, selection) => acc + selection.totalFee, 0),
-        ...boardSelections.reduce((acc, selection) => {
-          const key = `total${selection.board.replace(/ /g, '')}Fee`;
-          acc[key] = selection.totalFee;
-          return acc;
-        }, {}),
-        timestamp: new Date().toISOString(),
+      if (!potId) {
+        return res.status(400).json({ error: 'Missing pot ID.' });
+      }
+  
+      // Initialize board fees with zero values
+      const boardFees = {
+        'totalCatch&ReleaseFee': 0,
+        'totalOffshoreFee': 0,
+        'totalBaySurfFee': 0
+      };
+  
+      // Parse boardSelections if it's a string
+      const parsedBoardSelections = typeof boardSelections === 'string' 
+        ? JSON.parse(boardSelections) 
+        : boardSelections;
+  
+      // Calculate total fees and set individual board fees
+      let totalPotFee = 0;
+      parsedBoardSelections.forEach(selection => {
+        let boardFeeKey;
+        switch(selection.board) {
+          case 'Catch & Release':
+            boardFeeKey = 'totalCatch&ReleaseFee';
+            break;
+          case 'Offshore':
+            boardFeeKey = 'totalOffshoreFee';
+            break;
+          case 'Bay/Surf':
+            boardFeeKey = 'totalBaySurfFee';
+            break;
+        }
+        boardFees[boardFeeKey] = selection.totalFee;
+        totalPotFee += selection.totalFee;
       });
+  
+      // Update the document
+      const updateData = {
+        name,
+        ...boardFees,
+        totalPotFee,
+        boardSelections: JSON.stringify(parsedBoardSelections),
+        timestamp: new Date().toISOString(),
+      };
+  
+      await db.collection(`pots${year}`).doc(potId).update(updateData);
   
       res.status(200).json({ message: 'Pot entry updated successfully' });
     } catch (error) {
       console.error('Error updating pot entry:', error);
-      res.status(500).json({ error: 'Failed to update pot entry.' });
+      res.status(500).json({ error: error.message });
     }
-  }; 
+  };
   
   const adminDeletePot = async (req, res) => {
     try {
@@ -870,10 +844,12 @@ module.exports = ({redisClient}) => {
 
   return {
     adminGetDatabaseList,
+    adminGetAnglerList,
     adminGetOldTeamNameList,
-    adminAddTeam,
-    adminEditTeam,
-    adminDeleteTeam,
+    adminEditAngler,
+    adminDeleteAngler,
+    adminEditSponsor,
+    adminDeleteSponsor,
     adminAddCatch,
     adminEditCatch,
     adminDeleteCatch,
@@ -885,8 +861,8 @@ module.exports = ({redisClient}) => {
     adminEditPot,
     adminDeletePot,
     adminGetTotalCatchCount,
-    adminGetTotalCatchCountBySpecies,
-    adminGetRegisteredTeamDataForReport,
+    adminGetTotalCatchCountByDivision,
+    adminGetRegisteredAnglerDataForReport,
     upload
   };
 

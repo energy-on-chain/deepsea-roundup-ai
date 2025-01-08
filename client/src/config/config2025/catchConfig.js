@@ -3,10 +3,9 @@
 /////////////////////////////////////////////////////////////////////////////
 module.exports = {
   CONFIG_CATCHES_STATS_LIST: [
-    "Catch & Release", 
     "Offhsore",
     "Bay/Surf",
-    "Flyfish",
+    "Flyfishing",
     "Kayak"
   ],
   CONFIG_CATCHES_SPECIES_LIST: [

@@ -1,7 +1,7 @@
 import jsPDF from 'jspdf';
 import 'jspdf-autotable';
 import dayjs from 'dayjs';
-import { loadConfigForYear } from '../config/masterConfig'; // Dynamic config loader
+import { loadConfigForYear } from '../config/masterConfig';
 
 const addPageNumbers = (doc) => {
   const pageCount = doc.internal.getNumberOfPages();
@@ -24,13 +24,20 @@ const formatCurrency = (value) => {
 export const generateRegistrationReport = (teams, year, tableProperties, tournamentName) => {
   const doc = new jsPDF('landscape');
   const currentDate = dayjs().format('MMMM D, YYYY h:mm A [CST]');
-
+  
+  // Define consistent margins
+  const margins = {
+    top: 20,
+    left: 10
+  };
+  
+  // Add header only on the first page
   doc.setFontSize(16);
   doc.setFont('helvetica', 'bold');
-  doc.text(`Teams registered for ${tournamentName} as of ${currentDate}`, 10, 10);
+  doc.text(`Anglers registered for ${tournamentName} as of ${currentDate}`, margins.left, margins.top);
 
   // Columns to display in the desired order
-  const selectedColumns = ['teamName', 'teamEmail', 'teamPhone', 'totalFeePaidAtCheckout', 'hasCheckedIn'];
+  const selectedColumns = ['anglerName', 'email', 'phone', 'boatName', 'division', 'ageBracket', 'gender', 'hasCheckedIn'];
 
   // Get headers for the selected columns in the desired order
   const visibleColumns = tableProperties.filter(col => selectedColumns.includes(col.field));
@@ -39,46 +46,52 @@ export const generateRegistrationReport = (teams, year, tableProperties, tournam
   const tableRows = [];
 
   // Sort teams by team name
-  const sortedTeams = Object.values(teams).sort((a, b) => a.teamName.localeCompare(b.teamName));
+  const sortedTeams = Object.values(teams).sort((a, b) => a.anglerName.localeCompare(b.anglerName));
 
   sortedTeams.forEach((team, index) => {
     const teamData = visibleColumns.map(col => {
-      if (col.field === 'totalFeePaidAtCheckout') {
-        return formatCurrency(team[col.field] || 0);  // Format as currency
+      if (col.field === 'registrationFee') {
+        return formatCurrency(team[col.field] || 0);
       }
-      return team[col.field] || '';  // Populate data based on visible columns
+      return team[col.field] || '';
     });
-    tableRows.push([index + 1, ...teamData]);  // Add the numbering column at the start
+    tableRows.push([index + 1, ...teamData]);
   });
 
-  // Insert a numbering column at the beginning of the column headers
+  // Column styles matching the selectedColumns order
+  const columnStyles = {
+    0: { cellWidth: 10 },     // #
+    1: { cellWidth: 40 },     // Angler Name
+    2: { cellWidth: 40 },     // Boat Name
+    3: { cellWidth: 20 },     // Division
+    4: { cellWidth: 20 },     // Gender
+    5: { cellWidth: 20 },     // Age
+    6: { cellWidth: 60 },     // Email
+    7: { cellWidth: 20 },     // Phone
+    8: { cellWidth: 30 },     // Checked-In?
+  };
+
   doc.autoTable({
-    startY: 20,  // Adjust to avoid overlapping with the new header text
-    head: [['#', ...tableColumn]],  // Prepend '#' for the numbering column
+    startY: margins.top + 10,  // Start table below header on first page
+    head: [['#', ...tableColumn]],
     body: tableRows,
     theme: 'striped',
-    styles: { fontSize: 10, halign: 'center', valign: 'middle', overflow: 'linebreak' },  // Center align headers and cells, handle overflow
-    headStyles: { fillColor: '#02133E', textColor: '#ffffff', halign: 'center' },  // Center align headers
-    columnStyles: {
-      0: { cellWidth: 10 },   // #
-      1: { cellWidth: 30 },   // Team Name
-      2: { cellWidth: 80 },  // Email (twice as wide)
-      3: { cellWidth: 30 },   // Phone
-      4: { cellWidth: 30 },   // Total Fee Paid (Currency)
-      5: { cellWidth: 30 },   // Checked-In (last column, smaller width)
-    },
+    styles: { fontSize: 10, halign: 'center', valign: 'middle', overflow: 'linebreak' },
+    headStyles: { fillColor: '#02133E', textColor: '#ffffff', halign: 'center' },
+    columnStyles: columnStyles,
     didDrawPage: function (data) {
-      // Add header to each page
-      doc.setFontSize(16);
-      doc.setFont('helvetica', 'bold');
-      doc.text(`Teams registered for ${tournamentName} as of ${currentDate}`, 10, 10);
+      // No header needed on subsequent pages
+      // Table will start at the top of the page
+      if (data.pageNumber > 1) {
+        data.cursor.y = 10; // Start table at top of page for all pages after the first
+      }
     }
   });
 
   addPageNumbers(doc);
 
   // Save the PDF
-  doc.save(`${tournamentName} ${year} Team Check-In Form.pdf`);
+  doc.save(`${tournamentName} ${year} Angler Check-In Form.pdf`);
 };
 
 export const fetchAndGenerateRegistrationReport = async (year, tournamentName, tableProperties) => {
@@ -99,7 +112,7 @@ export const fetchAndGenerateRegistrationReport = async (year, tournamentName, t
     const response = await fetch(`${apiUrl}/api/${year}/admin_get_registered_team_data_for_report`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ teamYear: config.generalConfig.CONFIG_GENERAL_FIREBASE_TEAMS_TABLE_NAME }), // Use dynamic table name
+      body: JSON.stringify({ teamYear: config.generalConfig.CONFIG_GENERAL_FIREBASE_TEAMS_TABLE_NAME }),
     });
     if (!response.ok) {
       throw new Error(`Error fetching data: ${response.statusText}`);

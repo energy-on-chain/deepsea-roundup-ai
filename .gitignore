@@ -39,3 +39,5 @@ key.pem
 
 # session (redis) database file
 *dump.rdb
+
+.codegpt

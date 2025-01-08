@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import { Button, Dialog, DialogContent, DialogTitle, IconButton, Stack, InputLabel, CircularProgress } from "@mui/material";
 import CloseIcon from "@mui/icons-material/Close";
@@ -6,14 +6,32 @@ import { toast } from 'react-toastify';
 
 const DeletePotModal = (props) => {
   const { year } = useParams();
-  const { potId, teamId, teamName, totalPotFee, boardSelections } = props.deleteInfo || {};
-  const [isSubmitting, setIsSubmitting] = useState(false); // Track submission state
-  const [isSubmitted, setIsSubmitted] = useState(false); // Track if the form is submitted
+  const { potId, name, totalPotFee } = props.deleteInfo || {};
+  const [boardType, setBoardType] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isSubmitted, setIsSubmitted] = useState(false);
+
+  useEffect(() => {
+    if (props.editInfo?.boardSelections) {
+      const boardSelections = JSON.parse(props.editInfo.boardSelections);
+      setBoardType(boardSelections[0]?.board || '');  // Get board type from first selection
+    }
+  }, [props.editInfo]);
+
+  // Parse boardSelections if it exists
+  let parsedBoardSelections = [];
+  try {
+    if (props.deleteInfo?.boardSelections) {
+      parsedBoardSelections = JSON.parse(props.deleteInfo.boardSelections);
+    }
+  } catch (e) {
+    console.error('Error parsing boardSelections:', e);
+  }
 
   const handleClose = () => {
     props.close();
-    setIsSubmitting(false); // Reset submission state when closing
-    setIsSubmitted(false);  // Reset isSubmitted state when closing
+    setIsSubmitting(false);
+    setIsSubmitted(false);
   };
 
   const delayRefresh = () => {
@@ -23,7 +41,7 @@ const DeletePotModal = (props) => {
   };
 
   const handleDelete = async () => {
-    setIsSubmitting(true); // Set the form as submitting
+    setIsSubmitting(true);
     let apiUrl = process.env.REACT_APP_NODE_ENV === "staging"
       ? process.env.REACT_APP_SERVER_URL_STAGING
       : process.env.REACT_APP_SERVER_URL_PRODUCTION;
@@ -32,20 +50,23 @@ const DeletePotModal = (props) => {
       const response = await fetch(`${apiUrl}/api/${year}/admin_delete_pot`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ potId: potId, potYear: props.potYear }),
+        body: JSON.stringify({ 
+          potId: potId, 
+          potYear: props.potYear 
+        }),
       });
 
       if (response.ok) {
         toast.success('Pot entry deleted successfully!');
-        setIsSubmitted(true); // Set the form as submitted after success
-        delayRefresh(); // Refresh the page after the delete action
+        setIsSubmitted(true);
+        delayRefresh();
       } else {
         throw new Error('Error deleting the pot entry.');
       }
     } catch (error) {
       toast.error('Error deleting pot entry.');
     } finally {
-      setIsSubmitting(false); // Reset the isSubmitting state
+      setIsSubmitting(false);
     }
   };
 
@@ -54,6 +75,18 @@ const DeletePotModal = (props) => {
       style: 'currency',
       currency: 'USD',
     }).format(value);
+  };
+
+  const getNameLabel = (boardType) => {
+    switch(boardType) {
+      case 'Catch & Release':
+      case 'Offshore':
+        return 'Team Name';
+      case 'Bay/Surf':
+        return 'Angler Name';
+      default:
+        return 'Name';
+    }
   };
 
   return (
@@ -66,23 +99,42 @@ const DeletePotModal = (props) => {
       </DialogTitle>
       <DialogContent>
         <Stack spacing={2}>
-          <InputLabel id="team-id-label"><strong>Team ID:</strong>  {teamId}</InputLabel>
-          <InputLabel id="team-name-label"><strong>Team Name:</strong>  {teamName}</InputLabel>
-          
-          <InputLabel id="total-fee-label"><strong>Total Fee:</strong>  {formatCurrency(totalPotFee)}</InputLabel>
-          {boardSelections && boardSelections.map((board, index) => (
-            <div key={index}>
-              <InputLabel>({board.board}: {formatCurrency(board.totalFee)})</InputLabel>
-            </div>
-          ))}
+          <InputLabel id="name-label">
+            <strong>{getNameLabel(boardType)}:</strong> {name}
+          </InputLabel>
+                    
+          <InputLabel id="total-fee-label">
+            <strong>Total Fee:</strong> {formatCurrency(totalPotFee)}
+          </InputLabel>
 
-          {/* Delete button: hides if submitted, shows spinner if submitting */}
+          {/* Show individual board fees */}
+          {props.deleteInfo && (
+            <>
+              {props.deleteInfo['totalCatch&ReleaseFee'] > 0 && (
+                <InputLabel>
+                  Catch & Release Fee: {formatCurrency(props.deleteInfo['totalCatch&ReleaseFee'])}
+                </InputLabel>
+              )}
+              {props.deleteInfo['totalOffshoreFee'] > 0 && (
+                <InputLabel>
+                  Offshore Fee: {formatCurrency(props.deleteInfo['totalOffshoreFee'])}
+                </InputLabel>
+              )}
+              {props.deleteInfo['totalBaySurfFee'] > 0 && (
+                <InputLabel>
+                  Bay/Surf Fee: {formatCurrency(props.deleteInfo['totalBaySurfFee'])}
+                </InputLabel>
+              )}
+            </>
+          )}
+
+          {/* Delete button */}
           {!isSubmitted ? (
             <Button 
               variant="contained" 
               color="primary" 
               onClick={handleDelete}
-              disabled={isSubmitting} // Disable the button while submitting
+              disabled={isSubmitting}
               startIcon={isSubmitting ? <CircularProgress size={20} /> : null}
             >
               {isSubmitting ? "Deleting..." : "Delete Pot Entry"}

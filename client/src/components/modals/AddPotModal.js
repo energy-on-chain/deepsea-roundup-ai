@@ -8,96 +8,211 @@ import 'react-toastify/dist/ReactToastify.css';
 import { loadConfigForYear } from '../../config/masterConfig';
 
 const AdminAddPotModal = (props) => {
-
   const { year } = useParams();
   const [config, setConfig] = useState(null);
-  const [isSubmitting, setIsSubmitting] = useState(false); // State to track submission
-  const [isSubmitted, setIsSubmitted] = useState(false); // State to track if the form has been submitted
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isSubmitted, setIsSubmitted] = useState(false);
 
   // State
   const [isLoaded, setIsLoaded] = useState(false);
-  const [registeredTeamList, setRegisteredTeamList] = useState([]);
-  const [registeredTeamNameList, setRegisteredTeamNameList] = useState([]);
+  const [anglerData, setAnglerData] = useState([]); // Store raw angler data
+  const [selectedBoard, setSelectedBoard] = useState(null);
+  const [eligibleParticipants, setEligibleParticipants] = useState([]);
+  const [boardList, setBoardList] = useState([]);
   const [teamIsSelected, setTeamIsSelected] = useState(false);
   const [teamId, setTeamId] = useState();
   const [teamName, setTeamName] = useState();
   const [boardSelections, setBoardSelections] = useState([]);
   const [isValidInput, setIsValidInput] = useState(false);
 
-  // INITIALIZE
   useEffect(() => {
-    fetchConfigAndData(); // Load config and fetch data
-  }, [year]);  // add tabName as a dependency to re-fetch when the tab changes
+    fetchConfigAndData();
+  }, [year]);
+
+  useEffect(() => {
+    if (anglerData.length > 0 && selectedBoard) {
+      updateEligibleParticipants();
+    }
+  }, [selectedBoard, anglerData]);
 
   const fetchConfigAndData = async () => {
-
     try {
-      const loadedConfig = await loadConfigForYear(year); // Load the config dynamically
-      setConfig(loadedConfig); // Set the loaded configuration
+      const loadedConfig = await loadConfigForYear(year);
+      setConfig(loadedConfig);
+
+      // Set board list from config
+      const boards = loadedConfig?.potsConfig?.CONFIG_POTS_BOARD_LIST.map(board => 
+        Object.keys(board)[0]
+      );
+      setBoardList(boards);
 
       const apiUrl = process.env.REACT_APP_NODE_ENV === 'production'
         ? process.env.REACT_APP_SERVER_URL_PRODUCTION
         : process.env.REACT_APP_SERVER_URL_STAGING;
 
-      // Get registered (eligible) teams
-      fetch(`${apiUrl}/api/${year}/admin_get_database_list`, {    
-        method: 'POST',    
+      // Fetch angler data
+      const response = await fetch(`${apiUrl}/api/${year}/admin_get_angler_list`, {
+        method: 'POST',
         headers: {
           'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({tableName: `teams${year}`})
-      })
-      .then(res => res.json())
-      .then(data => {
-        var tempList = [];
-        var tempNameList = [];
-        Object.keys(data).map((teamKey, i) => {
-          let tempObject = {};
-          let tempNameObject = {};
-          tempObject[teamKey] = data[teamKey]
-          tempNameObject["teamKey"] = teamKey;
-          tempNameObject["teamData"] = data[teamKey];
-          tempNameObject["label"]= data[teamKey].teamName;
-          tempList.push(tempObject);
-          tempNameList.push(tempNameObject);
-        });
-  
-        setRegisteredTeamList(tempList);
-        setRegisteredTeamNameList(tempNameList);
-        setIsLoaded(true);
-
+        }
       });
+      const data = await response.json();
+      
+      // Store raw angler data
+      const anglers = Object.entries(data).map(([id, angler]) => ({
+        id,
+        ...angler
+      }));
+      setAnglerData(anglers);
+      setIsLoaded(true);
 
     } catch (error) {
-      console.log('There was an error loading initial data from the server in the admin add pots component: ' + error);
+      console.error('Error loading data:', error);
+      toast.error('Error loading data. Please try again.');
     }
   };
 
-  const delayRefresh = () => {
-    setTimeout(() => {
-      window.location.reload();
-    }, 2000);
+  const updateEligibleParticipants = () => {
+    const participants = [];
+    
+    switch(selectedBoard) {
+      case 'Catch & Release':
+      case 'Offshore':
+        // Get unique boat names
+        const uniqueBoats = [...new Set(anglerData
+          .filter(angler => angler.boatName && angler.boatName.trim() !== '')
+          .map(angler => angler.boatName)
+        )];
+        participants.push(...uniqueBoats.map(boat => ({
+          id: boat,
+          label: boat,
+          type: 'boat'
+        })));
+        break;
+  
+      case 'Bay/Surf':
+        // Get unique Bay/Surf Adult anglers
+        const baySurfAnglers = anglerData.filter(angler => 
+          angler.division === 'Bay/Surf' && 
+          angler.ageBracket === 'Adult'
+        );
+        participants.push(...baySurfAnglers.map(angler => ({
+          id: angler.anglerId,
+          label: angler.anglerName,
+          type: 'angler'
+        })));
+        break;
+    }
+    setEligibleParticipants(participants);
   };
 
   const handleClose = () => {
-    setIsValidInput(false);
-    setIsLoaded(false);
-    setTeamId();
-    setTeamName();
+    setSelectedBoard(null);
+    props.close();
+  }
+
+  const handleBoardChange = (event, newValue) => {
+    setSelectedBoard(newValue);
+    // Reset selections when board changes
+    setTeamId(undefined);
+    setTeamName(undefined);
     setTeamIsSelected(false);
     setBoardSelections([]);
-    setRegisteredTeamList([]);
-    setRegisteredTeamNameList([]);
-    setIsSubmitting(false);
-    setIsSubmitted(false); // Reset isSubmitted state on close
-    props.close();
+  };
+
+  const handleTeamSelection = (event, value) => {
+    if (value) {
+      setTeamId(value.id);
+      setTeamName(value.label);
+      setTeamIsSelected(true);
+      console.log('Selected team details:')
+      console.log(value.id)
+      console.log(value.label)
+    } else {
+      setTeamId(undefined);
+      setTeamName(undefined);
+      setTeamIsSelected(false);
+    }
+  };
+
+  const handleBoardSelection = (boardName, isSelected) => {
+    const pots = config?.potsConfig?.CONFIG_POTS_BOARD_LIST.find(board => 
+      Object.keys(board)[0] === boardName
+    )[boardName];
+    
+    const totalFee = pots.reduce((acc, pot) => acc + pot.amount, 0);
+    const newSelections = [...boardSelections];
+    const currentBoardIndex = newSelections.findIndex(selection => 
+      selection.board === boardName
+    );
+
+    if (isSelected) {
+      if (currentBoardIndex === -1) {
+        newSelections.push({
+          board: boardName,
+          potList: pots.map(pot => pot.title),
+          totalFee,
+        });
+      } else {
+        const currentBoard = newSelections[currentBoardIndex];
+        currentBoard.potList = pots.map(pot => pot.title);
+        currentBoard.totalFee = totalFee;
+        newSelections[currentBoardIndex] = currentBoard;
+      }
+    } else {
+      newSelections.splice(currentBoardIndex, 1);
+    }
+
+    setBoardSelections(newSelections);
+  };
+
+  const handlePotSelection = (boardName, potTitle, isSelected, potAmount) => {
+    const newSelections = [...boardSelections];
+    const currentBoardIndex = newSelections.findIndex(selection => 
+      selection.board === boardName
+    );
+    
+    let currentBoard = newSelections[currentBoardIndex] || {
+      board: boardName,
+      potList: [],
+      totalFee: 0,
+    };
+
+    if (isSelected) {
+      if (!currentBoard.potList.includes(potTitle)) {
+        currentBoard.potList.push(potTitle);
+        currentBoard.totalFee += potAmount;
+      }
+    } else {
+      currentBoard.potList = currentBoard.potList.filter(pot => pot !== potTitle);
+      currentBoard.totalFee -= potAmount;
+    }
+
+    if (currentBoard.potList.length === 0) {
+      newSelections.splice(currentBoardIndex, 1);
+    } else if (currentBoardIndex === -1) {
+      newSelections.push(currentBoard);
+    } else {
+      newSelections[currentBoardIndex] = currentBoard;
+    }
+
+    setBoardSelections(newSelections);
   };
 
   const validateUserInput = () => {
-
-    if (!teamId || !teamName) {
-      toast.warning("Please select a team.");
-      return false;
+    // For Catch & Release board we expect teamName
+    // For Offshore/Bay/Surf boards we expect anglerName
+    if (selectedBoard === 'Catch & Release') {
+      if (!teamName) {
+        toast.warning("Please select a team.");
+        return false;
+      }
+    } else {
+      if (!teamName) {  // teamName holds the angler name for non-Catch & Release boards
+        toast.warning("Please select an angler.");
+        return false;
+      }
     }
 
     if (boardSelections.length === 0) {
@@ -119,8 +234,8 @@ const AdminAddPotModal = (props) => {
       } else if (process.env.REACT_APP_NODE_ENV === "production") {
         apiUrl = process.env.REACT_APP_SERVER_URL_PRODUCTION;
       }
-  
-      // Check for duplicate teamId in the current potYear collection
+
+      // Check for duplicate entries
       try {
         const checkDuplicateResponse = await fetch(`${apiUrl}/api/${year}/admin_add_pot_check_for_duplicate_entries`, {
           method: 'POST',
@@ -129,89 +244,56 @@ const AdminAddPotModal = (props) => {
           },
           body: JSON.stringify({
             potYear: `pots${year}`,
-            teamId,
+            participantId: teamName,
+            boardType: selectedBoard,
           }),
         });
-  
+
         const duplicateData = await checkDuplicateResponse.json();
-  
+
         if (duplicateData.exists) {
-          toast.warning('This team has already been added to the pot for the selected year.');
+          toast.warning(`This ${selectedBoard === 'Bay/Surf' ? 'angler' : 'team'} has already been entered for the selected board.`);
           setIsSubmitting(false);
-          return; // Stop the submission if a duplicate entry is found
+          return;
         }
-      } catch (error) {
-        console.error('Error checking for duplicate teamId:', error);
-        toast.error('Error checking for duplicate entry. Please try again.');
-        setIsSubmitting(false);
-        return; // Stop further execution if there's an error in duplicate check
-      }
-  
-      let formData = {
-        potYear: `pots${year}`,  // Pot year
-        teamId,
-        teamName,
-      };
-  
-      // Add board selections
-      const allBoardSelections = config?.potsConfig?.CONFIG_POTS_BOARD_LIST.map((boardObj) => {
-        const boardName = Object.keys(boardObj)[0];
-        const selectedBoard = boardSelections.find(selection => selection.board === boardName);
-  
-        // If the board is selected, keep its data, otherwise add it with empty potList and totalFee 0
-        return selectedBoard || {
-          board: boardName,
-          potList: [],
-          totalFee: 0,
+
+        // Prepare submission data
+        let formData = {
+          potYear: `pots${year}`,
+          name: selectedBoard === 'Bay/Surf' ? teamName : teamId, // Use our state values
+          boardType: selectedBoard,
+          boardSelections,
+          timestamp: new Date().toISOString(),
         };
-      });
-      formData["boardSelections"] = allBoardSelections;
-  
-      // Add total fees for each board
-      allBoardSelections.forEach((selection) => {
-        const boardFeeKey = `total${selection.board.replace(/ /g, '')}Fee`;
-        formData[boardFeeKey] = selection.totalFee;
-      });
-  
-      try {
-        fetch(`${apiUrl}/api/${year}/admin_add_pot`, {
+
+        const response = await fetch(`${apiUrl}/api/${year}/admin_add_pot`, {
           method: 'POST',
           headers: {
-            'Content-Type': 'application/json',  // Ensures we're sending JSON
+            'Content-Type': 'application/json',
           },
-          body: JSON.stringify(formData),  // Stringify the entire JSON data
-        })
-          .then((res) => {
-            if (res.ok) {
-              toast.success('Successfully added new pot entry! Page refreshing...');
-              setIsSubmitted(true); // Set the submission as complete to hide the button
-              delayRefresh();
-            }
-          })
-          .catch((e) => {
-            console.error(e);
-            toast.error('Error while attempting to save pot entry to the database. Please try again or contact the site administrator.');
-            delayRefresh();
-            handleClose();
-          })
-          .finally(() => {
-            setIsSubmitting(false); // Reset submission state
-          });
-      } catch (e) {
-        console.log('There was an error while attempting to save the pot entry to the database:', e);
-        setIsSubmitting(false); // Reset submission state
+          body: JSON.stringify(formData),
+        });
+
+        if (response.ok) {
+          toast.success('Successfully added new pot entry! Page refreshing...');
+          setIsSubmitted(true);
+          delayRefresh();
+        } else {
+          throw new Error('Failed to submit pot entry');
+        }
+      } catch (error) {
+        console.error('Error submitting pot entry:', error);
+        toast.error('Error while saving pot entry. Please try again or contact the administrator.');
+      } finally {
+        setIsSubmitting(false);
       }
-    } else {
-      console.log('Input was not valid or there was an error');
-      setIsSubmitting(false); // Reset submission state
     }
   };
-  
-  // HANDLERS
-  const handleTeamSelection = (event, value) => {
-    setTeamId(value["teamKey"]);
-    setTeamName(value["teamData"]["teamName"]);
-    setTeamIsSelected(true);
+
+  const delayRefresh = () => {
+    setTimeout(() => {
+      window.location.reload();
+    }, 2000);
   };
 
   const formatCurrency = (value) => {
@@ -221,157 +303,118 @@ const AdminAddPotModal = (props) => {
     }).format(value);
   };
 
-  const handleBoardSelection = (boardName, isSelected) => {
-    const newSelections = [...boardSelections];
-    const pots = config?.potsConfig?.CONFIG_POTS_BOARD_LIST.find(board => board[boardName])[boardName];
-    const totalFee = pots.reduce((acc, pot) => acc + pot.amount, 0);
-  
-    const currentBoardIndex = newSelections.findIndex(selection => selection.board === boardName);
-  
-    if (isSelected) {
-      // If the board isn't selected yet, add all pots for the board
-      if (currentBoardIndex === -1) {
-        newSelections.push({
-          board: boardName,
-          potList: pots.map(pot => pot.title),
-          totalFee,
-        });
-      } else {
-        // If the board is partially selected, add the remaining pots
-        const currentBoard = newSelections[currentBoardIndex];
-        currentBoard.potList = pots.map(pot => pot.title); // Select all pots
-        currentBoard.totalFee = totalFee;
-        newSelections[currentBoardIndex] = currentBoard;
-      }
-    } else {
-      // Unselect all pots for this board
-      newSelections.splice(currentBoardIndex, 1);
-    }
-  
-    setBoardSelections(newSelections);
-  };
-  
-  const handlePotSelection = (boardName, potTitle, isSelected, potAmount) => {
-    const newSelections = [...boardSelections];
-    const currentBoardIndex = newSelections.findIndex(selection => selection.board === boardName);
-    let currentBoard = newSelections[currentBoardIndex] || {
-      board: boardName,
-      potList: [],
-      totalFee: 0,
-    };
-  
-    if (isSelected) {
-      if (!currentBoard.potList.includes(potTitle)) {
-        currentBoard.potList.push(potTitle);
-        currentBoard.totalFee += potAmount;
-      }
-    } else {
-      currentBoard.potList = currentBoard.potList.filter(pot => pot !== potTitle);
-      currentBoard.totalFee -= potAmount;
-  
-      // If all pots are unselected, remove the board from the selections
-      if (currentBoard.potList.length === 0) {
-        newSelections.splice(currentBoardIndex, 1);
-      }
-    }
-  
-    if (currentBoard.potList.length > 0 && currentBoardIndex === -1) {
-      newSelections.push(currentBoard);
-    } else if (currentBoard.potList.length > 0) {
-      newSelections[currentBoardIndex] = currentBoard;
-    }
-  
-    setBoardSelections(newSelections);
-  }; 
-
   return (
     <Dialog open={props.status} onClose={handleClose} fullWidth maxWidth="sm">
-      <form action="/" method="POST" onSubmit={(e) => { e.preventDefault(); alert('Submitted form!'); handleClose(); }}>
-        <DialogTitle>Add {props.year} Pot Entry<IconButton onClick={handleClose} style={{ float: 'right' }}><CloseIcon color="primary"></CloseIcon></IconButton></DialogTitle>
-        <DialogContent>
-          <Stack spacing={2} margin={2}>
+      <DialogTitle>
+        Add {year} Pot Entry
+        <IconButton onClick={props.close} style={{ float: 'right' }}>
+          <CloseIcon color="primary" />
+        </IconButton>
+      </DialogTitle>
+      <DialogContent>
+        <Stack spacing={2} margin={2}>
+          {/* Board Selection Dropdown */}
+          <InputLabel required>Select Board</InputLabel>
+          <Autocomplete
+            value={selectedBoard}
+            onChange={handleBoardChange}
+            options={boardList}
+            renderInput={(params) => <TextField {...params} label="Select board" />}
+            disabled={!isLoaded}
+          />
 
-            {/* Select team */}
-            <InputLabel required id="angler-label">Select team</InputLabel>
-            {!isLoaded ? (
-                <CircularProgress/>
-              ) : (
-                <Autocomplete
-                  disablePortal
-                  id="select-angler-autocomplete-box"
-                  options={registeredTeamNameList}
-                  renderInput={(params) => <TextField {...params} label="Team name"/>}
-                  onChange={handleTeamSelection}
+          {/* Participant Selection */}
+          {selectedBoard && (
+            <>
+              <InputLabel required>
+                Select {selectedBoard === 'Bay/Surf' ? 'Angler' : 'Team'}
+              </InputLabel>
+              <Autocomplete
+                value={eligibleParticipants.find(p => p.id === teamId) || null}
+                onChange={handleTeamSelection}
+                options={eligibleParticipants}
+                getOptionLabel={(option) => option.label}
+                renderInput={(params) => <TextField {...params} label={
+                  selectedBoard === 'Bay/Surf' ? 'Angler name' : 'Team name'
+                }/>}
+                disabled={!isLoaded}
+              />
+            </>
+          )}
+
+          {/* Pot Selection */}
+          {selectedBoard && config?.potsConfig?.CONFIG_POTS_BOARD_LIST.map((boardObj, boardIndex) => {
+            const boardName = Object.keys(boardObj)[0];
+            if (boardName !== selectedBoard) return null;
+
+            const pots = boardObj[boardName];
+            const isBoardSelected = boardSelections.find(selection => 
+              selection.board === boardName
+            );
+            const selectedPots = isBoardSelected ? isBoardSelected.potList : [];
+
+            return (
+              <div key={boardIndex}>
+                <FormControlLabel
+                  control={
+                    <Checkbox
+                      checked={selectedPots.length === pots.length}
+                      indeterminate={selectedPots.length > 0 && selectedPots.length < pots.length}
+                      onChange={(e) => handleBoardSelection(boardName, e.target.checked)}
+                    />
+                  }
+                  label="Select All"
                 />
-              )
-            }            
-
-            {/* Select pots */}
-            {config?.potsConfig?.CONFIG_POTS_BOARD_LIST.map((boardObj, boardIndex) => {
-              const boardName = Object.keys(boardObj)[0];
-              const pots = boardObj[boardName];
-              const isBoardSelected = boardSelections.find(selection => selection.board === boardName);
-              const selectedPots = isBoardSelected ? isBoardSelected.potList : [];
-
-              return (
-                <div key={boardIndex}>
-                  <InputLabel>{boardName} Pots</InputLabel>
+                {pots.map((pot, potIndex) => (
                   <FormControlLabel
+                    key={potIndex}
                     control={
                       <Checkbox
-                        checked={selectedPots.length === pots.length}
-                        indeterminate={selectedPots.length > 0 && selectedPots.length < pots.length}
-                        onChange={(e) => handleBoardSelection(boardName, e.target.checked)}
+                        checked={selectedPots.includes(pot.title)}
+                        onChange={(e) =>
+                          handlePotSelection(boardName, pot.title, e.target.checked, pot.amount)
+                        }
                       />
                     }
-                    label="Select All"
+                    label={pot.title}
                   />
-                  {pots.map((pot, potIndex) => (
-                    <FormControlLabel
-                      key={potIndex}
-                      control={
-                        <Checkbox
-                          checked={selectedPots.includes(pot.title)}
-                          onChange={(e) =>
-                            handlePotSelection(boardName, pot.title, e.target.checked, pot.amount)
-                          }
-                        />
-                      }
-                      label={`${pot.title}`}
-                    />
-                  ))}
-                </div>
-              );
-            })}
+                ))}
+              </div>
+            );
+          })}
 
-            {/* Tally fee(s) */}
+          {/* Fee Summary */}
+          {boardSelections.length > 0 && (
             <div>
-              <h3>Total Fees: {formatCurrency(boardSelections.reduce((acc, selection) => acc + selection.totalFee, 0))}</h3>
+              <h3>Total Fees: {formatCurrency(
+                boardSelections.reduce((acc, selection) => acc + selection.totalFee, 0)
+              )}</h3>
               {boardSelections.map((boardSelection, index) => (
                 <div key={index}>
-                  <h4>{formatCurrency(boardSelection.totalFee)} in {boardSelection.board} Pots</h4>
+                  <h4>
+                    {formatCurrency(boardSelection.totalFee)} in {boardSelection.board} Pots
+                  </h4>
                 </div>
               ))}
             </div>
+          )}
 
-            {/* Submit button */}
-            {!isSubmitted ? (
-              <Button
-                color="primary"
-                variant="contained"
-                disabled={boardSelections.length === 0 || isSubmitting}
-                onClick={handleFormSubmission}
-                startIcon={isSubmitting ? <CircularProgress size={20} /> : null}
-              >
-                {isSubmitting ? "Submitting..." : "Submit"}
-              </Button>
-            ) : (
-              <h3>Submitted!</h3>
-            )}
-
-          </Stack>
-        </DialogContent>
-      </form>
+          {/* Submit Button */}
+          {!isSubmitted ? (
+            <Button
+              color="primary"
+              variant="contained"
+              disabled={!teamIsSelected || boardSelections.length === 0 || isSubmitting}
+              onClick={handleFormSubmission}
+              startIcon={isSubmitting ? <CircularProgress size={20} /> : null}
+            >
+              {isSubmitting ? "Submitting..." : "Submit"}
+            </Button>
+          ) : (
+            <h3>Submitted!</h3>
+          )}
+        </Stack>
+      </DialogContent>
     </Dialog>
   );
 };

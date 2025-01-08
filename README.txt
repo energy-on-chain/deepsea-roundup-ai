@@ -86,6 +86,7 @@
 ###############################################################################
 ###############################################################################
 # DEV NOTES
+- Link to historical catch records: https://roundup.portasouthjetty.com/wp-content/uploads/images/2023-06-22/15p1.jpg
 - Start react: (run in client and api terminals: nvm use 21.6.0)
 - Start redis server: (run in terminal: redis-server, confirm running: redis-cli ping)
 - Start stripe webhook for local dev: (run in terminal: stripe listen --forward-to localhost:3001/api/registration_webhook)
@@ -95,5 +96,5 @@ EXTRAS:
 [] HostGator - Adding the aliases...
 [] Redis - How to use this...
 
-STILL TODO: 
-[] Stripe webhooks (including keys for staging and prod)...
+FUTURE
+[] Handle free anglers associated with sponsor signups

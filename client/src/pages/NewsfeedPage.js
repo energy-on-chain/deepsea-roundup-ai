@@ -31,6 +31,7 @@ function NewsfeedPage() {
 
   // States for various data tables
   const [typeCountData, setTypeCountData] = useState([]);
+  const [divisionCountData, setDivisionCountData] = useState([]);
   const [speciesCountData, setSpeciesCountData] = useState([]);
   const [teamCountData, setTeamCountData] = useState([]);
   const [dateCountData, setDateCountData] = useState([]);
@@ -60,6 +61,7 @@ function NewsfeedPage() {
         },
         newsfeedConfig: {
           CONFIG_NEWSFEED_INCLUDE_TYPE_COUNT_TABLE,
+          CONFIG_NEWSFEED_INCLUDE_DIVISION_COUNT_TABLE,
           CONFIG_NEWSFEED_INCLUDE_SPECIES_COUNT_TABLE,
           CONFIG_NEWSFEED_INCLUDE_TEAM_COUNT_TABLE,
           CONFIG_NEWSFEED_INCLUDE_DATE_COUNT_TABLE,
@@ -89,6 +91,19 @@ function NewsfeedPage() {
         const typeDataWithIds = typeData.map((row, index) => ({ id: index, ...row }));
         setTypeCountData(typeDataWithIds);
         console.log(typeDataWithIds);
+      }
+
+      // Fetch Division Count Table Data
+      if (loadedConfig.newsfeedConfig.CONFIG_NEWSFEED_INCLUDE_DIVISION_COUNT_TABLE) {
+        const divisionResponse = await fetch(`${apiUrl}/api/${year}/get_division_count_data_for_newsfeed_table`, {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({ catchYear: loadedConfig.generalConfig.CONFIG_GENERAL_FIREBASE_CATCHES_TABLE_NAME })
+        });
+        const divisionData = await divisionResponse.json();
+        const divisionDataWithIds = divisionData.map((row, index) => ({ id: index, ...row }));
+        setDivisionCountData(divisionDataWithIds);
+        console.log(divisionDataWithIds);
       }
 
       // Fetch Species Count Table Data
@@ -181,7 +196,7 @@ function NewsfeedPage() {
   // Event Column Definitions
   const desktopEventColumns = [
     { field: 'type', headerName: 'Type', flex: 2, headerClassName: "super-app-theme--header", headerAlign: "center" },
-    { field: 'title', headerName: 'Team', flex: 2, headerClassName: "super-app-theme--header", headerAlign: "center" },
+    { field: 'title', headerName: 'Angler', flex: 2, headerClassName: "super-app-theme--header", headerAlign: "center" },
     {
       field: 'subtitle',
       headerName: 'Event',
@@ -289,6 +304,7 @@ function NewsfeedPage() {
                       onChange={onChangeCountType}
                     >
                       {config?.newsfeedConfig?.CONFIG_NEWSFEED_INCLUDE_TYPE_COUNT_TABLE && <MenuItem value="By Type">By Type</MenuItem>}
+                      {config?.newsfeedConfig?.CONFIG_NEWSFEED_INCLUDE_DIVISION_COUNT_TABLE && <MenuItem value="By Division">By Division</MenuItem>}
                       {config?.newsfeedConfig?.CONFIG_NEWSFEED_INCLUDE_SPECIES_COUNT_TABLE && <MenuItem value="By Species">By Species</MenuItem>}
                       {config?.newsfeedConfig?.CONFIG_NEWSFEED_INCLUDE_TEAM_COUNT_TABLE && <MenuItem value="By Team">By Team</MenuItem>}
                       {config?.newsfeedConfig?.CONFIG_NEWSFEED_INCLUDE_DATE_COUNT_TABLE && <MenuItem value="By Date">By Date</MenuItem>}
@@ -298,6 +314,8 @@ function NewsfeedPage() {
                   <br />
                   {config?.newsfeedConfig?.CONFIG_NEWSFEED_INCLUDE_TYPE_COUNT_TABLE && countType === "By Type" &&
                     <CountTable rows={typeCountData} columns={matches ? desktopColumns : mobileColumns} pagination={false} hideFooter={true} />}
+                  {config?.newsfeedConfig?.CONFIG_NEWSFEED_INCLUDE_DIVISION_COUNT_TABLE && countType === "By Division" &&
+                    <CountTable rows={divisionCountData} columns={matches ? desktopColumns : mobileColumns} pagination={false} hideFooter={true} />}
                   {config?.newsfeedConfig?.CONFIG_NEWSFEED_INCLUDE_SPECIES_COUNT_TABLE && countType === "By Species" &&
                     <CountTable rows={speciesCountData} columns={matches ? desktopColumns : mobileColumns} pagination={false} hideFooter={true} />}
                   {config?.newsfeedConfig?.CONFIG_NEWSFEED_INCLUDE_TEAM_COUNT_TABLE && countType === "By Team" &&

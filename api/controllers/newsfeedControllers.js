@@ -23,11 +23,11 @@ exports.getTypeCountDataForNewsfeedTable = async (req, res) => {
 
     snapshot.forEach(doc => {
       const data = doc.data();
-      const speciesType = data.speciesType;
-      if (typeCount[speciesType]) {
-        typeCount[speciesType] += 1;
+      const type = data.type;
+      if (typeCount[type]) {
+        typeCount[type] += 1;
       } else {
-        typeCount[speciesType] = 1;
+        typeCount[type] = 1;
       }
     });
 
@@ -43,6 +43,44 @@ exports.getTypeCountDataForNewsfeedTable = async (req, res) => {
     sortedTypeCount.push(['Total Count', totalCount]); // Ensure "Total Count" is last
 
     return res.status(200).json(sortedTypeCount.map(([key, value]) => ({ category: key, count: value })));
+  } catch (e) {
+    console.error('Error fetching Type Count Data:', e);
+    return res.status(500).json({ error: 'Error fetching Type Count Data' });
+  }
+};
+
+exports.getDivisionCountDataForNewsfeedTable = async (req, res) => {
+  console.log('In api/get_division_count_data_for_newsfeed_table...');
+  const year = req.params.year;
+  const db = getFirestore();
+  const catchYear = req.body.catchYear;
+
+  try {
+    const snapshot = await db.collection(`catches${year}`).get();
+    const divisionCount = {};
+
+    snapshot.forEach(doc => {
+      const data = doc.data();
+      const division = data.division;
+      if (divisionCount[division]) {
+        divisionCount[division] += 1;
+      } else {
+        divisionCount[division] = 1;
+      }
+    });
+
+    // Adding total count
+    const totalCount = Object.values(divisionCount).reduce((a, b) => a + b, 0);
+    divisionCount['Total Count'] = totalCount;
+
+    // Convert to array and sort by count (descending), placing "Total Count" at the end
+    const sortedDivisionCount = Object.entries(divisionCount)
+      .filter(([key]) => key !== 'Total Count')
+      .sort(([, a], [, b]) => b - a);
+
+    sortedDivisionCount.push(['Total Count', totalCount]); // Ensure "Total Count" is last
+
+    return res.status(200).json(sortedDivisionCount.map(([key, value]) => ({ category: key, count: value })));
   } catch (e) {
     console.error('Error fetching Type Count Data:', e);
     return res.status(500).json({ error: 'Error fetching Type Count Data' });
@@ -98,33 +136,33 @@ exports.getTeamCountDataForNewsfeedTable = async (req, res) => {
 
   try {
     const snapshot = await db.collection(`catches${year}`).get();
-    const teamCount = {};
+    const anglerCount = {};
 
     snapshot.forEach(doc => {
       const data = doc.data();
-      const teamName = data.teamName;
-      if (teamCount[teamName]) {
-        teamCount[teamName] += 1;
+      const anglerName = data.anglerName;
+      if (anglerCount[anglerName]) {
+        anglerCount[anglerName] += 1;
       } else {
-        teamCount[teamName] = 1;
+        anglerCount[anglerName] = 1;
       }
     });
 
     // Adding total count
-    const totalCount = Object.values(teamCount).reduce((a, b) => a + b, 0);
-    teamCount['Total Count'] = totalCount;
+    const totalCount = Object.values(anglerCount).reduce((a, b) => a + b, 0);
+    anglerCount['Total Count'] = totalCount;
 
     // Convert to array and sort by count (descending), placing "Total Count" at the end
-    const sortedTeamCount = Object.entries(teamCount)
+    const sortedAnglerCount = Object.entries(anglerCount)
       .filter(([key]) => key !== 'Total Count')
       .sort(([, a], [, b]) => b - a);
 
-    sortedTeamCount.push(['Total Count', totalCount]); // Ensure "Total Count" is last
+    sortedAnglerCount.push(['Total Count', totalCount]); // Ensure "Total Count" is last
 
-    return res.status(200).json(sortedTeamCount.map(([key, value]) => ({ category: key, count: value })));
+    return res.status(200).json(sortedAnglerCount.map(([key, value]) => ({ category: key, count: value })));
   } catch (e) {
-    console.error('Error fetching Team Count Data:', e);
-    return res.status(500).json({ error: 'Error fetching Team Count Data' });
+    console.error('Error fetching Angler Count Data:', e);
+    return res.status(500).json({ error: 'Error fetching Angler Count Data' });
   }
 };
 
@@ -187,22 +225,22 @@ exports.getEventDataForNewsfeedTable = async (req, res) => {
       const data = doc.data();
       eventArray.push({
         type: 'Catch',
-        title: data.teamName,
-        subtitle: `${data.teamName} caught a ${data.species}!`,
+        title: data.anglerName,
+        subtitle: `${data.anglerName} caught a ${data.species}!`,
         timestamp: data.dateTime ? new Date(data.dateTime).toISOString() : null,  // Format timestamp to ISO
         points: data.points
       });
     });
 
     // Fetch Team registration data
-    const teamSnapshot = await db.collection(`teams${year}`).get();
+    const teamSnapshot = await db.collection(`anglers${year}`).get();
     teamSnapshot.forEach(doc => {
       const data = doc.data();
       eventArray.push({
         type: 'Register',
-        title: data.teamName,
-        subtitle: `${data.teamName} registered for the event!`,
-        timestamp: data.registrationTimestampInLocalTime ? new Date(data.registrationTimestampInLocalTime).toISOString() : null,  // Format timestamp to ISO
+        title: data.anglerName,
+        subtitle: `${data.anglerName} registered for the event!`,
+        timestamp: data.registrationTimestamp ? new Date(data.registrationTimestamp).toISOString() : null,  // Format timestamp to ISO
         points: "-"
       });
     });

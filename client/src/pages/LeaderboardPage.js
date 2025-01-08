@@ -3,7 +3,7 @@ import { useParams } from 'react-router-dom';
 import AnimatedPage from './AnimatedPage';
 import Footer from '../components/Footer';
 import Box from '@mui/material/Box';
-import { Select, MenuItem } from "@mui/material";
+import { Select, MenuItem, Autocomplete, TextField } from "@mui/material";
 import { useTheme } from "@mui/material/styles";
 import useMediaQuery from "@mui/material/useMediaQuery";
 import dayjs from 'dayjs';
@@ -49,14 +49,18 @@ function LeaderboardPage() {
       
       const {
         generalConfig: {
+          CONFIG_GENERAL_FIREBASE_TEAMS_TABLE_NAME,
           CONFIG_GENERAL_FIREBASE_CATCHES_TABLE_NAME,
         },
         leaderboardConfig: {
           CONFIG_LEADERBOARD_INCLUDE_PRELIMINARY_RESULTS_DISCLAIMER,
           CONFIG_LEADERBOARD_PRELIMINARY_RESULTS_DISCLAIMER_CUTOFF_IN_LOCAL_TIME_IN_MS,
+          CONFIG_LEADERBOARD_HISTORICAL_CATCH_RECORD_DATA,
           CONFIG_LEADERBOARD_CATEGORIES
         }
       } = loadedConfig;
+
+      const filteredCategories = CONFIG_LEADERBOARD_CATEGORIES.filter((item) => item.display);
 
       // Assess and set preliminary result status
       if (CONFIG_LEADERBOARD_INCLUDE_PRELIMINARY_RESULTS_DISCLAIMER) {
@@ -72,9 +76,10 @@ function LeaderboardPage() {
         : process.env.REACT_APP_SERVER_URL_STAGING;
 
       // Build queries
-      const queries = CONFIG_LEADERBOARD_CATEGORIES.map((item) => {
+      const queries = filteredCategories.map((item) => {
         let bodyData = { 
           catchYear: CONFIG_GENERAL_FIREBASE_CATCHES_TABLE_NAME,
+          anglerYear: CONFIG_GENERAL_FIREBASE_TEAMS_TABLE_NAME,
           numPlaces: item.numPlaces,
           isReport: false, 
         };
@@ -177,11 +182,18 @@ function LeaderboardPage() {
     return `Preliminary leaderboard as of: ${timeString} on ${dateString}.`;
   };
 
-  const handleSelectResult = (e) => {
-    let result = resultArray.filter(item => item.title === e.target.value);
+  const handleSelectResult = (e, value) => {
+    let result = resultArray.filter(item => item.title === value);
     setSelectedResult(result);
     setHasSelectedResult(true);
   };
+
+  // const handleAutocompleteChange = (event, value) => {
+  //   const result = resultArray.find(item => item.title === value);
+  //   setSelectedResult(result || null);
+  //   setHasSelectedResult(!!result);
+  // };
+
 
   return (
     <AnimatedPage>
@@ -278,7 +290,16 @@ function LeaderboardPage() {
                     <div>
                       <div className="select-div">
                         <br/>
-                        <Select
+                        <Autocomplete
+                          labelId="select-category"
+                          id="select-category"
+                          value={selectedResult[0]?.title || ''}
+                          // value={selectedResult?.title || ''}
+                          onChange={handleSelectResult}
+                          options={resultArray.map((result) => result.title)}
+                          renderInput={(params) => <TextField {...params} label="Select category" />}
+                        />
+                        {/* <Select
                           labelId="select-category"
                           id="select-category"
                           value={selectedResult[0]?.title || ''}
@@ -289,10 +310,9 @@ function LeaderboardPage() {
                               {category.title}
                             </MenuItem>
                           ))}
-                        </Select>
-                      </div>
-
-                      {hasSelectedResult ? (
+                        </Select> */}
+                        <br/>
+                        {hasSelectedResult ? (
                         <div>
                           {selectedResult.map(result => (
                             result.rows.length > 0 ? (
@@ -308,13 +328,14 @@ function LeaderboardPage() {
                                 density="compact"
                               />
                             ) : (
-                              <h1 key={result.title}>No results yet.</h1>
+                              <h1 key={result.title}>No results exist for this category yet.</h1>
                             )
                           ))}
                         </div>
                       ) : (
-                        <h1 style={{ color: config?.stylingConfig?.CONFIG_STYLING_H2_COLOR }}>Please select a category</h1>
+                        <h1 style={{ color: config?.stylingConfig?.CONFIG_STYLING_H2_COLOR }}>Select a category to display results table.</h1>
                       )}
+                      </div>
                     </div>
                   )
                 )}

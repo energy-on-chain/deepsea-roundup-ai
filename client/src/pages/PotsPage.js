@@ -5,12 +5,17 @@ import Footer from '../components/Footer';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
 import { Select, MenuItem, InputLabel, Autocomplete, TextField } from "@mui/material";
+import { ToggleButtonGroup, ToggleButton } from '@mui/material';
 import CircularProgress from '@mui/material/CircularProgress';
 import { useTheme } from "@mui/material/styles";
 import useMediaQuery from "@mui/material/useMediaQuery";
 import dayjs from 'dayjs';
 import advancedFormat from 'dayjs/plugin/advancedFormat';
+import { Stack } from '@mui/material';
+import { toast } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 
+import SimplifiedEntries from '../components/SimplifiedEntries';
 import ToggleSliderButton from '../components/buttons/ToggleSliderButton';
 import PotCarousel from '../components/PotCarousel';
 import PotsResultTable from '../components/tables/PotsResultTable';
@@ -38,19 +43,27 @@ function PotsPage() {
   const [potEntryDataHasLoaded, setPotEntryDataHasLoaded] = useState(false);
   const displayOptions = ["Entries", "Payouts"];    // display options
   const [displaySelection, setDisplaySelection] = useState("Payouts");
-  const entriesViewOptions = ["Board", "By Pot", "By Team"]    // for entries
+  const entriesViewOptions = ["Board", "By Pot", "By Entrant"]    // for entries
+  const [selectedBoard, setSelectedBoard] = useState("Catch & Release"); // Default board
   const [entriesViewSelection, setEntriesViewSelection] = useState("Board");
   const [entriesBoardOptions, setEntriesBoardOptions] = useState();
   const [entriesBoardSelection, setBoardSelection] = useState();
+
   const [registeredTeamList, setRegisteredTeamList] = useState([]);
   const [registeredTeamNameList, setRegisteredTeamNameList] = useState([]);
   const [teamNameListIsLoaded, setTeamNameListIsLoaded] = useState(false);
+
+  const [registeredAnglerList, setRegisteredAnglerList] = useState([]);
+  const [registeredAnglerNameList, setRegisteredAnglerNameList] = useState([]);
+  const [anglerNameListIsLoaded, setAnglerNameListIsLoaded] = useState(false);
+
   const [entriesTeamSelection, setEntriesTeamSelection] = useState();
+  const [entriesAnglerSelection, setEntriesAnglerSelection] = useState();
   const [entriesPotOptions, setEntriesPotOptions] = useState();
   const [entriesPotSelection, setEntriesPotSelection] = useState();
 
   // STATE - PAYOUTS
-  const payoutsViewOptions = ["By Pot", "By Team"];    // for payouts
+  const payoutsViewOptions = ["By Pot", "By Entrant"];    // for payouts
   const [payoutsViewSelection, setPayoutsViewSelection] = useState("By Pot");
   const payoutsDisplayOptions = ["List", "Select", "Slideshow"];
   const [payoutsDisplaySelection, setPayoutsDisplaySelection] = useState("List");
@@ -59,8 +72,15 @@ function PotsPage() {
   const [payoutsResultArray, setPayoutsResultArray] = useState([]);
   const [payoutsTeamResultSummary, setPayoutsTeamResultSummary] = useState([]);
   const [payoutsTeamSelection, setPayoutsTeamSelection] = useState();
+  const [payoutsAnglerSelection, setPayoutsAnglerSelection] = useState();
   const [payoutsTeamResultObject, setPayoutsTeamResultObject] = useState([]);
   const [totalGrossPot, setTotalGrossPot] = useState(0);
+
+  // STATE - ADDITIONAL
+  const [entriesParticipantType, setEntriesParticipantType] = useState('team');
+  const [payoutsParticipantType, setPayoutsParticipantType] = useState('team');
+  const [payoutsAnglerResultSummary, setPayoutsAnglerResultSummary] = useState([]);
+  const [payoutsAnglerResultObject, setPayoutsAnglerResultObject] = useState({});
 
   useEffect(() => {
     fetchConfigAndData();
@@ -146,6 +166,8 @@ function PotsPage() {
           tournamentCut: item.tournamentCut,
           payoutStructure: item.payoutStructure,
           numPlaces: Object.keys(item.payoutStructure).length,
+          // Convert inputs array to a single object
+          ...item.inputs.reduce((acc, input) => ({ ...acc, ...input }), {})
         };
       
         // Add any extra inputs required (e.g. specific date)
@@ -161,6 +183,7 @@ function PotsPage() {
         return {
           url: item.url,
           body: JSON.stringify(bodyData),
+          display: item.display,
           title: item.title,
           subtitle: item.subtitle || "",
           numPlaces: Object.keys(item.payoutStructure).length,
@@ -183,31 +206,34 @@ function PotsPage() {
 
     try {
 
-      // ENTRIES - Get registered team list
+      // ENTRIES - Get registered participant list
       fetch(`${apiUrl}/api/${year}/admin_get_database_list`, {    
         method: 'POST',    
         headers: {
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify({tableName: `teams${year}`})
+        body: JSON.stringify({tableName: `anglers${year}`})
       })
       .then(res => res.json())
       .then(data => {
-        var tempList = [];
-        var tempNameList = [];
-        Object.keys(data).map((teamKey, i) => {
-          let tempObject = {};
-          let tempNameObject = {};
-          tempObject[teamKey] = data[teamKey]
-          tempNameObject["teamKey"] = teamKey;
-          tempNameObject["teamData"] = data[teamKey];
-          tempNameObject["label"]= data[teamKey].teamName;
-          tempList.push(tempObject);
-          tempNameList.push(tempNameObject);
-        })
-        setRegisteredTeamList(tempList);
-        setRegisteredTeamNameList(tempNameList);
+        const {
+          teamList,
+          teamNameList,
+          anglerList,
+          anglerNameList
+        } = transformParticipantData(data);
+  
+        setRegisteredTeamList(teamList);
+        setRegisteredTeamNameList(teamNameList);
         setTeamNameListIsLoaded(true);
+        
+        setRegisteredAnglerList(anglerList);
+        setRegisteredAnglerNameList(anglerNameList);
+        setAnglerNameListIsLoaded(true);
+      })
+      .catch(error => {
+        console.error('Error fetching participant data:', error);
+        toast.error('Error loading participant data. Please try again.');
       });
 
       // ENTRIES - Get all pot data
@@ -220,9 +246,22 @@ function PotsPage() {
       })
       .then(res => res.json())
       .then(data => {
-        setPotEntryData(data.data);
+        // Parse the boardSelections string for each entry
+        const parsedData = data.data.map(entry => ({
+          ...entry,
+          // Parse the stringified boardSelections back into an array
+          boardSelections: typeof entry.boardSelections === 'string' 
+            ? JSON.parse(entry.boardSelections)
+            : entry.boardSelections
+        }));
+        
+        setPotEntryData(parsedData);
         setPotEntryDataHasLoaded(true);
-        console.log(data.data);
+        console.log('Parsed pot entry data:', parsedData);
+      })
+      .catch(error => {
+        console.error('Error fetching pot entry data:', error);
+        toast.error('Error loading pot entries. Please try again.');
       });
 
       // PAYOUTS - Fetch pot results for all categories
@@ -289,6 +328,9 @@ function PotsPage() {
       });
       setPayoutsTeamResultObject(payoutsTeamResultObject);
 
+      // PAYOUTS - Set pot results for all anglers
+      // FIXME: in the same way that we did for teams, set these results for anglers (add new variables as needed)
+
       // Confirm all data has been fetched from server
       setAllDataIsFetched(true);
 
@@ -330,8 +372,56 @@ function PotsPage() {
     return `Preliminary pot standings as of: ${timeString} on ${dateString}.`;
   };
 
-  const handleEntriesTeamSelection = (event, value) => {
-    setEntriesTeamSelection(value["teamData"]["teamName"]);
+  const transformParticipantData = (data) => {
+    const teamList = [];
+    const teamNameList = [];
+    const anglerList = [];
+    const anglerNameList = [];
+    
+    // Process each angler entry
+    Object.entries(data).forEach(([id, angler]) => {
+      // Add to angler lists
+      const anglerObj = {
+        id: id,
+        ...angler
+      };
+      anglerList.push(anglerObj);
+      
+      anglerNameList.push({
+        id: id,
+        label: angler.anglerName,
+        anglerData: anglerObj
+      });
+      
+      // If they're on a boat, add to team lists
+      if (angler.boatName && angler.boatName.trim() !== '') {
+        const teamObj = {
+          id: angler.boatName,
+          teamName: angler.boatName,
+          members: [anglerObj]
+        };
+        
+        // Check if team already exists
+        const existingTeamIndex = teamList.findIndex(t => t.id === angler.boatName);
+        if (existingTeamIndex === -1) {
+          teamList.push(teamObj);
+          teamNameList.push({
+            teamKey: angler.boatName,
+            teamData: teamObj,
+            label: angler.boatName
+          });
+        } else {
+          teamList[existingTeamIndex].members.push(anglerObj);
+        }
+      }
+    });
+    
+    return {
+      teamList,
+      teamNameList,
+      anglerList,
+      anglerNameList
+    };
   };
   
   const handleEntriesPotSelection = (event, value) => {
@@ -339,7 +429,19 @@ function PotsPage() {
   };
 
   const handlePayoutsTeamSelection = (event, value) => {
-    setPayoutsTeamSelection(value["teamData"]["teamName"]);
+    if (value && value.teamData) {
+      setPayoutsTeamSelection(value.teamData.teamName);
+    } else {
+      setPayoutsTeamSelection(null);
+    }
+  };
+
+  const handlePayoutsAnglerSelection = (event, value) => {
+    if (value && value.anglerData) {
+      setPayoutsAnglerSelection(value.anglerData.anglerName);
+    } else {
+      setPayoutsAnglerSelection(null);
+    }
   };
 
   const handlePayoutsSelectResult = (e) => {
@@ -371,27 +473,76 @@ function PotsPage() {
     }
     return `${num}th`;
   };  
+
+  const getTeamTotalPayout = (teamName) => {
+    return payoutsTeamResultObject[teamName]?.reduce((sum, result) => sum + result.payout, 0) || 0;
+  };
+  
+  const getAnglerTotalPayout = (anglerName) => {
+    return payoutsAnglerResultObject[anglerName]?.reduce((sum, result) => sum + result.payout, 0) || 0;
+  };
+  
+  const getTeamPayoutRows = (teamName) => {
+    return (payoutsTeamResultObject[teamName] || []).map((result, index) => ({
+      ...result,
+      id: index,
+      place: formatPlace(result.place)
+    }));
+  };
+  
+  const getAnglerPayoutRows = (anglerName) => {
+    return (payoutsAnglerResultObject[anglerName] || []).map((result, index) => ({
+      ...result,
+      id: index,
+      place: formatPlace(result.place)
+    }));
+  };
+
+  const handleEntriesTeamSelection = (event, value) => {
+    if (value && value.teamData) {
+      setEntriesTeamSelection(value.label); // Change from teamData.teamName to label
+    } else {
+      setEntriesTeamSelection(null);
+    }
+  };
+  
+  const handleEntriesAnglerSelection = (event, value) => {
+    if (value && value.anglerData) {
+      setEntriesAnglerSelection(value.label); // Change from anglerData.anglerName to label
+    } else {
+      setEntriesAnglerSelection(null);
+    }
+  };
   
   return (
     <AnimatedPage>
       <main>
-
         {/* BANNER */}
         <section style={{ backgroundColor: config?.stylingConfig?.CONFIG_STYLING_BANNER_BACKGROUND_COLOR }} className="section-banner">
           <h1 style={{ color: config?.stylingConfig?.CONFIG_STYLING_BANNER_TEXT_COLOR }}>Pots</h1>
         </section>
-
+  
         {/* SELECT VIEW ENTRIES OR PAYOUTS */}
-        { allDataIsFetched &&
+        {allDataIsFetched && (
           <section className="section-leaderboard">
             <div>
-              { matches ? (
+              {matches ? (
                 <div>
-                  <ToggleSliderButton choice={displaySelection} choiceList={displayOptions} aligment={displaySelection} setAlignment={setDisplaySelection} />
+                  <ToggleSliderButton 
+                    choice={displaySelection} 
+                    choiceList={displayOptions} 
+                    aligment={displaySelection} 
+                    setAlignment={setDisplaySelection} 
+                  />
                 </div>
               ) : (
                 <div>
-                  <Select labelId="view-label" id="view" value={displaySelection} onChange={(e) => setDisplaySelection(e.target.value)}>
+                  <Select 
+                    labelId="view-label" 
+                    id="view" 
+                    value={displaySelection} 
+                    onChange={(e) => setDisplaySelection(e.target.value)}
+                  >
                     {displayOptions.map(view => (
                       <MenuItem key={view} value={view}>View {view}</MenuItem>
                     ))}
@@ -400,574 +551,467 @@ function PotsPage() {
               )}
             </div>
           </section>
-        } 
-
+        )} 
+  
         {/* SET DETAILED VIEW OPTIONS */}
-        { allDataIsFetched &&
+        {allDataIsFetched && (
           <section className="section-leaderboard">
             <div>
-
               {/* "BY ..." SELECTION */}
-              { matches ? (
+              {matches ? (
                 <div>
-                  {displaySelection === "Entries" &&
-                    <ToggleSliderButton choice={entriesViewSelection} choiceList={entriesViewOptions} aligment={entriesViewSelection} setAlignment={setEntriesViewSelection}/>
-                  }
-                  {displaySelection === "Payouts" &&
+                  {displaySelection === "Entries" && (
+                    <ToggleSliderButton 
+                      choice={entriesViewSelection} 
+                      choiceList={entriesViewOptions} 
+                      aligment={entriesViewSelection} 
+                      setAlignment={setEntriesViewSelection}
+                    />
+                  )}
+                  {displaySelection === "Payouts" && (
                     <>
-                      <ToggleSliderButton choice={payoutsViewSelection} choiceList={payoutsViewOptions} aligment={payoutsViewSelection} setAlignment={setPayoutsViewSelection}/>
-                      <ToggleSliderButton choice={payoutsDisplaySelection} choiceList={payoutsDisplayOptions} aligment={payoutsDisplaySelection} setAlignment={setPayoutsDisplaySelection}/>
+                      <ToggleSliderButton 
+                        choice={payoutsDisplaySelection} 
+                        choiceList={payoutsDisplayOptions} 
+                        aligment={payoutsDisplaySelection} 
+                        setAlignment={setPayoutsDisplaySelection}
+                      />
                     </>
-                  }
+                  )}
                 </div>
               ) : (
                 <div>
-                  {displaySelection === "Entries" &&
-                    <Select labelId="view-label" id="view" value={entriesViewSelection} onChange={(e) => setEntriesViewSelection(e.target.value)}>
+                  {displaySelection === "Entries" && (
+                    <Select 
+                      labelId="view-label" 
+                      id="view" 
+                      value={entriesViewSelection} 
+                      onChange={(e) => setEntriesViewSelection(e.target.value)}
+                    >
                       {entriesViewOptions.map(view => (
                         <MenuItem key={view} value={view}>{view}</MenuItem>
                       ))}
                     </Select>
-                  }
-                  {displaySelection === "Payouts" &&
+                  )}
+                  {displaySelection === "Payouts" && (
                     <div>
-                      <Select labelId="view-label" id="view" value={payoutsViewSelection} onChange={(e) => setPayoutsViewSelection(e.target.value)}>
+                      <Select 
+                        labelId="view-label" 
+                        id="view" 
+                        value={payoutsViewSelection} 
+                        onChange={(e) => setPayoutsViewSelection(e.target.value)}
+                      >
                         {payoutsViewOptions.map(view => (
                           <MenuItem key={view} value={view}>{view}</MenuItem>
                         ))}
                       </Select>
-                      <Select labelId="view-payouts-label" id="payouts-view" value={payoutsDisplaySelection} onChange={(e) => setPayoutsDisplaySelection(e.target.value)}>
+                      <Select 
+                        labelId="view-payouts-label" 
+                        id="payouts-view" 
+                        value={payoutsDisplaySelection} 
+                        onChange={(e) => setPayoutsDisplaySelection(e.target.value)}
+                      >
                         {payoutsDisplayOptions.map(view => (
                           <MenuItem key={view} value={view}>{view}</MenuItem>
                         ))}
                       </Select>
                     </div>
-                  }
-                </div>
-              )}
-
-            </div>
-          </section>
-        }
-
-        <section className="section-view">
-          <Box sx={{ width: '90%', typography: 'body1' }}>
-
-            {/* Preliminary results disclaimer message */}
-            { (allDataIsFetched && isPreliminaryResults && displaySelection === "Payouts") ?
-              (
-                <div>
-                  <br/>
-                  <h1 style={{ fontSize: '30px', marginBottom: '20px', color: config?.stylingConfig?.CONFIG_STYLING_POTS_TITLE_TEXT_COLOR }}>Total Pot Value: {formatCurrency(totalGrossPot)}</h1>
-                  <h3 className="timestamp-text" style={{color: config?.stylingConfig?.CONFIG_STYLING_POTS_TIMESTAMP_TEXT_COLOR}}><em>{timestamp}</em></h3>
-                </div>
-              ) : (
-                <div>
-                </div>
-            )
-            }
-
-            {/* Holdover message if there are no catches yet */}
-            { (!tournamentHasStarted && displaySelection === "Payouts") &&
-              <div>
-                <br/>
-                <h2 style={{color: config?.stylingConfig?.CONFIG_STYLING_POTS_TITLE_TEXT_COLOR}}>The {year} tournament will begin soon!</h2>
-              </div>
-            }
-
-            {/* Loading screen while fetching data from server */}
-            { !allDataIsFetched && 
-              <>
-                <br/>
-                <br/>
-                <h1 style={{color: config?.stylingConfig?.CONFIG_STYLING_POTS_TITLE_TEXT_COLOR}}>Loading, one moment please...</h1>
-                <CircularProgress/>
-              </>
-            }
-
-
-            {/* ENTRIES - BY BOARD */}
-            { ( (displaySelection === "Entries") && (entriesViewSelection === "Board") ) &&
-              <>
-                <br/> 
-
-                {/* Board Table Display */}
-                <div className="board-display">
-
-                  <h3 style={{fontStyle: "italic", color: config?.stylingConfig?.CONFIG_STYLING_POTS_TITLE_TEXT_COLOR}} >Scroll bar at bottom if needed</h3>
-                  <br/>
-
-                  {potEntryData ? (
-                    (() => {
-                      // Step 1: Get all pot names from all boards
-                      let allPots = [];
-                      config?.potsConfig?.CONFIG_POTS_BOARD_LIST.forEach(boardObj => {
-                        Object.values(boardObj).forEach(potArray => {
-                          potArray.forEach(pot => {
-                            allPots.push(pot.title); // Add pot titles
-                          });
-                        });
-                      });
-                      allPots = [...new Set(allPots)]; // Remove duplicates (just in case)
-
-                      // Step 2: Get all team names and their selected pots
-                      const teamsData = potEntryData.map(entry => {
-                        const teamPots = [];
-                        entry.boardSelections.forEach(boardSelection => {
-                          teamPots.push(...boardSelection.potList); // Collect all pots a team entered
-                        });
-                        return {
-                          teamName: entry.teamName,
-                          potsEntered: teamPots.sort(), // Sort the pots alphabetically for consistency
-                        };
-                      });
-
-                      // Step 3: Initialize a counter for the total number of entries in each pot
-                      const totalEntered = allPots.map(() => 0);
-
-                      // Define the styles for the table cells
-                      const headerCellStyle = {
-                        border: '1px solid #ddd',
-                        padding: '8px',
-                        fontSize: '14px',
-                        backgroundColor: '#f4f4f4',
-                        fontWeight: 'bold',
-                        position: 'sticky',
-                        top: 0,
-                        zIndex: 2,
-                        color: config?.stylingConfig?.CONFIG_STYLING_POTS_TITLE_TEXT_COLOR,
-                      };
-
-                      const teamCellStyle = {
-                        border: '1px solid #ddd',
-                        padding: '8px',
-                        fontSize: '14px',
-                        position: 'sticky',
-                        left: 0,
-                        backgroundColor: '#fff',
-                        zIndex: 1,
-                        fontWeight: 'bold',
-                        color: config?.stylingConfig?.CONFIG_STYLING_POTS_TITLE_TEXT_COLOR,
-                      };
-
-                      const tableCellStyle = {
-                        border: '1px solid #ddd',
-                        padding: '8px',
-                        textAlign: 'center',
-                        fontSize: '14px',
-                        color: config?.stylingConfig?.CONFIG_STYLING_POTS_TITLE_TEXT_COLOR,
-                      };
-
-                      return (
-                        <div className="scroll-wrapper"> {/* Scroll wrapper with reversed scroll */}
-                          <div className="scroll-content"> {/* Inner content with normal direction */}
-                            <table className="pot-table">
-                              <thead>
-                                <tr>
-                                  <th className="sticky-col" style={headerCellStyle}>Team</th>
-                                  {/* Render the pot names as columns */}
-                                  {allPots.map((potName, index) => (
-                                    <th key={index} style={headerCellStyle}>{potName}</th>
-                                  ))}
-                                </tr>
-                              </thead>
-                              <tbody>
-                                {/* Render each team and their pot entries */}
-                                {teamsData.map((team, teamIndex) => (
-                                  <tr key={teamIndex}>
-                                    <td className="sticky-col" style={teamCellStyle}>{team.teamName}</td>
-                                    {allPots.map((potName, potIndex) => {
-                                      const entered = team.potsEntered.includes(potName);
-                                      if (entered) totalEntered[potIndex] += 1; // Increment the counter if the team entered the pot
-                                      return (
-                                        <td key={potIndex} style={tableCellStyle}>
-                                          {entered ? 'X' : ''}
-                                        </td>
-                                      );
-                                    })}
-                                  </tr>
-                                ))}
-
-                                {/* Add the Total Entries row */}
-                                <tr>
-                                  <td style={{ ...teamCellStyle, fontWeight: 'bold' }}>Total Entries</td>
-                                  {totalEntered.map((count, index) => (
-                                    <td key={index} style={{ ...tableCellStyle, fontWeight: 'bold' }}>
-                                      {count}
-                                    </td>
-                                  ))}
-                                </tr>
-                              </tbody>
-                            </table>
-                          </div>
-                        </div>
-                      );
-                    })()
-                  ) : (
-                    <p style={{color: config?.stylingConfig?.CONFIG_STYLING_POTS_TITLE_TEXT_COLOR}}>No pot entry data available.</p>
                   )}
                 </div>
-
-              </>
-            }
-
-            {/* ENTRIES - BY POT */}
-            { ( (displaySelection === "Entries") && (entriesViewSelection === "By Pot") ) &&
+              )}
+            </div>
+          </section>
+        )}
+  
+        <section className="section-view">
+          <Box sx={{ width: '90%', typography: 'body1' }}>
+            {/* Preliminary results disclaimer message */}
+            {(allDataIsFetched && isPreliminaryResults && displaySelection === "Payouts") && (
+              <div>
+                <br/>
+                <h1 style={{ fontSize: '30px', marginBottom: '20px', color: config?.stylingConfig?.CONFIG_STYLING_POTS_TITLE_TEXT_COLOR }}>
+                  Total Pot Value: {formatCurrency(totalGrossPot)}
+                </h1>
+                <h3 className="timestamp-text" style={{color: config?.stylingConfig?.CONFIG_STYLING_POTS_TIMESTAMP_TEXT_COLOR}}>
+                  <em>{timestamp}</em>
+                </h3>
+              </div>
+            )}
+  
+            {/* Holdover message if there are no catches yet */}
+            {(!tournamentHasStarted && displaySelection === "Payouts") && (
+              <div>
+                <br/>
+                <h2 style={{color: config?.stylingConfig?.CONFIG_STYLING_POTS_TITLE_TEXT_COLOR}}>
+                  The {year} tournament will begin soon!
+                </h2>
+              </div>
+            )}
+  
+            {/* Loading screen while fetching data from server */}
+            {!allDataIsFetched && (
               <>
                 <br/>
-
-                {/* Select pot */}
-                <div className='pot-div'>
-                  <Autocomplete
-                    className='pot-autocomplete'
-                    disablePortal
-                    id="select-entries-by-pot-autocomplete-box"
-                    value={entriesPotSelection}
-                    options={entriesPotOptions}
-                    renderInput={(params) => <TextField {...params} label="Select Pot" />}
-                    onChange={handleEntriesPotSelection}
-                    sx={{ width: '400px' }}  
-                  />
-                </div>
-                <br/>        
-
-                {/* Display summary */}
-                {entriesPotSelection && (
-                  <>
-                    {potEntryData ? (
-                      (() => {
-                        let selectedPotTeams = [];
-                        let grossTotal = 0;
-                        let tournamentCut = 1;  // Default cut in case it's not found.
-                        let potAmount = 0;    // Default in case not found
-
-                        // Find the tournamentCut from CONFIG_POTS_BOARD_LIST based on the selected pot.
-                        config?.potsConfig?.CONFIG_POTS_BOARD_LIST.forEach(boardObj => {
-                          Object.values(boardObj).forEach(potArray => {
-                            potArray.forEach(pot => {
-                              if (pot.title === entriesPotSelection) {
-                                tournamentCut = pot.tournamentCut;
-                                potAmount = pot.amount;
-                              }
-                            });
-                          });
-                        });
-
-                        // Collect teams and calculate totals
-                        potEntryData.forEach(entry => {
-                          entry.boardSelections.forEach(boardSelection => {
-                            if (boardSelection.potList.includes(entriesPotSelection)) {
-                              selectedPotTeams.push(entry.teamName);
-                              grossTotal += potAmount;
-                            }
-                          });
-                        });
-
-                        const netTotal = grossTotal * (1 - tournamentCut);
-
-                        // Sort the teams alphabetically
-                        selectedPotTeams = selectedPotTeams.sort();
-
-                        return (
-                          <div>
-                            <p style={{ fontSize: '20px', color: config?.stylingConfig?.CONFIG_STYLING_POTS_TITLE_TEXT_COLOR }}><strong>Pot Name:</strong> {entriesPotSelection}</p>
-                            <p style={{ fontSize: '20px', color: config?.stylingConfig?.CONFIG_STYLING_POTS_TITLE_TEXT_COLOR }}><strong>Total Payout:</strong> {formatCurrency(netTotal)}</p>
-                            <p style={{ fontSize: '20px', color: config?.stylingConfig?.CONFIG_STYLING_POTS_TITLE_TEXT_COLOR }}><strong>Teams Entered ({selectedPotTeams.length})</strong></p>
-                            <ul>
-                              {selectedPotTeams.map((team, index) => (
-                                <p key={index} style={{ fontSize: '18px', color: config?.stylingConfig?.CONFIG_STYLING_POTS_TITLE_TEXT_COLOR}}>{team}</p>
-                              ))}
-                            </ul>
-                          </div>
-                        );
-                      })()
-                    ) : (
-                      <p style={{color: config?.stylingConfig?.CONFIG_STYLING_POTS_TITLE_TEXT_COLOR}}>No entries found for this pot.</p>
-                    )}
-                  </>
-                )}
-
-              </>        
-            }
-
-            {/* ENTRIES - BY TEAM */}
-            { ( (displaySelection === "Entries") && (entriesViewSelection === "By Team") ) &&
-              <>
                 <br/>
-
-                {/* Select team */}
-                {!teamNameListIsLoaded ? (
-                    <CircularProgress/>
-                  ) : (
-                    <div className='pot-div'>
-                      <Autocomplete
-                        className='pot-autocomplete'
-                        disablePortal
-                        id="select-entries-by-team-autocomplete-box"
-                        value={entriesTeamSelection}
-                        options={registeredTeamNameList}
-                        renderInput={(params) => <TextField {...params} label="Select Team" />}
-                        onChange={handleEntriesTeamSelection}
-                        sx={{ width: '400px' }}  
-                      />
-                    </div>
-                  )
-                }       
-                <br/>       
-
-                {/* Display summary */}
-                {entriesTeamSelection && (
-                  <>
-                    {/* Team Name */}
-                    <p style={{ fontSize: '20px', color: config?.stylingConfig?.CONFIG_STYLING_POTS_TITLE_TEXT_COLOR }}><strong>Team Name:</strong> {entriesTeamSelection}</p>
-
-                    {potEntryData ? (
-                      potEntryData
-                        .filter(entry => entry.teamName === entriesTeamSelection)
-                        .map((entry, index) => {
-                          // Collect all pot names from different boards into a single list
-                          let potsEntered = [];
-                          entry.boardSelections.forEach(boardSelection => {
-                            potsEntered = potsEntered.concat(boardSelection.potList);
-                          });
-
-                          // Sort the pot names alphabetically
-                          potsEntered = potsEntered.sort();
-
-                          // Total Pot Fee for the team
-                          const totalPotFee = entry.totalPotFee;
-
-                          return (
-                            <div key={index}>
-                              {/* Total Pot Fee */}
-                              <p style={{ fontSize: '20px', color: config?.stylingConfig?.CONFIG_STYLING_POTS_TITLE_TEXT_COLOR }}>
-                                <strong>Total Wagered:</strong> {formatCurrency(totalPotFee)}
-                              </p>
-
-                              {/* Pots Entered */}
-                              <p style={{ fontSize: '20px', color: config?.stylingConfig?.CONFIG_STYLING_POTS_TITLE_TEXT_COLOR }}>
-                                <strong>Pots Entered ({potsEntered.length}):</strong>
-                              </p>
-
-                              <ul>
-                                {potsEntered.map((pot, potIndex) => (
-                                  <p key={potIndex} style={{ fontSize: '18px', color: config?.stylingConfig?.CONFIG_STYLING_POTS_TITLE_TEXT_COLOR }}>{pot}</p>
-                                ))}
-                              </ul>
-                            </div>
-                          );
-                        })
-                    ) : (
-                      <p style={{color: config?.stylingConfig?.CONFIG_STYLING_POTS_TITLE_TEXT_COLOR}}>No entries found for this team.</p>
-                    )}
-                  </>
-                )}
-                
+                <h1 style={{color: config?.stylingConfig?.CONFIG_STYLING_POTS_TITLE_TEXT_COLOR}}>
+                  Loading, one moment please...
+                </h1>
+                <CircularProgress/>
               </>
-            }
+            )}
+  
+            {/* ENTRIES SECTION */}
+            {displaySelection === "Entries" && (
+              <>
 
-            {/* PAYOUTS - BY POT */}
-            { (displaySelection === "Payouts") && (payoutsViewSelection === "By Pot") && (payoutsDisplaySelection === "List") && tournamentHasStarted &&
-              (!hasLoaded ? (
-                <div>
-                  <h1 style={{color: config?.stylingConfig?.CONFIG_STYLING_POTS_TITLE_TEXT_COLOR}}>Loading...</h1>
-                  <CircularProgress />
-                </div>
-              ) : (
-                <>
-                  <br/>
-                  {payoutsResultArray.map(result => {
-                    if (result.rows.length > 0) {
-                      return (
-                        <PotsResultTable
-                          key={result.title}
-                          style={{ width: '100%' }}
-                          title={result.title}
-                          subtitle={result.subtitle}
-                          numPlaces={result.numPlaces}
-                          rows={result.rows}
-                          columns={matches ? (result.desktopColumns || []) : (result.mobileColumns || [])}
-                          scroll={matches ? null : "scroll"}
-                          density="compact"
-                        />
-                      );
-                    }
-                    return null;
-                  })}
-                </>
-              ))
-            }
+                {/* ENTRIES - BY BOARD */}
+                {(displaySelection === "Entries") && (entriesViewSelection === "Board") && (
+                  <>
+                    <br/> 
 
-            { ( (displaySelection === "Payouts") && (payoutsViewSelection === "By Pot") && (payoutsDisplaySelection === "Slideshow") && (tournamentHasStarted) ) &&
-              (!hasLoaded ? (
-                <div>
-                  <h1 style={{color: config?.stylingConfig?.CONFIG_STYLING_POTS_TITLE_TEXT_COLOR}}>Loading...</h1>
-                  <CircularProgress />
-                </div>
-              ) : (
-                <div>
-                  <br/>
-                  <PotCarousel results={payoutsResultArray} />
-                </div>
-              ))
-            }
-
-            { ( (displaySelection === "Payouts") && (payoutsViewSelection === "By Pot") && (payoutsDisplaySelection === "Select") && (tournamentHasStarted) ) &&
-              (!hasLoaded ? (
-                <div>
-                  <h1 style={{color: config?.stylingConfig?.CONFIG_STYLING_POTS_TITLE_TEXT_COLOR}}>Loading...</h1>
-                  <CircularProgress />
-                </div>
-                ) : (
-                  <div>
-                    <br/>
-                    <div className="select-div">
+                    {/* Board Selection Dropdown */}
+                    <div className='pot-div' style={{ marginBottom: '20px', display: 'flex', justifyContent: 'center' }}>
                       <Select
-                        labelId="select-category"
-                        id="select-category"
-                        value={payoutsSelectedResult[0]?.title || ''}
-                        onChange={handlePayoutsSelectResult}
+                        value={selectedBoard}
+                        onChange={(e) => setSelectedBoard(e.target.value)}
+                        sx={{ minWidth: 200 }}
                       >
-                        {config?.potsConfig?.CONFIG_POTS_CATEGORIES.map((category) => (
-                          <MenuItem key={category.title} value={category.title}>
-                            {category.title}
-                          </MenuItem>
-                        ))}
+                        <MenuItem value="Catch & Release">Catch & Release</MenuItem>
+                        <MenuItem value="Offshore">Offshore</MenuItem>
+                        <MenuItem value="Bay/Surf">Bay/Surf</MenuItem>
                       </Select>
                     </div>
 
-                    { payoutsHasSelectedResult ? (
-                      <div>
-                        {payoutsSelectedResult.map(result => (
-                          result.rows.length > 0 ? (
+                    {/* Board Table Display */}
+                    <div className="board-display">
+                      <h3 style={{fontStyle: "italic", color: config?.stylingConfig?.CONFIG_STYLING_POTS_TITLE_TEXT_COLOR}} >
+                        Scroll bar at bottom if needed
+                      </h3>
+                      <br/>
+
+                      {potEntryData ? (
+                        (() => {
+                          // Step 1: Get pot names for selected board
+                          let allPots = [];
+                          config?.potsConfig?.CONFIG_POTS_BOARD_LIST.forEach(boardObj => {
+                            if (Object.keys(boardObj)[0] === selectedBoard) {
+                              Object.values(boardObj).forEach(potArray => {
+                                potArray.forEach(pot => {
+                                  allPots.push(pot.title);
+                                });
+                              });
+                            }
+                          });
+
+                          // Step 2: Get entries for the selected board
+                          const entriesData = potEntryData
+                            .filter(entry => {
+                              const boardSelection = entry.boardSelections.find(bs => bs.board === selectedBoard);
+                              return boardSelection !== undefined;
+                            })
+                            .map(entry => {
+                              const boardSelection = entry.boardSelections.find(bs => bs.board === selectedBoard);
+                              return {
+                                name: entry.name, // This is either team name or angler name
+                                potsEntered: boardSelection ? boardSelection.potList.sort() : []
+                              };
+                            });
+
+                          // Step 3: Initialize counter for total entries
+                          const totalEntered = allPots.map(() => 0);
+
+                          // Define table styles
+                          const headerCellStyle = {
+                            border: '1px solid #ddd',
+                            padding: '8px',
+                            fontSize: '14px',
+                            backgroundColor: '#f4f4f4',
+                            fontWeight: 'bold',
+                            position: 'sticky',
+                            top: 0,
+                            zIndex: 2,
+                            color: config?.stylingConfig?.CONFIG_STYLING_POTS_TITLE_TEXT_COLOR,
+                          };
+
+                          const nameCellStyle = {
+                            border: '1px solid #ddd',
+                            padding: '8px',
+                            fontSize: '14px',
+                            position: 'sticky',
+                            left: 0,
+                            backgroundColor: '#fff',
+                            zIndex: 1,
+                            fontWeight: 'bold',
+                            color: config?.stylingConfig?.CONFIG_STYLING_POTS_TITLE_TEXT_COLOR,
+                          };
+
+                          const tableCellStyle = {
+                            border: '1px solid #ddd',
+                            padding: '8px',
+                            textAlign: 'center',
+                            fontSize: '14px',
+                            color: config?.stylingConfig?.CONFIG_STYLING_POTS_TITLE_TEXT_COLOR,
+                          };
+
+                          return (
+                            <div className="scroll-wrapper">
+                              <div className="scroll-content">
+                                <table className="pot-table">
+                                  <thead>
+                                    <tr>
+                                      <th className="sticky-col" style={headerCellStyle}>
+                                        {selectedBoard === "Bay/Surf" ? "Angler" : "Team"}
+                                      </th>
+                                      {allPots.map((potName, index) => (
+                                        <th key={index} style={headerCellStyle}>{potName}</th>
+                                      ))}
+                                    </tr>
+                                  </thead>
+                                  <tbody>
+                                    {entriesData.map((entry, entryIndex) => (
+                                      <tr key={entryIndex}>
+                                        <td className="sticky-col" style={nameCellStyle}>{entry.name}</td>
+                                        {allPots.map((potName, potIndex) => {
+                                          const entered = entry.potsEntered.includes(potName);
+                                          if (entered) totalEntered[potIndex] += 1;
+                                          return (
+                                            <td key={potIndex} style={tableCellStyle}>
+                                              {entered ? 'X' : ''}
+                                            </td>
+                                          );
+                                        })}
+                                      </tr>
+                                    ))}
+
+                                    {/* Total Entries row */}
+                                    <tr>
+                                      <td style={{ ...nameCellStyle, fontWeight: 'bold' }}>Total Entries</td>
+                                      {totalEntered.map((count, index) => (
+                                        <td key={index} style={{ ...tableCellStyle, fontWeight: 'bold' }}>
+                                          {count}
+                                        </td>
+                                      ))}
+                                    </tr>
+                                  </tbody>
+                                </table>
+                              </div>
+                            </div>
+                          );
+                        })()
+                      ) : (
+                        <p style={{color: config?.stylingConfig?.CONFIG_STYLING_POTS_TITLE_TEXT_COLOR}}>
+                          No pot entry data available.
+                        </p>
+                      )}
+                    </div>
+                  </>
+                )}
+  
+                {/* ENTRIES - BY POT */}
+                {entriesViewSelection === "By Pot" && (                   
+                  <>                     
+                    <br/>                     
+                    <div className='pot-div'>                       
+                      <Autocomplete                         
+                        className='pot-autocomplete'                         
+                        disablePortal                         
+                        id="select-entries-by-pot-autocomplete-box"                         
+                        value={entriesPotSelection}                         
+                        options={entriesPotOptions}                         
+                        renderInput={(params) => <TextField {...params} label="Select Pot" />}                         
+                        onChange={handleEntriesPotSelection}                         
+                        sx={{ width: '400px' }}                         
+                      />                     
+                    </div>                     
+                    <br/>        
+
+                    {/* Display summary */}
+                    {entriesPotSelection && (
+                      <>
+                        {potEntryData ? (
+                          (() => {
+                            // Find which board contains this pot
+                            let potBoard = '';
+                            let potAmount = 0;
+                            let tournamentCut = 1;
+
+                            config?.potsConfig?.CONFIG_POTS_BOARD_LIST.forEach(boardObj => {
+                              Object.entries(boardObj).forEach(([boardName, potArray]) => {
+                                potArray.forEach(pot => {
+                                  if (pot.title === entriesPotSelection) {
+                                    potBoard = boardName;
+                                    potAmount = pot.amount;
+                                    tournamentCut = pot.tournamentCut;
+                                  }
+                                });
+                              });
+                            });
+
+                            // Get all entries for this pot
+                            const selectedPotEntries = potEntryData
+                              .filter(entry => {
+                                return entry.boardSelections.some(boardSelection => 
+                                  boardSelection.potList.includes(entriesPotSelection)
+                                );
+                              })
+                              .map(entry => entry.name)
+                              .sort(); // Sort names alphabetically
+
+                            const grossTotal = selectedPotEntries.length * potAmount;
+                            const netTotal = grossTotal * (1 - tournamentCut);
+
+                            return (
+                              <div>
+                                <p style={{ fontSize: '20px', color: config?.stylingConfig?.CONFIG_STYLING_POTS_TITLE_TEXT_COLOR }}>
+                                  <strong>Pot Name:</strong> {entriesPotSelection}
+                                </p>
+                                <p style={{ fontSize: '20px', color: config?.stylingConfig?.CONFIG_STYLING_POTS_TITLE_TEXT_COLOR }}>
+                                  <strong>Total Payout:</strong> {formatCurrency(netTotal)}
+                                </p>
+                                <p style={{ fontSize: '20px', color: config?.stylingConfig?.CONFIG_STYLING_POTS_TITLE_TEXT_COLOR }}>
+                                  <strong>{potBoard === 'Bay/Surf' ? 'Anglers' : 'Teams'} Entered ({selectedPotEntries.length})</strong>
+                                </p>
+                                <ul>
+                                  {selectedPotEntries.map((name, index) => (
+                                    <p key={index} style={{ 
+                                      fontSize: '18px', 
+                                      color: config?.stylingConfig?.CONFIG_STYLING_POTS_TITLE_TEXT_COLOR,
+                                      marginLeft: '20px'
+                                    }}>
+                                      {name}
+                                    </p>
+                                  ))}
+                                </ul>
+                              </div>
+                            );
+                          })()
+                        ) : (
+                          <p style={{color: config?.stylingConfig?.CONFIG_STYLING_POTS_TITLE_TEXT_COLOR}}>
+                            No entries found for this pot.
+                          </p>
+                        )}
+                      </>
+                    )}
+                  </>                 
+                )}
+  
+                {/* ENTRIES - BY TEAM/ANGLER */}
+                {entriesViewSelection === "By Entrant" && (
+                  <SimplifiedEntries
+                    registeredTeamNameList={registeredTeamNameList}
+                    registeredAnglerNameList={registeredAnglerNameList}
+                    potEntryData={potEntryData}
+                    formatCurrency={formatCurrency}
+                    config={config}
+                    teamNameListIsLoaded={teamNameListIsLoaded}
+                    anglerNameListIsLoaded={anglerNameListIsLoaded}
+                  />
+                )}
+
+              </>
+            )}
+  
+            {/* PAYOUTS SECTION */}
+            {displaySelection === "Payouts" && tournamentHasStarted && (
+            <>
+              {/* List View */}
+              {payoutsDisplaySelection === "List" && (
+                <>
+                  <br/>
+                  {!hasLoaded ? (
+                    <div>
+                      <h1 style={{color: config?.stylingConfig?.CONFIG_STYLING_POTS_TITLE_TEXT_COLOR}}>Loading...</h1>
+                      <CircularProgress />
+                    </div>
+                  ) : (
+                    <>
+                      {payoutsResultArray.map(result => {
+                        if (result.rows.length > 0) {
+                          return (
                             <PotsResultTable
                               key={result.title}
                               style={{ width: '100%' }}
                               title={result.title}
                               subtitle={result.subtitle}
-                              numPlaces={result.numPlaces}
+                              numPlaces={result.numPlaces}  
                               rows={result.rows}
                               columns={matches ? (result.desktopColumns || []) : (result.mobileColumns || [])}
-                              scroll={matches ? (null) : ("scroll")}
+                              scroll={matches ? null : "scroll"}
                               density="compact"
                             />
-                          ) : (
-                            <h1 key={result.title} style={{color: config?.stylingConfig?.CONFIG_STYLING_POTS_TITLE_TEXT_COLOR}}>No results yet.</h1>
-                          )
-                        ))}
-                      </div>
-                    ) : (
-                      <h1 style={{color: config?.stylingConfig?.CONFIG_STYLING_POTS_TITLE_TEXT_COLOR}}>Please select a category</h1>
-                    )}
-                  </div>
-                )
-              )
-            }
+                          );
+                        }
+                        return null;
+                      })}
+                    </>
+                  )}
+                </>
+              )}
 
-            {/* PAYOUTS - BY TEAM */}
-            { ( (displaySelection === "Payouts") && (payoutsViewSelection === "By Team") && (payoutsDisplaySelection === "List") && (tournamentHasStarted) ) &&
-            (!hasLoaded ? (
-              <div>
-                <h1 style={{color: config?.stylingConfig?.CONFIG_STYLING_POTS_TITLE_TEXT_COLOR}}>Loading...</h1>
-                <CircularProgress />
-              </div>
-            ) : (
-              <>
-                <br/>
-                <PotsResultTable
-                  style={{ width: '100%' }}
-                  title="Team Payout Summary"
-                  rows={payoutsTeamResultSummary.map((team, index) => ({ ...team, id: index }))}
-                  columns={matches ? config?.potsConfig?.CONFIG_POTS_TEAM_SUMMARY_DESKTOP_COLUMN_DEFINITIONS : config?.potsConfig?.CONFIG_POTS_TEAM_SUMMARY_MOBILE_COLUMN_DEFINITIONS}
-                  scroll={matches ? null : "scroll"}
-                  density="compact"
-                />
-              </>
-            ))}
-
-            { ( (displaySelection === "Payouts") && (payoutsViewSelection === "By Team") && (payoutsDisplaySelection === "Select") && (tournamentHasStarted) ) &&
-            (!hasLoaded ? (
-              <div>
-                <h1 style={{color: config?.stylingConfig?.CONFIG_STYLING_POTS_TITLE_TEXT_COLOR}}>Loading...</h1>
-                <CircularProgress />
-              </div>
-              ) : (
+              {/* Slideshow View */}
+              {payoutsDisplaySelection === "Slideshow" && (
                 <>
                   <br/>
+                  {!hasLoaded ? (
+                    <div>
+                      <h1 style={{color: config?.stylingConfig?.CONFIG_STYLING_POTS_TITLE_TEXT_COLOR}}>Loading...</h1>
+                      <CircularProgress />
+                    </div>
+                  ) : (
+                    <>
+                      <PotCarousel results={payoutsResultArray} />
+                    </>
+                  )}
+                </>
+              )}
 
-                  {/* Select team */}
-                  {!teamNameListIsLoaded ? (
-                      <CircularProgress/>
-                    ) : (
+              {/* Select View */}
+              {payoutsDisplaySelection === "Select" && (
+                <>
+                  <br/>
+                    <>
                       <div className='pot-div'>
                         <Autocomplete
                           className='pot-autocomplete'
                           disablePortal
-                          id="select-payouts-by-team-autocomplete-box"
-                          value={payoutsTeamSelection}
-                          options={registeredTeamNameList}
-                          renderInput={(params) => <TextField {...params} label="Select Team" />}
-                          onChange={handlePayoutsTeamSelection}
-                          sx={{ width: '400px' }}  
+                          id="select-payouts-by-pot-autocomplete-box"
+                          value={payoutsSelectedResult[0]?.title || ''}
+                          options={config?.potsConfig?.CONFIG_POTS_CATEGORIES.map(cat => cat.title)}
+                          renderInput={(params) => <TextField {...params} label="Select Pot" />}  
+                          onChange={(_, value) => {
+                            let result = payoutsResultArray.filter(item => item.title === value);
+                            setPayoutsSelectedResult(result);
+                            setPayoutsHasSelectedResult(true);
+                          }}
+                          sx={{ width: '400px' }}
                         />
                       </div>
-                    )
-                  }       
-                  <br/>  
-
-                  {!payoutsTeamSelection && (
-                    <h1 style={{color: config?.stylingConfig?.CONFIG_STYLING_POTS_TITLE_TEXT_COLOR}}>Please select a team</h1>
-                  )}
-
-                  {payoutsTeamSelection && (
-                    <>
-                      {payoutsTeamResultObject[payoutsTeamSelection] && payoutsTeamResultObject[payoutsTeamSelection].length > 0 ? (
-                        <PotsResultTable
-                          style={{ width: '100%' }}
-                          title={`${payoutsTeamSelection} Payout: ${formatCurrency(payoutsTeamResultObject[payoutsTeamSelection].reduce((sum, result) => sum + result.payout, 0))}`}
-                          rows={payoutsTeamResultObject[payoutsTeamSelection].map((result, index) => ({
-                            ...result,
-                            id: index,
-                            place: formatPlace(result.place)  // Format the place value
-                          }))}
-                          columns={matches ? config?.potsConfig?.CONFIG_POTS_INDIVIDUAL_TEAM_SUMMARY_DESKTOP_COLUMN_DEFINITIONS : config?.potsConfig?.CONFIG_POTS_INDIVIDUAL_TEAM_SUMMARY_MOBILE_COLUMN_DEFINITIONS}
-                          scroll={matches ? null : "scroll"}
-                          density="compact"
-                        />
-                      ) : (
-                        <h1 style={{color: config?.potsConfig?.CONFIG_STYLING_POTS_TITLE_TEXT_COLOR}}>{payoutsTeamSelection} has no payouts.</h1>
-                      )}
+                      <br />
+                      {payoutsHasSelectedResult && payoutsSelectedResult.map(result => (
+                        result.rows.length > 0 ? (
+                          <PotsResultTable
+                            key={result.title}
+                            style={{ width: '100%' }}
+                            title={result.title}
+                            subtitle={result.subtitle}
+                            numPlaces={result.numPlaces}
+                            rows={result.rows}
+                            columns={matches ? result.desktopColumns : result.mobileColumns}
+                            scroll={matches ? null : "scroll"}
+                            density="compact"
+                          />
+                        ) : (
+                          <p style={{color: config?.stylingConfig?.CONFIG_STYLING_POTS_TITLE_TEXT_COLOR}}>
+                            No results yet for {result.title}
+                          </p>
+                        )
+                      ))}
                     </>
-                  )}
-                </>
-              )
-            )}
 
-            {(displaySelection === "Payouts") && (payoutsViewSelection === "By Team") && (payoutsDisplaySelection === "Slideshow") && (tournamentHasStarted) && 
-            (!hasLoaded ? (
-              <div>
-                <h1 style={{color: config?.stylingConfig?.CONFIG_STYLING_POTS_TITLE_TEXT_COLOR}}>Loading...</h1>
-                <CircularProgress />
-              </div>
-            ) : (
-              <>
-                <br/>
-                <PotCarousel
-                    results={Object.keys(payoutsTeamResultObject).map((teamName) => ({
-                    desktopColumns: config?.potsConfig?.CONFIG_POTS_INDIVIDUAL_TEAM_SUMMARY_DESKTOP_COLUMN_DEFINITIONS,
-                    mobileColumns: config?.potsConfig?.CONFIG_POTS_INDIVIDUAL_TEAM_SUMMARY_MOBILE_COLUMN_DEFINITIONS,
-                    title: `${teamName} Payout: ${formatCurrency(
-                      payoutsTeamResultObject[teamName]?.reduce((sum, result) => sum + result.payout, 0) || 0
-                    )}`,
-                    rows: (payoutsTeamResultObject[teamName] || []).map((result, index) => ({
-                      ...result,
-                      id: index,
-                      place: formatPlace(result.place)  // Format the place value
-                    })),
-                  }))}
-                />
-              </>
-            ))}
+                </>
+              )}
+            </>
+            )}
 
           </Box>
         </section>
@@ -975,6 +1019,7 @@ function PotsPage() {
       </main>
     </AnimatedPage>
   );
+
 }
 
 export default PotsPage;

@@ -20,10 +20,8 @@ import CrudTable from '../components/tables/CrudTable';
 import Footer from '../components/Footer';
 import Login from '../components/Login';
 import { fetchAndGenerateRegistrationReport } from '../generators/registrationReports';
-import { fetchAndGenerateCatchesReport } from '../generators/catchesReports';
 import { generateLeaderboardReport } from '../generators/leaderboardReports';
 import { generatePotsReport } from '../generators/potReports';
-import { generateAwardsReport } from '../generators/awardReports';
 import "./RegisterPage.css";
 import { loadConfigForYear } from '../config/masterConfig';
 
@@ -58,9 +56,7 @@ function AdminPage() {
   const [registrationStats, setRegistrationStats] = useState({
     totalAnglers: 0,
     checkedInAnglers: 0,
-    totalFees: 0,
     totalRegistrationFees: 0,
-    totalAddOnFees: 0
   });
   const openAddAnglerModal = () => {setIsAddAnglerModalOpen(true)};
   const closeAddAnglerModal = () => {setIsAddAnglerModalOpen(false)};
@@ -68,6 +64,17 @@ function AdminPage() {
   const closeEditAnglerModal = () => {setIsEditAnglerModalOpen(false)};
   const openDeleteAnglerModal = () => {setIsDeleteAnglerModalOpen(true)};
   const closeDeleteAnglerModal = () => {setIsDeleteAnglerModalOpen(false)};
+  const [isEarlyBird, setIsEarlyBird] = useState(false);
+  const [earlyBird, setEarlyBird] = useState({
+    adultEarlybirdFee: 0,
+    juniorEarlybirdFee: 0,
+    date: '',
+  });
+  const [normalFee, setNormalFee] = useState({
+    adultNormalfee: 0,
+    juniorNormalfee: 0,
+    date: '',
+  });
 
   // STATE - SPONSORS
   const [sponsorRows, setSponsorRows] = useState([]);
@@ -79,10 +86,7 @@ function AdminPage() {
   const [editSponsorInfo, setEditSponsorInfo] = useState();
   const [sponsorStats, setSponsorStats] = useState({
     totalSponsors: 0,
-    checkedInSponsors: 0,
-    totalFees: 0,
-    totalRegistrationFees: 0,
-    totalAddOnFees: 0
+    totalSponsorDonations: 0,
   });
   const openAddSponsorModal = () => {setIsAddSponsorModalOpen(true)};
   const closeAddSponsorModal = () => {setIsAddSponsorModalOpen(false)};
@@ -101,6 +105,7 @@ function AdminPage() {
   const [editCatchInfo, setEditCatchInfo] = useState();
   const [catchesStats, setCatchesStats] = useState({
     totalFish: 0,
+    divisionStats: null,
   });
   const openAddCatchModal = () => {setIsAddCatchModalOpen(true)};
   const closeAddCatchModal = () => {setIsAddCatchModalOpen(false)};
@@ -148,11 +153,8 @@ function AdminPage() {
 
   // REPORTS
   const [isRegistrationReportLoading, setIsRegistrationReportLoading] = useState(false);
-  const [isCatchesSpeciesReportLoading, setIsCatchesSpeciesReportLoading] = useState(false);
-  const [isCatchesAnglerReportLoading, setIsCatchesAnglerReportLoading] = useState(false);
   const [isLeaderboardReportLoading, setIsLeaderboardReportLoading] = useState(false);
   const [isPotsReportLoading, setIsPotsReportLoading] = useState(false);
-  const [isAwardsReportLoading, setIsAwardsReportLoading] = useState(false);
 
   // INITIALIZE
   useEffect(() => {
@@ -194,6 +196,16 @@ function AdminPage() {
           CONFIG_STYLING_LOGIN_TEXT_COLOR,
           CONFIG_STYLING_STATS_TEXT_COLOR,
         },
+        registrationConfig: {
+          CONFIG_REGISTRATION_HAS_EARLYBIRD_REGISTRATION,
+          CONFIG_REGISTRATION_EARLYBIRD_ADULT_FEE,
+          CONFIG_REGISTRATION_EARLYBIRD_JUNIOR_FEE,
+          CONFIG_REGISTRATION_EARLYBIRD_DATE_STRING,
+          CONFIG_REGISTRATION_NORMAL_ADULT_FEE,
+          CONFIG_REGISTRATION_NORMAL_JUNIOR_FEE,
+          CONFIG_REGISTRATION_NORMAL_DATE_STRING,
+          CONFIG_REGISTRATION_EARLYBIRD_CUTOFF_IN_LOCAL_TIME_IN_MS,
+        },
         adminConfig: {
           CONFIG_ADMIN_DEFAULT_TAB_NAME,
           CONFIG_ADMIN_DEFAULT_TAB_NAME_LIST,
@@ -214,6 +226,25 @@ function AdminPage() {
           CONFIG_POTS_BOARD_LIST,
         },
       } = loadedConfig;
+
+      setEarlyBird({
+        hasEarlyBird: loadedConfig.registrationConfig.CONFIG_REGISTRATION_HAS_EARLYBIRD_REGISTRATION,
+        adultEarlybirdFee: loadedConfig.registrationConfig.CONFIG_REGISTRATION_EARLYBIRD_ADULT_FEE,
+        juniorEarlybirdFee: loadedConfig.registrationConfig.CONFIG_REGISTRATION_EARLYBIRD_JUNIOR_FEE,
+        date: loadedConfig.registrationConfig.CONFIG_REGISTRATION_EARLYBIRD_DATE_STRING,
+      });
+      setNormalFee({
+        adultNormalfee: loadedConfig.registrationConfig.CONFIG_REGISTRATION_NORMAL_ADULT_FEE,
+        juniorNormalfee: loadedConfig.registrationConfig.CONFIG_REGISTRATION_NORMAL_JUNIOR_FEE,
+        date: loadedConfig.registrationConfig.CONFIG_REGISTRATION_NORMAL_DATE_STRING,
+      });
+
+      const currentTime = new Date().getTime();
+      if (currentTime > loadedConfig.registrationConfig.CONFIG_REGISTRATION_EARLYBIRD_CUTOFF_IN_LOCAL_TIME_IN_MS){
+        setIsEarlyBird(false);
+      } else {
+        setIsEarlyBird(true);
+      }
 
       const apiUrl = process.env.REACT_APP_NODE_ENV === 'production'
         ? process.env.REACT_APP_SERVER_URL_PRODUCTION
@@ -278,7 +309,7 @@ function AdminPage() {
 
           // Registration
           if (loadedConfig.generalConfig.CONFIG_GENERAL_HAS_REGISTRATION) {
-            const [totalAnglersRes, checkedInAnglersRes, totalFeesRes, totalRegistrationFeesRes, totalAddOnFeesRes] = await Promise.all([
+            const [totalAnglersRes, checkedInAnglersRes, totalRegistrationFeesRes, totalSponsorRes, totalSponsorDonationRes] = await Promise.all([
               fetch(`${apiUrl}/api/${year}/registration_get_number_of_registered_teams`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -289,36 +320,40 @@ function AdminPage() {
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ teamTableName: loadedConfig.generalConfig.CONFIG_GENERAL_FIREBASE_TEAMS_TABLE_NAME })
               }),
-              fetch(`${apiUrl}/api/${year}/registration_get_total_fees_collected`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ teamTableName: loadedConfig.generalConfig.CONFIG_GENERAL_FIREBASE_TEAMS_TABLE_NAME })
-              }),
               fetch(`${apiUrl}/api/${year}/registration_get_total_registration_fees_collected`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ teamTableName: loadedConfig.generalConfig.CONFIG_GENERAL_FIREBASE_TEAMS_TABLE_NAME })
               }),
-              fetch(`${apiUrl}/api/${year}/registration_get_total_add_on_fees_collected`, {
+              fetch(`${apiUrl}/api/${year}/registration_get_number_of_registered_sponsors`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ teamTableName: loadedConfig.generalConfig.CONFIG_GENERAL_FIREBASE_TEAMS_TABLE_NAME })
-              })
+                // body: JSON.stringify({})
+              }),
+              fetch(`${apiUrl}/api/${year}/registration_get_total_sponsor_donations_collected`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                // body: JSON.stringify({})
+              }),
             ]);
 
             const totalAnglers = await totalAnglersRes.json();
             const checkedInAnglers = await checkedInAnglersRes.json();
-            const totalFees = await totalFeesRes.json();
             const totalRegistrationFees = await totalRegistrationFeesRes.json();
-            const totalAddOnFees = await totalAddOnFeesRes.json();
+            const totalSponsors = await totalSponsorRes.json();
+            const totalSponsorDonations = await totalSponsorDonationRes.json();
+
         
             // Update state with fetched data
             setRegistrationStats({
-              totalAnglers: totalAnglers.totalAnglers,
-              checkedInAnglers: checkedInAnglers.checkedInAnglers,
-              totalFees: totalFees.totalFees,
+              totalAnglers: totalAnglers.totalTeams,
+              checkedInAnglers: checkedInAnglers.checkedInTeams,
               totalRegistrationFees: totalRegistrationFees.totalRegistrationFees,
-              totalAddOnFees: totalAddOnFees.totalAddOnFees
+            });
+
+            setSponsorStats({
+              totalSponsors: totalSponsors.totalSponsors,
+              totalSponsorDonations: totalSponsorDonations.totalDonationFees,
             });
           }
 
@@ -333,30 +368,31 @@ function AdminPage() {
               }).then(res => res.json());
 
               // Fetch fish count by species
-              const speciesStatsPromises = loadedConfig.catchConfig.CONFIG_CATCHES_STATS_LIST.map((speciesType) => {
-                return fetch(`${apiUrl}/api/${year}/admin_get_total_catch_count_by_species`, {
+              const divisionStatsPromises = loadedConfig.catchConfig.CONFIG_CATCHES_STATS_LIST.map((division) => {
+                return fetch(`${apiUrl}/api/${year}/admin_get_total_catch_count_by_division`, {
                   method: 'POST',
                   headers: { 'Content-Type': 'application/json' },
-                  body: JSON.stringify({ catchYear: loadedConfig.generalConfig.CONFIG_GENERAL_FIREBASE_CATCHES_TABLE_NAME, speciesType })
+                  body: JSON.stringify({ catchYear: loadedConfig.generalConfig.CONFIG_GENERAL_FIREBASE_CATCHES_TABLE_NAME, division: division })
                 })
                 .then(res => res.json())
-                .then(data => ({ speciesType, count: data.speciesCount }));
+                .then(data => ({ division, count: data.divisionCount }));
               });
 
               // Wait for all promises to resolve
-              const [totalFishData, ...speciesStats] = await Promise.all([totalFishRes, ...speciesStatsPromises]);
+              const [totalFishData, ...divisionStats] = await Promise.all([totalFishRes, ...divisionStatsPromises]);
+              console.log('divisionStats:', divisionStats)
 
               // Parse the results
               const totalFishCount = totalFishData.totalFishCount;
-              const speciesCountStats = speciesStats.reduce((acc, { speciesType, count }) => {
-                acc[speciesType] = count;
+              const divisionCountStats = divisionStats.reduce((acc, { division, count }) => {
+                acc[division] = count;
                 return acc;
               }, {});
 
               // Update the state
               setCatchesStats({
                 totalFish: totalFishCount,
-                speciesStats: speciesCountStats,
+                divisionStats: divisionCountStats,
               });
 
             } catch (error) {
@@ -445,6 +481,11 @@ function AdminPage() {
       setIsAddAnglerModalOpen(false);   
       setIsEditAnglerModalOpen(false);
       setIsDeleteAnglerModalOpen(false);
+
+      // Sponsors
+      setIsAddSponsorModalOpen(false);   
+      setIsEditSponsorModalOpen(false);
+      setIsDeleteSponsorModalOpen(false);
 
       // Catches
       setIsAddCatchModalOpen(false);   
@@ -545,7 +586,7 @@ function AdminPage() {
     setIsRegistrationReportLoading(true); // Set the loading state
     try {
       console.log('In handleGenerateRegistrationReport...');
-      await fetchAndGenerateRegistrationReport(year, config?.generalConfig?.CONFIG_GENERAL_TOURNAMENT_NAME, config?.adminConfig?.CONFIG_ADMIN_TABLE_PROPERTIES_FOR_TEAMS);
+      await fetchAndGenerateRegistrationReport(year, config?.generalConfig?.CONFIG_GENERAL_TOURNAMENT_NAME, config?.adminConfig?.CONFIG_ADMIN_TABLE_PROPERTIES_FOR_ANGLERS);
     } catch (error) {
       console.error("Error generating registration report:", error);
     } finally {
@@ -553,29 +594,6 @@ function AdminPage() {
     }
   };
 
-  const handleGenerateCatchesReportSpecies = async (year) => {
-    setIsCatchesSpeciesReportLoading(true);
-    try {
-      console.log('In handleGenerateCatchesReport (Species)...');
-      await fetchAndGenerateCatchesReport(year, "Species", config?.generalConfig?.CONFIG_GENERAL_TOURNAMENT_NAME);
-    } catch (error) {
-      console.error("Error generating catches report (Species):", error);
-    } finally {
-      setIsCatchesSpeciesReportLoading(false);
-    }
-  };
-
-  const handleGenerateCatchesReportAnglers = async (year) => {
-    setIsCatchesAnglerReportLoading(true);
-    try {
-      console.log('In handleGenerateCatchesReport (Anglers)...');
-      await fetchAndGenerateCatchesReport(year, "Angler", config?.generalConfig?.CONFIG_GENERAL_TOURNAMENT_NAME);
-    } catch (error) {
-      console.error("Error generating catches report (Anglers):", error);
-    } finally {
-      setIsCatchesAnglerReportLoading(false);
-    }
-  };
 
   const handleGenerateLeaderboardReport = async (year) => {
     setIsLeaderboardReportLoading(true);
@@ -598,18 +616,6 @@ function AdminPage() {
       console.error("Error generating pots report:", error);
     } finally {
       setIsPotsReportLoading(false);
-    }
-  };
-
-  const handleGenerateAwardsReport = async (year) => {
-    setIsAwardsReportLoading(true);
-    try {
-      console.log('In handleGenerateAwardsReport...');
-      await generateAwardsReport(year, config?.generalConfig?.CONFIG_GENERAL_TOURNAMENT_NAME);
-    } catch (error) {
-      console.error("Error generating awards report:", error);
-    } finally {
-      setIsAwardsReportLoading(false);
     }
   };
 
@@ -654,15 +660,15 @@ function AdminPage() {
                                 <>
                                   <p><strong>Total Anglers Registered:</strong></p>
                                   <p>{registrationStats.totalAnglers} ({registrationStats.checkedInAnglers} checked-in)</p>
-                                  <p><strong>Total Fees Collected:</strong></p>
-                                  <p>{formatCurrency(registrationStats.totalFees)}</p>
-                                  <p>({formatCurrency(registrationStats.totalRegistrationFees)} registration)</p>
-                                  <p>({formatCurrency(registrationStats.totalAddOnFees)} add-ons)</p>
+                                  <p><strong>Total Registration Fees Collected:</strong></p>
+                                  <p> {formatCurrency(registrationStats.totalRegistrationFees)}</p>
                                 </>
                               ) : (
                                 <>
                                   <p><strong>Total Anglers Registered:</strong> {registrationStats.totalAnglers} ({registrationStats.checkedInAnglers} checked-in)</p>
-                                  <p><strong>Total Fees Collected:</strong> {formatCurrency(registrationStats.totalFees)} ({formatCurrency(registrationStats.totalRegistrationFees)} registration, {formatCurrency(registrationStats.totalAddOnFees)} add-ons)</p>
+                                  <p><strong>Total Registration Fees Collected:</strong> {formatCurrency(registrationStats.totalRegistrationFees)}</p>
+                                  <p><strong>Total Sponsors Registered Online:</strong> {sponsorStats.totalSponsors}</p>
+                                  <p><strong>Total Sponsor Online Donations:</strong> {formatCurrency(sponsorStats.totalSponsorDonations)}</p>
                                 </>
                               )}
                               <br/>
@@ -677,9 +683,9 @@ function AdminPage() {
                                 <>
                                   <p><strong>Total Fish Caught:</strong></p>
                                   <p>{catchesStats.totalFish}</p>
-                                  {catchesStats.speciesStats && Object.keys(catchesStats.speciesStats).map(speciesType => (
-                                    <div key={speciesType}>
-                                      <p>({catchesStats.speciesStats[speciesType]} {speciesType})</p>
+                                  {catchesStats.divisionStats && Object.keys(catchesStats.divisionStats).map(division => (
+                                    <div key={division}>
+                                      <p>({catchesStats.divisionStats[division]} {division})</p>
                                     </div>
                                   ))}
                                 </>
@@ -687,11 +693,11 @@ function AdminPage() {
                                 <>
                                   <p>
                                     <strong>Total Fish Caught:</strong> {catchesStats.totalFish}
-                                    {catchesStats.speciesStats && (
+                                    {catchesStats.divisionStats && (
                                       <> (
-                                        {Object.keys(catchesStats.speciesStats).map((speciesType, index, array) => (
-                                          <span key={speciesType}>
-                                            {catchesStats.speciesStats[speciesType]} {speciesType}
+                                        {Object.keys(catchesStats.divisionStats).map((division, index, array) => (
+                                          <span key={division}>
+                                            {catchesStats.divisionStats[division]} {division}
                                             {index < array.length - 1 && ', '}
                                           </span>
                                         ))}
@@ -714,7 +720,7 @@ function AdminPage() {
                                   <p>-----</p>
                                   <p>{formatCurrency(potStats.totalPotSize)}</p>
                                   {Object.keys(potStats.boardTotals).map(board => (
-                                    <p key={board}><strong>{board} Board Total:</strong> {formatCurrency(potStats.boardTotals[board])}</p>
+                                    <p key={board}><strong>{board} Board Gross Total:</strong> {formatCurrency(potStats.boardTotals[board])}</p>
                                   ))}
                                 </>
                               ) : (
@@ -722,7 +728,7 @@ function AdminPage() {
                                   <p><strong>Total Gross Pot:</strong> {formatCurrency(potStats.totalPotSize)}</p>
                                   <p>-----</p>
                                   {Object.keys(potStats.boardTotals).map(board => (
-                                    <p key={board}><strong>{board} Board Total:</strong> {formatCurrency(potStats.boardTotals[board])}</p>
+                                    <p key={board}><strong>{board} Board Gross Total:</strong> {formatCurrency(potStats.boardTotals[board])}</p>
                                   ))}
                                 </>
                               )}
@@ -737,6 +743,7 @@ function AdminPage() {
                     return (
                       <TabPanel key="Reports" value="Reports">
                         <div>
+
                           {config?.generalConfig?.CONFIG_GENERAL_HAS_REGISTRATION && (
                             <div>
                               <Button
@@ -746,29 +753,6 @@ function AdminPage() {
                                 disabled={isRegistrationReportLoading} // Disable while loading
                               >
                                 {isRegistrationReportLoading ? "Processing..." : "Download Check-In Form"}
-                              </Button>
-                              <br /><br />
-                            </div>
-                          )}
-
-                          {config?.generalConfig?.CONFIG_GENERAL_HAS_NEWSFEED && (
-                            <div>
-                              <Button
-                                onClick={() => handleGenerateCatchesReportSpecies(config?.generalConfig?.CONFIG_GENERAL_YEAR)}
-                                color="primary"
-                                variant="contained"
-                                disabled={isCatchesSpeciesReportLoading}
-                              >
-                                {isCatchesSpeciesReportLoading ? "Processing..." : "Download Catch Log (Species)"}
-                              </Button>
-                              <br /><br />
-                              <Button
-                                onClick={() => handleGenerateCatchesReportAnglers(config?.generalConfig?.CONFIG_GENERAL_YEAR)}
-                                color="primary"
-                                variant="contained"
-                                disabled={isCatchesAnglerReportLoading}
-                              >
-                                {isCatchesAnglerReportLoading ? "Processing..." : "Download Catch Log (Anglers)"}
                               </Button>
                               <br /><br />
                             </div>
@@ -802,20 +786,6 @@ function AdminPage() {
                             </div>
                           )}
 
-                          {config?.generalConfig?.CONFIG_GENERAL_HAS_LEADERBOARD &&
-                            config?.generalConfig?.CONFIG_GENERAL_HAS_POTS && (
-                              <div>
-                                <Button
-                                  onClick={() => handleGenerateAwardsReport(config?.generalConfig?.CONFIG_GENERAL_YEAR)}
-                                  color="primary"
-                                  variant="contained"
-                                  disabled={isAwardsReportLoading}
-                                >
-                                  {isAwardsReportLoading ? "Processing..." : "Download Awards"}
-                                </Button>
-                                <br /><br />
-                              </div>
-                            )}
                         </div>
                       </TabPanel>
                     );
@@ -831,6 +801,12 @@ function AdminPage() {
                               today={today}
                               startDate={config?.adminConfig?.CONFIG_ADMIN_TOURNAMENT_START_DATE_STRING}
                               endDate={config?.adminConfig?.CONFIG_ADMIN_TOURNAMENT_END_DATE_STRING}
+
+                              // registration data
+                              tableName={config?.generalConfig?.CONFIG_GENERAL_FIREBASE_TEAMS_TABLE_NAME}
+                              isEarlyBird={isEarlyBird}
+                              earlyBirdData={earlyBird}
+                              normalData={normalFee}
 
                               // table styling
                               tableType={tab}
@@ -879,6 +855,9 @@ function AdminPage() {
                               startDate={config?.adminConfig?.CONFIG_ADMIN_TOURNAMENT_START_DATE_STRING}
                               endDate={config?.adminConfig?.CONFIG_ADMIN_TOURNAMENT_END_DATE_STRING}
 
+                              // sponsor config
+                              tableName={config?.generalConfig?.CONFIG_GENERAL_FIREBASE_SPONSORS_TABLE_NAME}
+
                               // table styling
                               tableType={tab}
                               buttonLabel={`Add ${tab}`}
@@ -925,6 +904,9 @@ function AdminPage() {
                               today={today}
                               startDate={config?.adminConfig?.CONFIG_ADMIN_TOURNAMENT_START_DATE_STRING}
                               endDate={config?.adminConfig?.CONFIG_ADMIN_TOURNAMENT_END_DATE_STRING}
+
+                              // sponsor config
+                              tableName={config?.generalConfig?.CONFIG_GENERAL_FIREBASE_CATCHES_TABLE_NAME}
 
                               // table styling
                               tableType={tab}
@@ -973,6 +955,9 @@ function AdminPage() {
                               startDate={config?.adminConfig?.CONFIG_ADMIN_TOURNAMENT_START_DATE_STRING}
                               endDate={config?.adminConfig?.CONFIG_ADMIN_TOURNAMENT_END_DATE_STRING}
 
+                              // sponsor config
+                              tableName={config?.generalConfig?.CONFIG_GENERAL_FIREBASE_ANNOUNCEMENTS_TABLE_NAME}
+
                               // table styling
                               tableType={tab}
                               buttonLabel={`Add ${tab}`}
@@ -1019,6 +1004,9 @@ function AdminPage() {
                               today={today}
                               startDate={config?.adminConfig?.CONFIG_ADMIN_TOURNAMENT_START_DATE_STRING}
                               endDate={config?.adminConfig?.CONFIG_ADMIN_TOURNAMENT_END_DATE_STRING}
+
+                              // sponsor config
+                              tableName={config?.generalConfig?.CONFIG_GENERAL_FIREBASE_POTS_TABLE_NAME}
 
                               // table styling
                               tableType={tab}
