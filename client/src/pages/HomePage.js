@@ -9,6 +9,7 @@ import HomeCountdownTimer from '../components/timers/HomeCountdownTimer';
 import Footer from '../components/Footer';
 import logoDesktop from '../images/HomePageLogoDesktop.png';
 import logoTablet from '../images/HomePageLogoTablet.png';
+import logoTablet2 from '../images/HomePageLogoTablet2.png';
 import logoMobile from '../images/HomePageLogoMobile.png';
 import './HomePage.css';
 import './RegisterPage.css';
@@ -46,7 +47,9 @@ function HomePage() {
           setLogo(logoTablet);
         } else {
           // setLogo(logoDesktop);
-          setLogo(logoTablet);
+          // setLogo(logoTablet);
+          setLogo(logoTablet2);
+          // setLogo(logoMobile);
         }
       }
     };

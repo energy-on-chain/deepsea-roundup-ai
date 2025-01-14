@@ -100,6 +100,7 @@ function DashboardPage() {
           {/* UPCOMING AND ACTIVE TOURNAMENTS */}
           <h2 style={{ color: CONFIG_STYLING_H2_COLOR }}>Upcoming and Active Tournaments</h2>
           <br/>
+          <br/>
           <div className='dashboard-container'>
             {createRows(CONFIG_DASHBOARD_UPCOMING_AND_ACTIVE_TOURNAMENT_DATA).map((row, rowIndex) => (
               <div key={rowIndex} className='dashboard-container-row'>
@@ -126,9 +127,11 @@ function DashboardPage() {
           <br/>
           <br/>
           <br/>
+          <br/>
 
           {/* PAST TOURNAMENTS */}
           <h2 style={{ color: CONFIG_STYLING_H2_COLOR }}>Past Tournaments</h2>
+          <br/>
           <br/>
           <div className='dashboard-container'>
             {createRows(CONFIG_DASHBOARD_PAST_TOURNAMENT_DATA).map((row, rowIndex) => (

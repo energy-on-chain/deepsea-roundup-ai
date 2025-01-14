@@ -4,6 +4,7 @@ import AnimatedPage from './AnimatedPage';
 import Footer from '../components/Footer';
 import Box from '@mui/material/Box';
 import { Select, MenuItem, Autocomplete, TextField } from "@mui/material";
+import CircularProgress from '@mui/material/CircularProgress';
 import { useTheme } from "@mui/material/styles";
 import useMediaQuery from "@mui/material/useMediaQuery";
 import dayjs from 'dayjs';
@@ -28,6 +29,7 @@ function LeaderboardPage() {
   const [tournamentHasStarted, setTournamentHasStarted] = useState(false);
   const [resultArray, setResultArray] = useState([]);
   const [isPreliminaryResults, setIsPreliminaryResults] = useState(true);
+  const [allDataIsFetched, setAllDataIsFetched] = useState(false);
   
   // View state
   const viewList = ["List", "Select", "Slideshow"];
@@ -143,6 +145,7 @@ function LeaderboardPage() {
       }));
 
       setResults(res);
+      setAllDataIsFetched(true);
 
     } catch (error) {
       console.error('Error fetching data: ', error);
@@ -233,6 +236,18 @@ function LeaderboardPage() {
                       The {config?.generalConfig?.CONFIG_GENERAL_YEAR} tournament will begin soon!
                     </h2>
                   </div>
+                )}
+
+                {/* Loading screen while fetching data from server */}
+                {!allDataIsFetched && (
+                  <>
+                    <br/>
+                    <br/>
+                    <h1 style={{color: config?.stylingConfig?.CONFIG_STYLING_POTS_TITLE_TEXT_COLOR}}>
+                      Loading, one moment please...
+                    </h1>
+                    <CircularProgress/>
+                  </>
                 )}
 
                 {/* List view */}

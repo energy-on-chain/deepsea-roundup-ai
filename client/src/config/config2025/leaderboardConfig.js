@@ -13,7 +13,7 @@ module.exports = {
       subtitle: "",
       numPlaces: 2,
       numTrophies: 2,
-      display: true,
+      display: false,
       url: "get_deepsea_roundup_offshore_grand_champion",
       inputs: [
         {ageBracket: "Adult"},
@@ -61,7 +61,7 @@ module.exports = {
         { field: 'ageBracket', headerName: 'Age', flex: 1, headerClassName: 'super-app-theme--header', headerAlign: 'center', align: 'center', isDateTime: false },
         { field: 'hometown', headerName: 'Hometown', flex: 1, headerClassName: 'super-app-theme--header', headerAlign: 'center', align: 'center', isDateTime: false },
         { field: 'points', headerName: 'Points', flex: 1, headerClassName: 'super-app-theme--header', headerAlign: 'center', align: 'center', isDateTime: false },
-        { field: 'tiebreaker', headerName: 'Tiebreaker', flex: 1, headerClassName: 'super-app-theme--header', headerAlign: 'center', align: 'center', isDateTime: false },
+        // { field: 'tiebreaker', headerName: 'Tiebreaker', flex: 1, headerClassName: 'super-app-theme--header', headerAlign: 'center', align: 'center', isDateTime: false },
       ],
       mobileColumns: [
         { field: 'place', headerName: 'Place', width: 150, headerClassName: 'super-app-theme--header', headerAlign: 'center', align: 'center', isDateTime: false },
@@ -70,7 +70,7 @@ module.exports = {
         { field: 'ageBracket', headerName: 'Age', width: 150, headerClassName: 'super-app-theme--header', headerAlign: 'center', align: 'center', isDateTime: false },
         { field: 'hometown', headerName: 'Hometown', width: 150, headerClassName: 'super-app-theme--header', headerAlign: 'center', align: 'center', isDateTime: false },
         { field: 'points', headerName: 'Points', width: 150, headerClassName: 'super-app-theme--header', headerAlign: 'center', align: 'center', isDateTime: false },
-        { field: 'tiebreaker', headerName: 'Tiebreaker', width: 150, headerClassName: 'super-app-theme--header', headerAlign: 'center', align: 'center', isDateTime: false },
+        // { field: 'tiebreaker', headerName: 'Tiebreaker', width: 150, headerClassName: 'super-app-theme--header', headerAlign: 'center', align: 'center', isDateTime: false },
       ],
     },    
     {
@@ -78,7 +78,7 @@ module.exports = {
       subtitle: "",
       numPlaces: 2,
       numTrophies: 2,
-      display: true,
+      display: false,
       url: "get_deepsea_roundup_offshore_grand_champion",
       inputs: [
         {ageBracket: "Junior"},
@@ -126,7 +126,7 @@ module.exports = {
         { field: 'ageBracket', headerName: 'Age', flex: 1, headerClassName: 'super-app-theme--header', headerAlign: 'center', align: 'center', isDateTime: false },
         { field: 'hometown', headerName: 'Hometown', flex: 1, headerClassName: 'super-app-theme--header', headerAlign: 'center', align: 'center', isDateTime: false },
         { field: 'points', headerName: 'Points', flex: 1, headerClassName: 'super-app-theme--header', headerAlign: 'center', align: 'center', isDateTime: false },
-        { field: 'tiebreaker', headerName: 'Tiebreaker', flex: 1, headerClassName: 'super-app-theme--header', headerAlign: 'center', align: 'center', isDateTime: false },
+        // { field: 'tiebreaker', headerName: 'Tiebreaker', flex: 1, headerClassName: 'super-app-theme--header', headerAlign: 'center', align: 'center', isDateTime: false },
       ],
       mobileColumns: [
         { field: 'place', headerName: 'Place', width: 150, headerClassName: 'super-app-theme--header', headerAlign: 'center', align: 'center', isDateTime: false },
@@ -135,7 +135,7 @@ module.exports = {
         { field: 'ageBracket', headerName: 'Age', width: 150, headerClassName: 'super-app-theme--header', headerAlign: 'center', align: 'center', isDateTime: false },
         { field: 'hometown', headerName: 'Hometown', width: 150, headerClassName: 'super-app-theme--header', headerAlign: 'center', align: 'center', isDateTime: false },
         { field: 'points', headerName: 'Points', width: 150, headerClassName: 'super-app-theme--header', headerAlign: 'center', align: 'center', isDateTime: false },
-        { field: 'tiebreaker', headerName: 'Tiebreaker', width: 150, headerClassName: 'super-app-theme--header', headerAlign: 'center', align: 'center', isDateTime: false },
+        // { field: 'tiebreaker', headerName: 'Tiebreaker', width: 150, headerClassName: 'super-app-theme--header', headerAlign: 'center', align: 'center', isDateTime: false },
       ],
     },    
     {
@@ -143,7 +143,7 @@ module.exports = {
       subtitle: "",
       numPlaces: 2,
       numTrophies: 2,
-      display: true,
+      display: false,
       url: "get_deepsea_roundup_bay_surf_grand_champion",
       inputs: [
         {ageBracket: "Adult"},
@@ -195,7 +195,7 @@ module.exports = {
       subtitle: "",
       numPlaces: 2,
       numTrophies: 2,
-      display: true,
+      display: false,
       url: "get_deepsea_roundup_bay_surf_grand_champion",
       inputs: [
         {ageBracket: "Junior"},
@@ -247,7 +247,7 @@ module.exports = {
       subtitle: "",
       numPlaces: 2,
       numTrophies: 2,
-      display: true,
+      display: false,
       url: "get_deepsea_roundup_top_woman_angler",
       inputs: [
         {billfishSpeciesList: ["Blue Marlin", "White Marlin", "Sailfish", "Tarpon"]},
@@ -311,7 +311,7 @@ module.exports = {
         { field: 'ageBracket', headerName: 'Age', flex: 1, headerClassName: 'super-app-theme--header', headerAlign: 'center', align: 'center', isDateTime: false },
         { field: 'hometown', headerName: 'Hometown', flex: 1, headerClassName: 'super-app-theme--header', headerAlign: 'center', align: 'center', isDateTime: false },
         { field: 'points', headerName: 'Points', flex: 1, headerClassName: 'super-app-theme--header', headerAlign: 'center', align: 'center', isDateTime: false },
-        { field: 'tiebreaker', headerName: 'Tiebreaker', flex: 1, headerClassName: 'super-app-theme--header', headerAlign: 'center', align: 'center', isDateTime: false },
+        // { field: 'tiebreaker', headerName: 'Tiebreaker', flex: 1, headerClassName: 'super-app-theme--header', headerAlign: 'center', align: 'center', isDateTime: false },
       ],
       mobileColumns: [
         { field: 'place', headerName: 'Place', width: 150, headerClassName: 'super-app-theme--header', headerAlign: 'center', align: 'center', isDateTime: false },
@@ -321,7 +321,7 @@ module.exports = {
         { field: 'ageBracket', headerName: 'Age', width: 150, headerClassName: 'super-app-theme--header', headerAlign: 'center', align: 'center', isDateTime: false },
         { field: 'hometown', headerName: 'Hometown', width: 150, headerClassName: 'super-app-theme--header', headerAlign: 'center', align: 'center', isDateTime: false },
         { field: 'points', headerName: 'Points', width: 150, headerClassName: 'super-app-theme--header', headerAlign: 'center', align: 'center', isDateTime: false },
-        { field: 'tiebreaker', headerName: 'Tiebreaker', width: 150, headerClassName: 'super-app-theme--header', headerAlign: 'center', align: 'center', isDateTime: false },
+        // { field: 'tiebreaker', headerName: 'Tiebreaker', width: 150, headerClassName: 'super-app-theme--header', headerAlign: 'center', align: 'center', isDateTime: false },
       ],
     },    
     {
@@ -329,7 +329,7 @@ module.exports = {
       subtitle: "",
       numPlaces: 2,
       numTrophies: 2,
-      display: true,
+      display: false,
       url: "get_deepsea_roundup_billfish_release_champion",
       inputs: [
       ],
