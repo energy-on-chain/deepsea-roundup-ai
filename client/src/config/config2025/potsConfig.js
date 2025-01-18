@@ -69,7 +69,7 @@ module.exports = {
       potName: "Blue Marlin ($100)",
       entryAmount: 100,
       tournamentCut: 0.2,
-      display: true,
+      display: false,
       payoutStructure: {
         1: 1.0,
         2: 0.0,
@@ -104,7 +104,7 @@ module.exports = {
       potName: "Blue Marlin ($250)",
       entryAmount: 250,
       tournamentCut: 0.2,
-      display: true,
+      display: false,
       payoutStructure: {
         1: 1.0,
         2: 0.0,
@@ -139,7 +139,7 @@ module.exports = {
       potName: "Blue Marlin ($500)",
       entryAmount: 500,
       tournamentCut: 0.2,
-      display: true,
+      display: false,
       payoutStructure: {
         1: 1.0,
         2: 0.0,
@@ -174,7 +174,7 @@ module.exports = {
       potName: "White Marlin ($100)",
       entryAmount: 100,
       tournamentCut: 0.2,
-      display: true,
+      display: false,
       payoutStructure: {
         1: 1.0,
         2: 0.0,
@@ -209,7 +209,7 @@ module.exports = {
       potName: "White Marlin ($250)",
       entryAmount: 250,
       tournamentCut: 0.2,
-      display: true,
+      display: false,
       payoutStructure: {
         1: 1.0,
         2: 0.0,
@@ -244,7 +244,7 @@ module.exports = {
       potName: "White Marlin ($500)",
       entryAmount: 500,
       tournamentCut: 0.2,
-      display: true,
+      display: false,
       payoutStructure: {
         1: 1.0,
         2: 0.0,
@@ -279,7 +279,7 @@ module.exports = {
       potName: "Sailfish ($100)",
       entryAmount: 100,
       tournamentCut: 0.2,
-      display: true,
+      display: false,
       payoutStructure: {
         1: 1.0,
         2: 0.0,
@@ -314,7 +314,7 @@ module.exports = {
       potName: "Sailfish ($250)",
       entryAmount: 250,
       tournamentCut: 0.2,
-      display: true,
+      display: false,
       payoutStructure: {
         1: 1.0,
         2: 0.0,
@@ -349,7 +349,7 @@ module.exports = {
       potName: "Sailfish ($500)",
       entryAmount: 500,
       tournamentCut: 0.2,
-      display: true,
+      display: false,
       payoutStructure: {
         1: 1.0,
         2: 0.0,
@@ -386,7 +386,7 @@ module.exports = {
       potName: "Barracuda ($100)",
       entryAmount: 100,
       tournamentCut: 0.2,
-      display: true,
+      display: false,
       payoutStructure: {
         1: 1.0,
         2: 0.0,
@@ -421,7 +421,7 @@ module.exports = {
       potName: "Blackfin Tuna ($100)",
       entryAmount: 100,
       tournamentCut: 0.2,
-      display: true,
+      display: false,
       payoutStructure: {
         1: 1.0,
         2: 0.0,
@@ -456,7 +456,7 @@ module.exports = {
       potName: "Blacktip (Spinner) Shark ($100)",
       entryAmount: 100,
       tournamentCut: 0.2,
-      display: true,
+      display: false,
       payoutStructure: {
         1: 1.0,
         2: 0.0,
@@ -491,7 +491,7 @@ module.exports = {
       potName: "Bonito (Little Tunny) ($100)",
       entryAmount: 100,
       tournamentCut: 0.2,
-      display: true,
+      display: false,
       payoutStructure: {
         1: 1.0,
         2: 0.0,
@@ -526,7 +526,7 @@ module.exports = {
       potName: "Dolphin (Dorado Mahi) ($100)",
       entryAmount: 100,
       tournamentCut: 0.2,
-      display: true,
+      display: false,
       payoutStructure: {
         1: 1.0,
         2: 0.0,
@@ -561,7 +561,7 @@ module.exports = {
       potName: "Jack Crevalle (Jackfish) ($100)",
       entryAmount: 100,
       tournamentCut: 0.2,
-      display: true,
+      display: false,
       payoutStructure: {
         1: 1.0,
         2: 0.0,
@@ -596,7 +596,7 @@ module.exports = {
       potName: "King Mackerel (Kingfish) ($100)",
       entryAmount: 100,
       tournamentCut: 0.2,
-      display: true,
+      display: false,
       payoutStructure: {
         1: 1.0,
         2: 0.0,
@@ -631,7 +631,7 @@ module.exports = {
       potName: "Ling (Cobia) ($100)",
       entryAmount: 100,
       tournamentCut: 0.2,
-      display: true,
+      display: false,
       payoutStructure: {
         1: 1.0,
         2: 0.0,
@@ -666,7 +666,7 @@ module.exports = {
       potName: "Red Snapper ($100)",
       entryAmount: 100,
       tournamentCut: 0.2,
-      display: true,
+      display: false,
       payoutStructure: {
         1: 1.0,
         2: 0.0,
@@ -701,7 +701,7 @@ module.exports = {
       potName: "Spanish Mackerel ($100)",
       entryAmount: 100,
       tournamentCut: 0.2,
-      display: true,
+      display: false,
       payoutStructure: {
         1: 1.0,
         2: 0.0,
@@ -736,7 +736,7 @@ module.exports = {
       potName: "Wahoo ($100)",
       entryAmount: 100,
       tournamentCut: 0.2,
-      display: true,
+      display: false,
       payoutStructure: {
         1: 1.0,
         2: 0.0,
@@ -771,7 +771,7 @@ module.exports = {
       potName: "Yellowfin Tuna ($100)",
       entryAmount: 100,
       tournamentCut: 0.2,
-      display: true,
+      display: false,
       payoutStructure: {
         1: 1.0,
         2: 0.0,
@@ -808,7 +808,7 @@ module.exports = {
       potName: "Black Drum ($75)",
       entryAmount: 75,
       tournamentCut: 0.2,
-      display: true,
+      display: false,
       payoutStructure: {
         1: 1.0,
         2: 0.0,
@@ -843,7 +843,7 @@ module.exports = {
       potName: "Flounder ($75)",
       entryAmount: 75,
       tournamentCut: 0.2,
-      display: true,
+      display: false,
       payoutStructure: {
         1: 1.0,
         2: 0.0,
@@ -878,7 +878,7 @@ module.exports = {
       potName: "Gafftop ($75)",
       entryAmount: 75,
       tournamentCut: 0.2,
-      display: true,
+      display: false,
       payoutStructure: {
         1: 1.0,
         2: 0.0,
@@ -913,7 +913,7 @@ module.exports = {
       potName: "Pompano ($75)",
       entryAmount: 75,
       tournamentCut: 0.2,
-      display: true,
+      display: false,
       payoutStructure: {
         1: 1.0,
         2: 0.0,
@@ -948,7 +948,7 @@ module.exports = {
       potName: "Redfish ($75)",
       entryAmount: 75,
       tournamentCut: 0.2,
-      display: true,
+      display: false,
       payoutStructure: {
         1: 1.0,
         2: 0.0,
@@ -983,7 +983,7 @@ module.exports = {
       potName: "Spanish Mackerel ($75)",
       entryAmount: 75,
       tournamentCut: 0.2,
-      display: true,
+      display: false,
       payoutStructure: {
         1: 1.0,
         2: 0.0,
@@ -1018,7 +1018,7 @@ module.exports = {
       potName: "Speckled Trout ($75)",
       entryAmount: 75,
       tournamentCut: 0.2,
-      display: true,
+      display: false,
       payoutStructure: {
         1: 1.0,
         2: 0.0,

@@ -143,7 +143,7 @@ module.exports = {
       headerName: "Hometown",
       type: "string",
       isEditable: true,
-      isRequired: false,
+      isRequired: true,
       isVisible: true,
       flex: 3,
       width: 300,
