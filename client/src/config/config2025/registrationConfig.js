@@ -3,21 +3,21 @@
 /////////////////////////////////////////////////////////////////////////////
 module.exports = {
   CONFIG_REGISTRATION_HAS_EARLYBIRD_REGISTRATION: true,
-  CONFIG_REGISTRATION_EARLYBIRD_CUTOFF_IN_LOCAL_TIME_IN_MS: "1719810000000",    // 00:00 on July 1st, 2024 (CST) FIXME: testing
-  CONFIG_ANGLER_REGISTRATION_CUTOFF_IN_LOCAL_TIME_IN_MS: "1721023200000",    // 01:00 on July 15th, 2024 (CST) FIXME: testing
+  // CONFIG_REGISTRATION_EARLYBIRD_CUTOFF_IN_LOCAL_TIME_IN_MS: "1719810000000",    // 00:00 on July 1st, 2024 (CST) FIXME: testing
+  // CONFIG_ANGLER_REGISTRATION_CUTOFF_IN_LOCAL_TIME_IN_MS: "1721023200000",    // 01:00 on July 15th, 2024 (CST) FIXME: testing
   // CONFIG_SPONSOR_REGISTRATION_CUTOFF_IN_LOCAL_TIME_IN_MS: "1721023200000",    // 01:00 on July 15th, 2024 (CST) FIXME: testing
 
-  // CONFIG_REGISTRATION_EARLYBIRD_CUTOFF_IN_LOCAL_TIME_IN_MS: "1751346000000",    // 00:00 on July 1st, 2025 (CST) 
-  // CONFIG_ANGLER_REGISTRATION_CUTOFF_IN_LOCAL_TIME_IN_MS: "1752555600000",    // 00:00 on July 14th, 2025 (CST)    
+  CONFIG_REGISTRATION_EARLYBIRD_CUTOFF_IN_LOCAL_TIME_IN_MS: "1751346000000",    // 00:00 on July 1st, 2025 (CST) 
+  CONFIG_ANGLER_REGISTRATION_CUTOFF_IN_LOCAL_TIME_IN_MS: "1752555600000",    // 00:00 on July 14th, 2025 (CST)    
   CONFIG_SPONSOR_REGISTRATION_CUTOFF_IN_LOCAL_TIME_IN_MS: "1752555600000",    // 00:00 on July 14th, 2025 (CST)    
   CONFIG_REGISTRATION_EARLYBIRD_DATE_STRING:
-    "Pre-registration (cutoff date TBD):",    // FIXME: must be confirmed by client
-  CONFIG_REGISTRATION_EARLYBIRD_ADULT_FEE: "TBD",    // FIXME: must be confirmed by client
-  CONFIG_REGISTRATION_EARLYBIRD_JUNIOR_FEE: "TBD",    // FIXME: must be confirmed by client
+    "Pre-registration (before July 1st, 2025):",    // FIXME: must be confirmed by client
+  CONFIG_REGISTRATION_EARLYBIRD_ADULT_FEE: 130,    // FIXME: must be confirmed by client
+  CONFIG_REGISTRATION_EARLYBIRD_JUNIOR_FEE: 110,    // FIXME: must be confirmed by client
   CONFIG_REGISTRATION_NORMAL_DATE_STRING:
-    "Normal registration (cutoff date TBD):",    // FIXME: must be confirmed by client
-  CONFIG_REGISTRATION_NORMAL_ADULT_FEE: "TBD",    // FIXME: must be confirmed by client
-  CONFIG_REGISTRATION_NORMAL_JUNIOR_FEE: "TBD",    // FIXME: must be confirmed by client
+    "Normal registration (after July 1st, 2025):",    // FIXME: must be confirmed by client
+  CONFIG_REGISTRATION_NORMAL_ADULT_FEE: 150,    // FIXME: must be confirmed by client
+  CONFIG_REGISTRATION_NORMAL_JUNIOR_FEE: 130,    // FIXME: must be confirmed by client
   CONFIG_REGISTRATION_PAST_TEAMS_TABLES_FOR_AUTOCOMPLETE_NAME_LIST: [
     // "anglers2024",
   ],

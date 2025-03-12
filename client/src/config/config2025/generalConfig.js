@@ -38,7 +38,7 @@ module.exports = {
   CONFIG_GENERAL_CONTACT_FOOTER_LOCATION_STRING: "Austin, TX    -    New Orleans, LA", // Contact info
   CONFIG_GENERAL_CONTACT_FOOTER_PHONE_STRING: "Phone / Text: (630) 991-3012",
   CONFIG_GENERAL_CONTACT_FOOTER_EMAIL_STRING:
-    "Email: info@customtournamentsolutions.com",
+    "Email: support@customtournamentsolutions.com",
   CONFIG_GENERAL_CONTACT_FOOTER_COMPANY_COPYRIGHT_STRING:
     " Custom Tournament Solutions, 2023-Present, All Rights Reserved",
   CONFIG_GENERAL_CONTACT_INFO_ADMIN_NAME_1: "Cody Craig",
