@@ -80,9 +80,9 @@ const EditPotModal = (props) => {
       setIsSubmitting(true);
       setIsSubmitted(true);
   
-      let apiUrl = process.env.REACT_APP_NODE_ENV === "staging"
-        ? process.env.REACT_APP_SERVER_URL_STAGING
-        : process.env.REACT_APP_SERVER_URL_PRODUCTION;
+      let apiUrl = import.meta.env.VITE_NODE_ENV === "staging"
+        ? import.meta.env.VITE_SERVER_URL_STAGING
+        : import.meta.env.VITE_SERVER_URL_PRODUCTION;
   
       // Only send the active board selections
       const activeSelections = boardSelections.filter(selection => {

@@ -30,17 +30,16 @@ export const generateLeaderboardReport = async (year, tournamentName) => {
   const config = await loadConfigForYear(year);
 
   let apiUrl = null;
-  if (process.env.REACT_APP_NODE_ENV === "staging") {
-    apiUrl = process.env.REACT_APP_SERVER_URL_STAGING;
-  } else if (process.env.REACT_APP_NODE_ENV === "production") {
-    apiUrl = process.env.REACT_APP_SERVER_URL_PRODUCTION;
+  if (import.meta.env.VITE_NODE_ENV === "staging") {
+    apiUrl = import.meta.env.VITE_SERVER_URL_STAGING;
+  } else if (import.meta.env.VITE_NODE_ENV === "production") {
+    apiUrl = import.meta.env.VITE_SERVER_URL_PRODUCTION;
   }
 
   // Fetch and process leaderboard data
   try {
-    // Build queries for leaderboard categories dynamically from config
+    // Build queries for all leaderboard categories — both public species and champion categories
     const queries = config.leaderboardConfig.CONFIG_LEADERBOARD_CATEGORIES
-      .filter(item => item.display) // Only include categories marked for display
       .map(item => ({
         title: item.title,
         subtitle: item.subtitle || "",

@@ -3,11 +3,15 @@ const cors = require('cors');
 const bodyParser = require("body-parser");
 const path = require('path');
 const dotenv = require('dotenv');
-const admin = require("firebase-admin");    // firebase
-const {firebaseStagingConfig, firebaseProductionConfig} = require("../client/src/config/dashboardConfig.js");
+const admin = require("firebase-admin");
 const session = require('express-session');
-const RedisStore = require('connect-redis').default; // Corrected way to import connect-redis
+const RedisStore = require('connect-redis').default;
 const redis = require('redis');
+const morgan = require('morgan');
+
+// Internal services & middleware
+const cache = require('./services/cache');
+const { errorHandler } = require('./middleware/errorHandler');
 
 // ROUTES
 const homeRoutes = require('./routes/homeRoutes');
@@ -16,6 +20,7 @@ const adminRoutes = require('./routes/adminRoutes');
 const newsfeedRoutes = require('./routes/newsfeedRoutes');
 const leaderboardRoutes = require('./routes/leaderboardRoutes');
 const potRoutes = require('./routes/potRoutes');
+const settingsRoutes = require('./routes/settingsRoutes');
 // const auctionRoutes = require('./routes/auctionRoutes');
 
 // ENVIRONMENT
@@ -24,17 +29,15 @@ dotenv.config({ path: '../.env' });
 const app = express();
 const port = process.env.PORT || 8000;
 
-let clientUrl;    // stripe
+let clientUrl;
 let serverUrl;
 let stripe;
 let webhookSecret;
-
-let redisHost;    // sessions
-let sessionSecret;    
+let sessionSecret;
 
 if (process.env.REACT_APP_NODE_ENV === "staging") {
 
-  admin.initializeApp({    // firebase
+  admin.initializeApp({
     credential: admin.credential.cert({
       "type": process.env.REACT_APP_GOOGLE_SERVICE_ACCOUNT_TYPE_STAGING,
       "project_id": process.env.REACT_APP_GOOGLE_SERVICE_ACCOUNT_PROJECT_ID_STAGING,
@@ -49,20 +52,17 @@ if (process.env.REACT_APP_NODE_ENV === "staging") {
       "universe_domain": process.env.REACT_APP_GOOGLE_SERVICE_ACCOUNT_UNIVERSE_DOMAIN_STAGING
     }),
     storageBucket: process.env.REACT_APP_FIREBASE_STORAGE_BUCKET_STAGING,
-    config: firebaseStagingConfig
   });
 
-  clientUrl = process.env.REACT_APP_CLIENT_URL_STAGING;    // stripe
+  clientUrl = process.env.REACT_APP_CLIENT_URL_STAGING;
   serverUrl = process.env.REACT_APP_SERVER_URL_STAGING;
   stripe = require("stripe")(process.env.REACT_APP_STRIPE_PRIVATE_KEY_TESTING);
   webhookSecret = process.env.REACT_APP_STRIPE_WEBHOOK_SECRET_KEY_TESTING;
-
-  redisHost: process.env.REACT_APP_CLIENT_URL_STAGING;    // session
-  sessionSecret = process.env.REACT_APP_SESSION_SECRET_KEY_STAGING;   
+  sessionSecret = process.env.REACT_APP_SESSION_SECRET_KEY_STAGING;
 
 } else if (process.env.REACT_APP_NODE_ENV === "production") {
 
-  admin.initializeApp({    // firebase
+  admin.initializeApp({
     credential: admin.credential.cert({
       "type": process.env.REACT_APP_GOOGLE_SERVICE_ACCOUNT_TYPE_PRODUCTION,
       "project_id": process.env.REACT_APP_GOOGLE_SERVICE_ACCOUNT_PROJECT_ID_PRODUCTION,
@@ -77,23 +77,20 @@ if (process.env.REACT_APP_NODE_ENV === "staging") {
       "universe_domain": process.env.REACT_APP_GOOGLE_SERVICE_ACCOUNT_UNIVERSE_DOMAIN_PRODUCTION
     }),
     storageBucket: process.env.REACT_APP_FIREBASE_STORAGE_BUCKET_PRODUCTION,
-    config: firebaseProductionConfig
   });
 
-  clientUrl = process.env.REACT_APP_CLIENT_URL_PRODUCTION;    // stripe
+  clientUrl = process.env.REACT_APP_CLIENT_URL_PRODUCTION;
   serverUrl = process.env.REACT_APP_SERVER_URL_PRODUCTION;
   stripe = require("stripe")(process.env.REACT_APP_STRIPE_PRIVATE_KEY_PRODUCTION);
   webhookSecret = process.env.REACT_APP_STRIPE_WEBHOOK_SECRET_KEY_PRODUCTION;
-
-  redisHost: process.env.REACT_APP_CLIENT_URL_PRODUCTION;    // session
-  sessionSecret = process.env.REACT_APP_SESSION_SECRET_KEY_PRODUCTION;  
+  sessionSecret = process.env.REACT_APP_SESSION_SECRET_KEY_PRODUCTION;
 
 } else {
-  console.log("There was an error while defining the environment")
-};
+  console.error("REACT_APP_NODE_ENV is not set to 'staging' or 'production'");
+}
 
 // REDIS
-const redisUrl = process.env.REDIS_TLS_URL || 'redis://127.0.0.1:6379'; // Use REDIS_URL from environment or default to local Redis
+const redisUrl = process.env.REDIS_TLS_URL || 'redis://127.0.0.1:6379';
 const redisClient = redis.createClient({
   url: redisUrl,
   socket: {
@@ -108,6 +105,7 @@ redisClient.on('end', () => console.log('Redis client disconnected'));
 (async () => {
   try {
     await redisClient.connect();
+    cache.init(redisClient); // Initialize cache service with the connected client
   } catch (err) {
     console.error('Failed to connect to Redis:', err);
   }
@@ -120,54 +118,56 @@ const allowedOrigins = [
   'https://www.deepsearoundup.customtournamentsolutions.com',
   'https://deepsearoundup.customtournamentsolutions.com',
   'https://deepsea-roundup-v3-staging-980ad25bef47.herokuapp.com',
-  'https://deepsea-roundup-v3-prod-38a284cee946.herokuapp.com'
+  'https://deepsea-roundup-v3-prod-38a284cee946.herokuapp.com',
 ];
-// app.use(cors({ origin: clientUrl }));
+
+app.use(morgan('dev'));
 app.use(cors({
   origin: (origin, callback) => {
-    console.log('Origin: ', origin);
-    // Allow requests with no origin (like mobile apps or curl requests)
     if (!origin) return callback(null, true);
-    
     if (allowedOrigins.includes(origin)) {
-      callback(null, true); // Origin is allowed
+      callback(null, true);
     } else {
-      callback(new Error('Not allowed by CORS')); // Origin not allowed
+      callback(new Error('Not allowed by CORS'));
     }
   },
-  credentials: true // Allow cookies and credentials to be sent in the requests
+  credentials: true,
 }));
-app.use(bodyParser.json({ verify: (req, res, buf, encoding) => { req.rawBody = buf.toString() }}));
+app.use(bodyParser.json({ verify: (req, res, buf) => { req.rawBody = buf.toString(); } }));
 app.use(session({
   store: new RedisStore({ client: redisClient }),
-  secret: sessionSecret, // Replace with your secret key
+  secret: sessionSecret,
   resave: false,
   saveUninitialized: true,
-  cookie: { 
+  cookie: {
     secure: process.env.REACT_APP_NODE_ENV === 'production' || process.env.REACT_APP_NODE_ENV === 'staging',
-    httpOnly: true,  // Helps to prevent cross-site scripting attacks by ensuring the cookie is only accessible via HTTP(S)
-    maxAge: 1000 * 60 * 60 * 24 * 7 // 1 week (adjust as needed)
+    httpOnly: true,
+    maxAge: 1000 * 60 * 60 * 24 * 7,
   }
 }));
 app.use('/', express.static(path.join(__dirname, '../client/build')));
+
+// ROUTES
 app.use('/', homeRoutes);
 app.use('/', registrationRoutes({ clientUrl, serverUrl, stripe, webhookSecret, redisClient }));
-app.use('/', adminRoutes ({redisClient}));
+app.use('/', adminRoutes({ redisClient }));
 app.use('/', newsfeedRoutes);
 app.use('/', leaderboardRoutes);
 app.use('/', potRoutes);
+app.use('/', settingsRoutes);
 // app.use('/', auctionRoutes);
 
-
-// REDIRECT
+// REDIRECT — serve React app for all non-API routes
 if (process.env.REACT_APP_NODE_ENV === "staging" || process.env.REACT_APP_NODE_ENV === "production") {
   app.get('*', (req, res) => {
     res.sendFile(path.join(__dirname, '../client/build', 'index.html'));
   });
 }
 
+// CENTRALIZED ERROR HANDLER (must be last middleware)
+app.use(errorHandler);
+
 // LISTEN
 app.listen(port, () => {
-  console.log(`Server is running on port ${port}`);
+  console.log(`Server is running on port ${port} [${process.env.REACT_APP_NODE_ENV}]`);
 });
-

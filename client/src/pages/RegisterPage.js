@@ -44,6 +44,7 @@ function RegisterPage(props) {
     date: '',
   });
   const [disclaimers, setDisclaimers] = useState([]);
+  const [pricesPendingConfirmation, setPricesPendingConfirmation] = useState(false);
   const [configLoaded, setConfigLoaded] = useState(false); // Track if the config has loaded
 
   // Modal state
@@ -101,6 +102,7 @@ function RegisterPage(props) {
           date: registrationConfig.CONFIG_REGISTRATION_NORMAL_DATE_STRING,
         });
         setDisclaimers(registrationConfig.CONFIG_REGISTRATION_DISCLAIMERS || []);
+        setPricesPendingConfirmation(registrationConfig.CONFIG_REGISTRATION_PRICES_PENDING_CONFIRMATION === true);
 
         const currentTime = new Date().getTime();
         console.log('currentTime', currentTime)
@@ -141,9 +143,15 @@ function RegisterPage(props) {
 
         <section className="section-register">
 
+          {pricesPendingConfirmation && (
+            <div style={{ backgroundColor: '#FFF3CD', border: '1px solid #FFC107', borderRadius: '6px', padding: '12px 16px', marginBottom: '20px', color: '#856404' }}>
+              <strong>Registration Coming Soon</strong> — Entry fees are pending final confirmation by the tournament committee. Registration will open once pricing is confirmed.
+            </div>
+          )}
+
           <h1 style={{ color: titleTextColor }}>Registration For Anglers ({year})</h1>
-          {isAnglerRegistrationDisabled ? (
-            <h2 style={{ color: subtitleTextColor }}>Coming soon!</h2>
+          {(isAnglerRegistrationDisabled || pricesPendingConfirmation) ? (
+            <h2 style={{ color: subtitleTextColor }}>{pricesPendingConfirmation ? 'Coming Soon!' : 'Coming soon!'}</h2>
           ) : (
             <>
               {earlyBird.hasEarlyBird && (
@@ -165,38 +173,38 @@ function RegisterPage(props) {
             </>
           )}
 
-          <button 
-            style={{ 
-              backgroundColor: isAnglerRegistrationDisabled ? '#AEBDC4' : buttonBgColor, // Grey background if disabled
-              color: isAnglerRegistrationDisabled ? 'white' : buttonTextColor,  // Light text color if disabled
-              borderColor: isAnglerRegistrationDisabled ? 'black' : buttonBorderColor  // Grey border if disabled
-            }} 
-            className="home-signup-button" 
-            onClick={openAddAnglerModal} 
-            disabled={isAnglerRegistrationDisabled} // Disable the button if the cutoff is reached
+          <button
+            style={{
+              backgroundColor: (isAnglerRegistrationDisabled || pricesPendingConfirmation) ? '#AEBDC4' : buttonBgColor,
+              color: (isAnglerRegistrationDisabled || pricesPendingConfirmation) ? 'white' : buttonTextColor,
+              borderColor: (isAnglerRegistrationDisabled || pricesPendingConfirmation) ? 'black' : buttonBorderColor
+            }}
+            className="home-signup-button"
+            onClick={openAddAnglerModal}
+            disabled={isAnglerRegistrationDisabled || pricesPendingConfirmation}
             type="button"
           >
-            {isAnglerRegistrationDisabled ? "Signup Closed!" : "Register Angler"} {/* Change the label */}
+            {isAnglerRegistrationDisabled ? "Signup Closed!" : pricesPendingConfirmation ? "Coming Soon" : "Register Angler"}
           </button>
           <br/>
 
           <h1 style={{ color: titleTextColor }}>Registration For Sponsors ({year})</h1>
-          {isSponsorRegistrationDisabled &&
-            <h2 style={{ color: subtitleTextColor }}>Coming soon!</h2>
+          {(isSponsorRegistrationDisabled || pricesPendingConfirmation) &&
+            <h2 style={{ color: subtitleTextColor }}>{pricesPendingConfirmation ? 'Coming Soon!' : 'Coming soon!'}</h2>
           }
-          
-          <button 
-            style={{ 
-              backgroundColor: isSponsorRegistrationDisabled ? '#AEBDC4' : buttonBgColor, // Grey background if disabled
-              color: isSponsorRegistrationDisabled ? 'white' : buttonTextColor,  // Light text color if disabled
-              borderColor: isSponsorRegistrationDisabled ? 'black' : buttonBorderColor  // Grey border if disabled
-            }} 
-            className="home-signup-button" 
-            onClick={openAddSponsorModal} 
-            disabled={isSponsorRegistrationDisabled} // Disable the button if the cutoff is reached
+
+          <button
+            style={{
+              backgroundColor: (isSponsorRegistrationDisabled || pricesPendingConfirmation) ? '#AEBDC4' : buttonBgColor,
+              color: (isSponsorRegistrationDisabled || pricesPendingConfirmation) ? 'white' : buttonTextColor,
+              borderColor: (isSponsorRegistrationDisabled || pricesPendingConfirmation) ? 'black' : buttonBorderColor
+            }}
+            className="home-signup-button"
+            onClick={openAddSponsorModal}
+            disabled={isSponsorRegistrationDisabled || pricesPendingConfirmation}
             type="button"
           >
-            {isSponsorRegistrationDisabled ? "Signup Closed!" : "Register Sponsor"} {/* Change the label */}
+            {isSponsorRegistrationDisabled ? "Signup Closed!" : pricesPendingConfirmation ? "Coming Soon" : "Register Sponsor"}
           </button>
           <br/>
 

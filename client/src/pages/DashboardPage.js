@@ -49,8 +49,7 @@ function DashboardPage() {
   useEffect(() => {
     if (year) { // Only call loadConfigForYear if the year is defined
       const loadConfigs = async () => {
-        const loadedConfig = await loadConfigForYear('2024'); // Dynamically load config for the given year
-        // const loadedConfig = await loadConfigForYear(year); // Dynamically load config for the given year
+        const loadedConfig = await loadConfigForYear('2026'); // Dashboard config is year-agnostic; load latest
         if (loadedConfig) {
           setConfigs(loadedConfig);
         }

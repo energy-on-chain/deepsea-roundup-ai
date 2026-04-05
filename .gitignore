@@ -15,9 +15,12 @@ package-lock.json
 client/data
 /node_modules
 
-# google credentials (FIXME)
+# google credentials / service account keys
 deepsea-roundup-v3-prod-463aed678572.json
 deepsea-roundup-v3-staging-4f60645d903e.json
+deepsea-roundup-ai-dev-2c669abe8bd9.json
+deepsea-roundup-ai-prod-9f87b3605bb9.json
+scripts/keys/
 
 # misc
 *.env

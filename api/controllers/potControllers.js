@@ -7,16 +7,39 @@ const timezone = require('dayjs/plugin/timezone');
 dayjs.extend(utc);
 dayjs.extend(timezone);
 
+// Normalize names for matching — trim whitespace, collapse internal spaces, lowercase
+const normalizeName = (name) =>
+  (name || '').toString().trim().replace(/\s+/g, ' ').toLowerCase();
+
+/**
+ * Parse boardSelections — stored as JSON string or already parsed array.
+ */
+const parseBoardSelections = (raw) => {
+  if (!raw) return [];
+  if (typeof raw === 'string') {
+    try { return JSON.parse(raw); } catch { return []; }
+  }
+  return Array.isArray(raw) ? raw : [];
+};
+
+/**
+ * Calculate payout for a given place (1-indexed) using the payoutStructure map.
+ * payoutStructure: { 1: 1.0, 2: 0.0, ... }
+ */
+const calculatePayout = (place, payoutStructure, netPotAmount) => {
+  const fraction = payoutStructure?.[place] ?? 0;
+  return Math.round(netPotAmount * fraction * 100) / 100;
+};
+
 exports.getAllPotData = async (req, res) => {
   console.log('Fetching all pot data...');
   const year = req.params.year;
   const db = getFirestore();
-  const { potYear } = req.body;
 
   try {
     const potCollectionRef = db.collection(`pots${year}`);
     const snapshot = await potCollectionRef.get();
-    
+
     if (snapshot.empty) {
       return res.status(404).json({ error: 'No pots found for this year.' });
     }
@@ -42,26 +65,22 @@ exports.getTotalPotSizeData = async (req, res) => {
   console.log('Fetching total pot size data...');
   const year = req.params.year;
   const db = getFirestore();
-  const { potYear, boardNames } = req.body;
+  const { boardNames } = req.body;
 
   try {
     const potCollectionRef = db.collection(`pots${year}`);
     const snapshot = await potCollectionRef.get();
-    
+
     if (!snapshot || snapshot.empty) {
       const totalPotSize = 0;
       const boardTotals = {};
-      boardNames.forEach(board => {
-        boardTotals[board] = 0;
-      });
+      boardNames.forEach(board => { boardTotals[board] = 0; });
       return res.status(200).json({ totalPotSize, boardTotals });
     }
 
     let totalPotSize = 0;
     const boardTotals = {};
-    boardNames.forEach(board => {
-      boardTotals[board] = 0;
-    });
+    boardNames.forEach(board => { boardTotals[board] = 0; });
 
     snapshot.forEach(doc => {
       const data = doc.data();
@@ -77,15 +96,11 @@ exports.getTotalPotSizeData = async (req, res) => {
           boardKey = board.replace(/[^a-zA-Z0-9]/g, '');
         }
         const boardFeeKey = `total${boardKey}Fee`;
-        console.log('boardFeeKey:', boardFeeKey);
         boardTotals[board] += parseFloat(data[boardFeeKey] || 0);
       });
     });
 
-    return res.status(200).json({
-      totalPotSize,
-      boardTotals
-    });
+    return res.status(200).json({ totalPotSize, boardTotals });
 
   } catch (error) {
     console.error('Error fetching total pot size data:', error);
@@ -93,42 +108,53 @@ exports.getTotalPotSizeData = async (req, res) => {
   }
 };
 
+/**
+ * C&R pot winner — team-based (scored by total release points from all anglers on the boat).
+ * Entrant = boat name. Any angler on the boat contributes release points.
+ */
 exports.getDeepseaRoundupCatchAndReleasePotWinner = async (req, res) => {
   try {
     const year = req.params.year;
     if (!year) throw new Error('Year parameter is required');
 
     const db = getFirestore();
-    const { species, numPlaces } = req.body;
-    
-    // Get pot entrants
+    const { species, numPlaces, potName, entryAmount, tournamentCut, payoutStructure } = req.body;
+
+    // --- Collect entrant boat names for this specific pot ---
     const potSnapshot = await db.collection(`pots${year}`).get();
-    const entrantTeams = new Set();
-    
+    const entrantBoatNames = new Set(); // normalized boat names
+    const entrantBoatNamesRaw = {}; // normalized → original (for display)
+
     potSnapshot.docs.forEach(doc => {
       const data = doc.data();
-      const boardSelections = typeof data.boardSelections === 'string' 
-        ? JSON.parse(data.boardSelections)
-        : data.boardSelections;
-      
-      if (boardSelections?.some(board => 
-        board.board === "Catch & Release" && 
-        board.potList.includes(req.body.potName)
-      )) {
-        entrantTeams.add(data.name);
+      const boardSelections = parseBoardSelections(data.boardSelections);
+
+      const entered = boardSelections.some(board =>
+        board.board === "Catch & Release" &&
+        Array.isArray(board.potList) &&
+        board.potList.some(p => normalizeName(p) === normalizeName(potName))
+      );
+
+      if (entered) {
+        const key = normalizeName(data.name);
+        entrantBoatNames.add(key);
+        if (!entrantBoatNamesRaw[key]) entrantBoatNamesRaw[key] = data.name;
       }
     });
 
-    if (entrantTeams.size === 0) return res.status(200).json([]);
+    if (entrantBoatNames.size === 0) {
+      return res.status(200).json([]);
+    }
 
-    // Get angler data to map anglerId -> boatName
+    // --- Build anglerId → normalized boat name map ---
     const anglersSnapshot = await db.collection(`anglers${year}`).get();
-    const anglerBoatMap = {};
+    const anglerBoatMap = {}; // anglerId → normalized boat name
     anglersSnapshot.docs.forEach(doc => {
-      anglerBoatMap[doc.id] = doc.data().boatName;
+      const boatKey = normalizeName(doc.data().boatName);
+      anglerBoatMap[doc.id] = boatKey;
     });
 
-    // Get and process catches
+    // --- Tally release points by team ---
     const catchesSnapshot = await db.collection(`catches${year}`)
       .where("species", "==", species)
       .get();
@@ -136,43 +162,39 @@ exports.getDeepseaRoundupCatchAndReleasePotWinner = async (req, res) => {
     const teamStats = {};
     catchesSnapshot.docs.forEach(doc => {
       const catchData = doc.data();
-      const team = anglerBoatMap[catchData.anglerId];
-      
-      if (!team || !entrantTeams.has(team)) return;
-      
+      const boatKey = anglerBoatMap[catchData.anglerId];
+      if (!boatKey || !entrantBoatNames.has(boatKey)) return;
+
       const points = parseFloat(catchData.points || 0);
-      
-      if (!teamStats[team]) {
-        teamStats[team] = {
-          team,
+      if (!teamStats[boatKey]) {
+        teamStats[boatKey] = {
+          team: entrantBoatNamesRaw[boatKey] || boatKey,
           points: 0,
-          lastCatch: catchData.dateTime
+          lastCatch: catchData.dateTime,
         };
       }
-      
-      teamStats[team].points += points;
-      if (dayjs(catchData.dateTime).isAfter(dayjs(teamStats[team].lastCatch))) {
-        teamStats[team].lastCatch = catchData.dateTime;
+      teamStats[boatKey].points += points;
+      if (catchData.dateTime && dayjs(catchData.dateTime).isAfter(dayjs(teamStats[boatKey].lastCatch))) {
+        teamStats[boatKey].lastCatch = catchData.dateTime;
       }
     });
 
     const sortedTeams = Object.values(teamStats)
       .sort((a, b) => {
-        if (b.points === a.points) {
-          return dayjs(a.lastCatch).diff(dayjs(b.lastCatch));
-        }
-        return b.points - a.points;
+        if (b.points !== a.points) return b.points - a.points;
+        return dayjs(a.lastCatch).diff(dayjs(b.lastCatch)); // earlier last catch wins on tie
       });
 
-    const potAmount = req.body.entryAmount * entrantTeams.size;
-    const netPotAmount = potAmount * (1 - req.body.tournamentCut);
+    const potAmount = (entryAmount || 0) * entrantBoatNames.size;
+    const netPotAmount = potAmount * (1 - (tournamentCut || 0));
 
     const result = sortedTeams.slice(0, numPlaces).map((team, index) => ({
       place: index + 1,
       team: team.team,
       points: team.points,
       lastCatch: team.lastCatch,
-      payout: index === 0 ? netPotAmount : 0
+      payout: calculatePayout(index + 1, payoutStructure, netPotAmount),
+      entrantCount: entrantBoatNames.size,
     }));
 
     res.status(200).json(result);
@@ -182,46 +204,54 @@ exports.getDeepseaRoundupCatchAndReleasePotWinner = async (req, res) => {
   }
 };
 
+/**
+ * Offshore meatfish pot winner — individual-level (heaviest single fish per angler).
+ * Entrant = boat. Eligible anglers must be on an entrant boat, matching division and ageBracket.
+ */
 exports.getDeepseaRoundupOffshorePotWinner = async (req, res) => {
   try {
     const year = req.params.year;
-    if (!year) {
-      throw new Error('Year parameter is required');
-    }
+    if (!year) throw new Error('Year parameter is required');
 
     const db = getFirestore();
-    const { species, division, ageBracket, numPlaces } = req.body;
+    const { species, division, ageBracket, numPlaces, potName, entryAmount, tournamentCut, payoutStructure } = req.body;
 
+    // --- Collect entrant boat names ---
     const potSnapshot = await db.collection(`pots${year}`).get();
-    const entrantTeams = new Set();
-    
+    const entrantBoatNames = new Set();
+
     potSnapshot.docs.forEach(doc => {
       const data = doc.data();
-      const boardSelections = typeof data.boardSelections === 'string' 
-        ? JSON.parse(data.boardSelections)
-        : data.boardSelections;
-      
-      if (boardSelections?.some(board => 
-        board.board === "Offshore" && 
-        board.potList.includes(req.body.potName)
-      )) {
-        entrantTeams.add(data.name);
+      const boardSelections = parseBoardSelections(data.boardSelections);
+
+      const entered = boardSelections.some(board =>
+        board.board === "Offshore" &&
+        Array.isArray(board.potList) &&
+        board.potList.some(p => normalizeName(p) === normalizeName(potName))
+      );
+
+      if (entered) {
+        entrantBoatNames.add(normalizeName(data.name));
       }
     });
 
-    if (entrantTeams.size === 0) {
+    if (entrantBoatNames.size === 0) {
       return res.status(200).json([]);
     }
 
+    // --- Find valid anglers: on entrant boat, matching division + ageBracket ---
     const anglersSnapshot = await db.collection(`anglers${year}`).get();
     const validAnglerIds = new Set();
     const anglerDetails = {};
 
     anglersSnapshot.docs.forEach(doc => {
       const angler = doc.data();
-      if (angler.ageBracket === ageBracket && 
-          angler.division === division &&
-          entrantTeams.has(angler.boatName)) {
+      const boatKey = normalizeName(angler.boatName);
+
+      const divisionMatch = !division || angler.division === division;
+      const ageBracketMatch = !ageBracket || angler.ageBracket === ageBracket;
+
+      if (divisionMatch && ageBracketMatch && entrantBoatNames.has(boatKey)) {
         validAnglerIds.add(doc.id);
         anglerDetails[doc.id] = angler;
       }
@@ -231,31 +261,41 @@ exports.getDeepseaRoundupOffshorePotWinner = async (req, res) => {
       return res.status(200).json([]);
     }
 
+    // --- Get catches: one winner per angler, heaviest fish ---
     const catchesSnapshot = await db.collection(`catches${year}`)
       .where("species", "==", species)
-      .where("division", "==", division)
       .get();
 
-    let catches = catchesSnapshot.docs
-      .map(doc => ({
-        ...doc.data(),
-        weight: parseFloat(doc.data().weight || 0),
-        length: parseFloat(doc.data().length || 0)
-      }))
-      .filter(item => validAnglerIds.has(item.anglerId) && item.weight > 0)
+    // Best catch per angler
+    const bestCatchByAngler = {};
+    catchesSnapshot.docs.forEach(doc => {
+      const c = doc.data();
+      if (!validAnglerIds.has(c.anglerId)) return;
+      const weight = parseFloat(c.weight || 0);
+      const length = parseFloat(c.length || 0);
+      if (weight <= 0) return;
+      const existing = bestCatchByAngler[c.anglerId];
+      if (!existing || weight > existing.weight || (weight === existing.weight && length > existing.length)) {
+        bestCatchByAngler[c.anglerId] = { ...c, weight, length };
+      }
+    });
+
+    const catches = Object.values(bestCatchByAngler)
       .sort((a, b) => b.weight - a.weight || b.length - a.length);
 
-    const potAmount = req.body.entryAmount * entrantTeams.size;
-    const netPotAmount = potAmount * (1 - req.body.tournamentCut);
+    const potAmount = (entryAmount || 0) * entrantBoatNames.size;
+    const netPotAmount = potAmount * (1 - (tournamentCut || 0));
 
     const result = catches.slice(0, numPlaces).map((catchItem, index) => {
       const angler = anglerDetails[catchItem.anglerId] || {};
       return {
         place: index + 1,
-        angler: angler.anglerName,
+        angler: angler.anglerName || 'Unknown',
+        team: angler.boatName || '',
         weight: catchItem.weight,
         length: catchItem.length,
-        payout: index === 0 ? netPotAmount : 0
+        payout: calculatePayout(index + 1, payoutStructure, netPotAmount),
+        entrantCount: entrantBoatNames.size,
       };
     });
 
@@ -266,46 +306,61 @@ exports.getDeepseaRoundupOffshorePotWinner = async (req, res) => {
   }
 };
 
+const BAY_SURF_ELIGIBLE_DIVISIONS = ["Bay/Surf", "Kayak", "Flyfishing"];
+
+/**
+ * Bay/Surf pot winner — individual-level (heaviest single fish per angler).
+ * Entrant = individual angler by name. Kayak and Flyfishing eligible for bay/surf pots.
+ */
 exports.getDeepseaRoundupBaySurfPotWinner = async (req, res) => {
   try {
     const year = req.params.year;
-    if (!year) {
-      throw new Error('Year parameter is required');
-    }
+    if (!year) throw new Error('Year parameter is required');
 
     const db = getFirestore();
-    const { species, division, ageBracket, numPlaces } = req.body;
+    const { species, ageBracket, numPlaces, potName, entryAmount, tournamentCut, payoutStructure } = req.body;
 
+    // --- Collect entrant angler names ---
     const potSnapshot = await db.collection(`pots${year}`).get();
-    const entrantAnglers = new Set();
-    
+    const entrantAnglerNames = new Set(); // normalized angler names
+    const entrantAnglerNamesRaw = {}; // normalized → original
+
     potSnapshot.docs.forEach(doc => {
       const data = doc.data();
-      const boardSelections = typeof data.boardSelections === 'string' 
-        ? JSON.parse(data.boardSelections)
-        : data.boardSelections;
-      
-      if (boardSelections?.some(board => 
-        board.board === "Bay/Surf" && 
-        board.potList.includes(req.body.potName)
-      )) {
-        entrantAnglers.add(data.name);
+      const boardSelections = parseBoardSelections(data.boardSelections);
+
+      const entered = boardSelections.some(board =>
+        board.board === "Bay/Surf" &&
+        Array.isArray(board.potList) &&
+        board.potList.some(p => normalizeName(p) === normalizeName(potName))
+      );
+
+      if (entered) {
+        const key = normalizeName(data.name);
+        entrantAnglerNames.add(key);
+        if (!entrantAnglerNamesRaw[key]) entrantAnglerNamesRaw[key] = data.name;
       }
     });
 
-    if (entrantAnglers.size === 0) {
+    if (entrantAnglerNames.size === 0) {
       return res.status(200).json([]);
     }
 
+    // --- Find valid anglers ---
     const anglersSnapshot = await db.collection(`anglers${year}`).get();
     const validAnglerIds = new Set();
     const anglerDetails = {};
 
     anglersSnapshot.docs.forEach(doc => {
       const angler = doc.data();
-      if (angler.ageBracket === ageBracket && 
-          angler.division === division &&
-          entrantAnglers.has(angler.anglerName)) {
+      const nameKey = normalizeName(angler.anglerName);
+      const ageBracketMatch = !ageBracket || angler.ageBracket === ageBracket;
+
+      if (
+        BAY_SURF_ELIGIBLE_DIVISIONS.includes(angler.division) &&
+        ageBracketMatch &&
+        entrantAnglerNames.has(nameKey)
+      ) {
         validAnglerIds.add(doc.id);
         anglerDetails[doc.id] = angler;
       }
@@ -315,31 +370,40 @@ exports.getDeepseaRoundupBaySurfPotWinner = async (req, res) => {
       return res.status(200).json([]);
     }
 
+    // --- Get catches: one winner per angler, heaviest fish ---
     const catchesSnapshot = await db.collection(`catches${year}`)
       .where("species", "==", species)
-      .where("division", "==", division)
       .get();
 
-    let catches = catchesSnapshot.docs
-      .map(doc => ({
-        ...doc.data(),
-        weight: parseFloat(doc.data().weight || 0),
-        length: parseFloat(doc.data().length || 0)
-      }))
-      .filter(item => validAnglerIds.has(item.anglerId) && item.weight > 0)
+    const bestCatchByAngler = {};
+    catchesSnapshot.docs.forEach(doc => {
+      const c = doc.data();
+      if (!validAnglerIds.has(c.anglerId)) return;
+      if (!BAY_SURF_ELIGIBLE_DIVISIONS.includes(c.division)) return;
+      const weight = parseFloat(c.weight || 0);
+      const length = parseFloat(c.length || 0);
+      if (weight <= 0) return;
+      const existing = bestCatchByAngler[c.anglerId];
+      if (!existing || weight > existing.weight || (weight === existing.weight && length > existing.length)) {
+        bestCatchByAngler[c.anglerId] = { ...c, weight, length };
+      }
+    });
+
+    const catches = Object.values(bestCatchByAngler)
       .sort((a, b) => b.weight - a.weight || b.length - a.length);
 
-    const potAmount = req.body.entryAmount * entrantAnglers.size;
-    const netPotAmount = potAmount * (1 - req.body.tournamentCut);
+    const potAmount = (entryAmount || 0) * entrantAnglerNames.size;
+    const netPotAmount = potAmount * (1 - (tournamentCut || 0));
 
     const result = catches.slice(0, numPlaces).map((catchItem, index) => {
       const angler = anglerDetails[catchItem.anglerId] || {};
       return {
         place: index + 1,
-        angler: angler.anglerName,
+        angler: angler.anglerName || entrantAnglerNamesRaw[normalizeName(angler.anglerName)] || 'Unknown',
         weight: catchItem.weight,
         length: catchItem.length,
-        payout: index === 0 ? netPotAmount : 0
+        payout: calculatePayout(index + 1, payoutStructure, netPotAmount),
+        entrantCount: entrantAnglerNames.size,
       };
     });
 
@@ -349,4 +413,3 @@ exports.getDeepseaRoundupBaySurfPotWinner = async (req, res) => {
     res.status(500).json({ error: e.message });
   }
 };
-

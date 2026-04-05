@@ -30,7 +30,7 @@ function LeaderboardPage() {
   const [resultArray, setResultArray] = useState([]);
   const [isPreliminaryResults, setIsPreliminaryResults] = useState(true);
   const [allDataIsFetched, setAllDataIsFetched] = useState(false);
-  
+
   // View state
   const viewList = ["List", "Select", "Slideshow"];
   const [viewAlignment, setViewAlignment] = useState('List');
@@ -41,7 +41,7 @@ function LeaderboardPage() {
   const [config, setConfig] = useState(null);
 
   useEffect(() => {
-    fetchConfigAndData(); // Load config and fetch data
+    fetchConfigAndData();
   }, [year]);
 
   const fetchConfigAndData = async () => {
@@ -58,11 +58,14 @@ function LeaderboardPage() {
           CONFIG_LEADERBOARD_INCLUDE_PRELIMINARY_RESULTS_DISCLAIMER,
           CONFIG_LEADERBOARD_PRELIMINARY_RESULTS_DISCLAIMER_CUTOFF_IN_LOCAL_TIME_IN_MS,
           CONFIG_LEADERBOARD_HISTORICAL_CATCH_RECORD_DATA,
-          CONFIG_LEADERBOARD_CATEGORIES
+          CONFIG_LEADERBOARD_CATEGORIES,
+          CONFIG_LEADERBOARD_SHOW_CHAMPIONS_PUBLICLY,
         }
       } = loadedConfig;
 
-      const filteredCategories = CONFIG_LEADERBOARD_CATEGORIES.filter((item) => item.display);
+      const apiUrl = import.meta.env.VITE_NODE_ENV === "production"
+        ? import.meta.env.VITE_SERVER_URL_PRODUCTION
+        : import.meta.env.VITE_SERVER_URL_STAGING;
 
       // Assess and set preliminary result status
       if (CONFIG_LEADERBOARD_INCLUDE_PRELIMINARY_RESULTS_DISCLAIMER) {
@@ -73,12 +76,13 @@ function LeaderboardPage() {
         setIsPreliminaryResults(false);
       }
 
-      const apiUrl = process.env.REACT_APP_NODE_ENV === "production"
-        ? process.env.REACT_APP_SERVER_URL_PRODUCTION
-        : process.env.REACT_APP_SERVER_URL_STAGING;
+      // Champions (display: false) are hidden from the public leaderboard until CONFIG_LEADERBOARD_SHOW_CHAMPIONS_PUBLICLY is set to true.
+      const publicCategories = CONFIG_LEADERBOARD_CATEGORIES.filter(
+        item => item.display !== false || CONFIG_LEADERBOARD_SHOW_CHAMPIONS_PUBLICLY
+      );
 
-      // Build queries
-      const queries = filteredCategories.map((item) => {
+      // Build queries for public categories only
+      const queries = publicCategories.map((item) => {
         let bodyData = { 
           catchYear: CONFIG_GENERAL_FIREBASE_CATCHES_TABLE_NAME,
           anglerYear: CONFIG_GENERAL_FIREBASE_TEAMS_TABLE_NAME,
@@ -259,24 +263,19 @@ function LeaderboardPage() {
                   ) : (
                     <div>
                       <br/>
-                      {resultArray.map(result => {
-                        if (result.rows.length > 0) {
-                          return (
-                            <LeaderboardResultTable
-                              key={result.title}
-                              style={{ width: '100%' }}
-                              title={result.title}
-                              subtitle={result.subtitle}
-                              numPlaces={result.numPlaces}
-                              rows={result.rows}
-                              columns={matches ? result.desktopColumns : result.mobileColumns}
-                              scroll={matches ? null : "scroll"}
-                              density="compact"
-                            />
-                          );
-                        }
-                        return null;
-                      })}
+                      {resultArray.filter(r => r.rows.length > 0).map(result => (
+                        <LeaderboardResultTable
+                          key={result.title}
+                          style={{ width: '100%' }}
+                          title={result.title}
+                          subtitle={result.subtitle}
+                          numPlaces={result.numPlaces}
+                          rows={result.rows}
+                          columns={matches ? result.desktopColumns : result.mobileColumns}
+                          scroll={matches ? null : "scroll"}
+                          density="compact"
+                        />
+                      ))}
                     </div>
                   )
                 )}

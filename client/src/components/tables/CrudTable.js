@@ -3,6 +3,7 @@ import { useParams } from 'react-router-dom';
 import { DataGrid, GridActionsCellItem } from '@mui/x-data-grid';
 import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/DeleteOutlined';
+import Checkbox from '@mui/material/Checkbox';
 import dayjs from 'dayjs';
 
 import AddAnglerModal from '../modals/AddAnglerModal';
@@ -180,6 +181,32 @@ function CrudTable(props) {
               currency: 'USD', // You can replace 'USD' with the desired currency code
             }).format(value.price);
           };
+        }
+
+        // Inline check-in toggle for the hasCheckedIn field on the Anglers table
+        if (columnObject.field === 'hasCheckedIn' && props.tableType === 'Anglers') {
+          updatedColumn.renderCell = (params) => (
+            <Checkbox
+              checked={!!params.value}
+              onChange={async (e) => {
+                const newValue = e.target.checked;
+                const apiUrl = import.meta.env.VITE_NODE_ENV === 'staging'
+                  ? import.meta.env.VITE_SERVER_URL_STAGING
+                  : import.meta.env.VITE_SERVER_URL_PRODUCTION;
+                try {
+                  await fetch(`${apiUrl}/api/${year}/admin_edit_angler`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ ...params.row, hasCheckedIn: newValue }),
+                  });
+                  setRows(prev => prev.map(r => r.id === params.row.id ? { ...r, hasCheckedIn: newValue } : r));
+                } catch (err) {
+                  console.error('Failed to update check-in status:', err);
+                }
+              }}
+              onClick={(e) => e.stopPropagation()}
+            />
+          );
         }
 
         return updatedColumn;

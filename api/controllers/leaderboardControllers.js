@@ -18,8 +18,13 @@ exports.getDeepseaRoundupTopWomanAngler = async (req, res) => {
     const anglerYear = req.body.anglerYear;
     const billfishSpeciesList = req.body.billfishSpeciesList;
     const meatfishSpeciesList = req.body.meatfishSpeciesList;
-    const historicalRecordCatchData = req.body.historicalRecordCatchData;
     const numPlaces = req.body.numPlaces;
+
+    // Load species records from Firebase (year-specific); fall back to config values in req.body
+    const recordsDoc = await db.collection("speciesRecords").doc(year).get();
+    const historicalRecordCatchData = recordsDoc.exists
+      ? recordsDoc.data()
+      : (req.body.historicalRecordCatchData || {});
 
     // Fetch all anglers and filter for women
     const anglersSnapshot = await db.collection(anglerYear).get();
@@ -29,7 +34,7 @@ exports.getDeepseaRoundupTopWomanAngler = async (req, res) => {
     }, {});
 
     const validAnglerIds = Object.keys(anglers).filter(
-      (id) => anglers[id].gender === "Female"
+      (id) => anglers[id].gender === "Female" && anglers[id].ageBracket === "Adult"
     );
 
     if (validAnglerIds.length === 0) {
@@ -51,22 +56,35 @@ exports.getDeepseaRoundupTopWomanAngler = async (req, res) => {
           points: parseFloat(doc.data().points || 0),
           weight: parseFloat(doc.data().weight || 0),
         }))
-        .filter((catchItem) => validAnglerIds.includes(catchItem.anglerId));
+        .filter((catchItem) => validAnglerIds.includes(catchItem.anglerId) && catchItem.weight > 0)
+        .sort((a, b) => b.weight - a.weight);
 
-      return catches;
+      // One angler cannot hold both 1st and 2nd place in the same species — keep best catch per angler
+      const seen = new Set();
+      return catches.filter((c) => {
+        if (seen.has(c.anglerId)) return false;
+        seen.add(c.anglerId);
+        return true;
+      });
     };
 
-    // Helper function: Calculate angler stats for a division
+    // Meatfish species that are Bay/Surf only — all others in meatfishSpeciesList use Offshore
+    const BAY_SURF_ONLY_SPECIES = new Set([
+      'Black Drum', 'Flounder', 'Gafftop', 'Pompano', 'Redfish', 'Speckled Trout',
+    ]);
+
+    // Helper function: Calculate angler stats for a list of species
+    // Pass division=null to auto-select per species (meatfish); pass a string to fix division (billfish)
     const calculateDivisionStats = async (speciesList, division) => {
       const winners = [];
       for (const species of speciesList) {
-        const speciesCatches = await getDivisionSpeciesWinners(species, division);
-        const sortedCatches = speciesCatches
-          .filter((catchItem) => catchItem.weight > 0)
-          .sort((a, b) => b.weight - a.weight);
+        const effectiveDivision = division !== null
+          ? division
+          : (BAY_SURF_ONLY_SPECIES.has(species) ? "Bay/Surf" : "Offshore");
+        const speciesCatches = await getDivisionSpeciesWinners(species, effectiveDivision);
 
         winners.push(
-          ...sortedCatches.slice(0, 2).map((catchItem, index) => ({
+          ...speciesCatches.slice(0, 2).map((catchItem, index) => ({
             anglerId: catchItem.anglerId,
             points: index === 0 ? 2 : 1, // 2 points for 1st place, 1 point for 2nd
             weight: catchItem.weight,
@@ -79,19 +97,21 @@ exports.getDeepseaRoundupTopWomanAngler = async (req, res) => {
       return winners;
     };
 
-    // Fetch winners for Offshore and Bay/Surf divisions
+    // Billfish: always Offshore. Meatfish: per-species division (null = auto-select)
     const offshoreWinners = await calculateDivisionStats(billfishSpeciesList, "Offshore");
-    const baySurfWinners = await calculateDivisionStats(meatfishSpeciesList, "Bay/Surf");
+    const meatfishWinners = await calculateDivisionStats(meatfishSpeciesList, null);
 
     // Combine all winners and calculate angler stats
-    const allWinners = [...offshoreWinners, ...baySurfWinners];
+    const allWinners = [...offshoreWinners, ...meatfishWinners];
     const anglerScores = allWinners.reduce((acc, winner) => {
       if (!acc[winner.anglerId]) {
-        acc[winner.anglerId] = { points: 0, weights: [] };
+        acc[winner.anglerId] = { points: 0, trophies: [] };
       }
 
       acc[winner.anglerId].points += winner.points;
-      acc[winner.anglerId].weights.push({
+      acc[winner.anglerId].trophies.push({
+        species: winner.species,
+        trophyPlace: winner.points === 2 ? 1 : 2,
         weight: winner.weight,
         recordWeight: winner.recordWeight,
       });
@@ -100,15 +120,30 @@ exports.getDeepseaRoundupTopWomanAngler = async (req, res) => {
     }, {});
 
     // Calculate average weight percentage for tiebreakers
+    // Formula per rules: sum of (catch weight / DSR record) for each trophy fish, divided by count
     const anglerStats = Object.entries(anglerScores).map(([anglerId, stats]) => {
-      const totalWeight = stats.weights.reduce((sum, item) => sum + item.weight, 0);
-      const totalRecordWeight = stats.weights.reduce((sum, item) => sum + item.recordWeight, 0);
-      const avgWeightPercentage = totalRecordWeight > 0 ? (totalWeight / totalRecordWeight) * 100 : 0;
+      const sumOfPcts = stats.trophies.reduce(
+        (sum, t) => sum + (t.recordWeight > 0 ? t.weight / t.recordWeight : 0),
+        0
+      );
+      const avgWeightPercentage = stats.trophies.length > 0 ? (sumOfPcts / stats.trophies.length) * 100 : 0;
+
+      // Build a readable trophy summary for display
+      const trophySummary = stats.trophies
+        .slice()
+        .sort((a, b) => b.weight - a.weight)
+        .map(t => {
+          const placeStr = t.trophyPlace === 1 ? '1st' : '2nd';
+          const pct = t.recordWeight > 0 ? ((t.weight / t.recordWeight) * 100).toFixed(1) : '0.0';
+          return `${placeStr} ${t.species} (${t.weight} lbs, ${pct}% rec)`;
+        })
+        .join(' | ');
 
       return {
         anglerId,
         points: stats.points,
-        avgWeightPercentage: avgWeightPercentage.toFixed(2),
+        avgWeightPercentage,
+        trophySummary,
       };
     });
 
@@ -126,12 +161,12 @@ exports.getDeepseaRoundupTopWomanAngler = async (req, res) => {
       return {
         place: index + 1,
         angler: angler.anglerName || "Unknown",
-        gender: angler.gender || "Unknown",
         division: angler.division || "Unknown",
         ageBracket: angler.ageBracket || "Unknown",
         hometown: angler.hometown || "Unknown",
+        trophySummary: entry.trophySummary,
         points: entry.points,
-        tiebreaker: `${entry.avgWeightPercentage}%`,
+        avgWeightPct: `${entry.avgWeightPercentage.toFixed(2)}%`,
       };
     });
 
@@ -249,9 +284,14 @@ exports.getDeepseaRoundupOffshoreGrandChampion = async (req, res) => {
     const ageBracket = req.body.ageBracket;
     const billfishSpeciesList = req.body.billfishSpeciesList;
     const meatfishSpeciesList = req.body.meatfishSpeciesList;
-    const historicalRecordCatchData = req.body.historicalRecordCatchData;
     const numPlaces = req.body.numPlaces;
     const isReport = req.body.isReport;
+
+    // Load species records from Firebase (year-specific); fall back to config values in req.body
+    const recordsDoc = await db.collection("speciesRecords").doc(year).get();
+    const historicalRecordCatchData = recordsDoc.exists
+      ? recordsDoc.data()
+      : (req.body.historicalRecordCatchData || {});
 
     // Fetch all anglers and filter by ageBracket
     const anglersSnapshot = await db.collection(anglerYear).get();
@@ -354,21 +394,29 @@ exports.getDeepseaRoundupOffshoreGrandChampion = async (req, res) => {
       acc[winner.anglerId].weights.push({
         weight: winner.weight || 0,
         recordWeight: historicalRecordCatchData[winner.species] || 1,
+        isBillfish: billfishSpeciesList.includes(winner.species),
+        place: winner.place,
       });
 
       return acc;
     }, {});
 
-     // Calculate average weight percentage for tiebreakers (only meatfish species)
-     const anglerStats = Object.entries(anglerScores).map(([anglerId, stats]) => {
-      const totalWeight = stats.weights.reduce((sum, item) => sum + item.weight, 0);
-      const totalRecordWeight = stats.weights.reduce((sum, item) => sum + item.recordWeight, 0);
-      const avgWeightPercentage = totalRecordWeight > 0 ? (totalWeight / totalRecordWeight) * 100 : 0;
+    // Calculate average weight percentage for tiebreakers
+    // Per rules: for release species (billfish), use fixed % (70% for 1st, 55% for 2nd).
+    // For weight species: individual weight/record %, then average across all species.
+    const anglerStats = Object.entries(anglerScores).map(([anglerId, stats]) => {
+      const sumOfPcts = stats.weights.reduce((sum, item) => {
+        if (item.isBillfish) {
+          return sum + (item.place === 1 ? 70 : 55);
+        }
+        return sum + (item.recordWeight > 0 ? (item.weight / item.recordWeight) * 100 : 0);
+      }, 0);
+      const avgWeightPercentage = stats.weights.length > 0 ? sumOfPcts / stats.weights.length : 0;
 
       return {
         anglerId,
         points: stats.points,
-        avgWeightPercentage: avgWeightPercentage.toFixed(2), // Format as percentage with two decimals
+        avgWeightPercentage,
       };
     });
 
@@ -386,11 +434,12 @@ exports.getDeepseaRoundupOffshoreGrandChampion = async (req, res) => {
       return {
         place: index + 1,
         angler: angler.anglerName || "Unknown",
+        boatName: angler.boatName || "",
         division: angler.division,
         ageBracket: angler.ageBracket,
         hometown: angler.hometown,
         points: entry.points,
-        tiebreaker: `${entry.avgWeightPercentage}%`, // Add formatted tiebreaker value
+        tiebreaker: `${entry.avgWeightPercentage.toFixed(2)}%`,
       };
     });
 
@@ -408,109 +457,106 @@ exports.getDeepseaRoundupBaySurfGrandChampion = async (req, res) => {
     const year = req.params.year;
     const db = getFirestore();
 
-    // Parse `inputs` from the request body
     const catchYear = req.body.catchYear;
     const anglerYear = req.body.anglerYear;
     const ageBracket = req.body.ageBracket;
     const meatfishSpeciesList = req.body.meatfishSpeciesList;
     const numPlaces = req.body.numPlaces || 2;
 
-    // Fetch all anglers and filter by ageBracket
+    // Fetch all anglers; filter to Bay/Surf division + correct age bracket
     const anglersSnapshot = await db.collection(anglerYear).get();
     const anglers = anglersSnapshot.docs.reduce((acc, doc) => {
       acc[doc.id] = doc.data();
       return acc;
     }, {});
-
-    const validAnglerIds = Object.keys(anglers).filter(
-      (id) => anglers[id].ageBracket === ageBracket && anglers[id].division === "Bay/Surf"
+    const validAnglerIds = new Set(
+      Object.keys(anglers).filter(
+        (id) => anglers[id].ageBracket === ageBracket && anglers[id].division === "Bay/Surf"
+      )
     );
 
-    // Helper function: Fetch catches for a given species and determine first-place winners
-    const getSpeciesFirstPlace = async (species) => {
-      const catchesSnapshot = await db.collection(catchYear).where("species", "==", species).get();
-      const catches = catchesSnapshot.docs
+    // anglerData[anglerId] = { speciesWeights: { species: bestWeight }, hasFirstPlaceFish: bool }
+    const anglerData = {};
+
+    for (const species of meatfishSpeciesList) {
+      const snapshot = await db.collection(catchYear).where("species", "==", species).get();
+      const catches = snapshot.docs
         .map((doc) => ({
-          ...doc.data(),
-          id: doc.id,
-          weight: parseFloat(doc.data().weight),
+          anglerId: doc.data().anglerId,
+          weight: parseFloat(doc.data().weight || 0),
           length: parseFloat(doc.data().length || 0),
           girth: parseFloat(doc.data().girth || 0),
         }))
-        .filter((catchItem) => validAnglerIds.includes(catchItem.anglerId) && catchItem.weight > 0);
+        .filter((c) => validAnglerIds.has(c.anglerId) && c.weight > 0);
 
-      // Sort catches by weight, length, and girth for tiebreakers
-      const sortedCatches = catches.sort((a, b) =>
+      // Sort to find species 1st place (weight → length → girth tiebreakers)
+      catches.sort((a, b) =>
         b.weight - a.weight || b.length - a.length || b.girth - a.girth
       );
+      const firstPlaceAnglerId = catches.length > 0 ? catches[0].anglerId : null;
 
-      if (sortedCatches.length > 0) {
-        sortedCatches[0].place = 1; // Assign first place to the top catch
+      // Track each angler's best (heaviest) catch of this species
+      const bestByAngler = {};
+      for (const c of catches) {
+        if (!bestByAngler[c.anglerId] || c.weight > bestByAngler[c.anglerId]) {
+          bestByAngler[c.anglerId] = c.weight;
+        }
       }
 
-      return sortedCatches;
-    };
-
-    // Calculate total weight and first-place species for each angler
-    const anglerWeights = {};
-    for (const species of meatfishSpeciesList) {
-      const catches = await getSpeciesFirstPlace(species);
-      for (const catchItem of catches) {
-        if (!anglerWeights[catchItem.anglerId]) {
-          anglerWeights[catchItem.anglerId] = {
-            totalWeight: 0,
-            uniqueSpecies: new Set(), // Track unique species
-            firstPlaceCount: 0,
-          };
+      for (const [anglerId, weight] of Object.entries(bestByAngler)) {
+        if (!anglerData[anglerId]) {
+          anglerData[anglerId] = { speciesWeights: {}, hasFirstPlaceFish: false };
         }
-
-        anglerWeights[catchItem.anglerId].totalWeight += catchItem.weight;
-
-        // Add species to the unique species set
-        anglerWeights[catchItem.anglerId].uniqueSpecies.add(species);
-
-        // Track first-place species
-        if (catchItem.place === 1) {
-          anglerWeights[catchItem.anglerId].firstPlaceCount++;
+        anglerData[anglerId].speciesWeights[species] = weight;
+        if (anglerId === firstPlaceAnglerId) {
+          anglerData[anglerId].hasFirstPlaceFish = true;
         }
       }
     }
 
-    // Filter anglers who meet the criteria
-    let minSpeciesRequirement = 4;
-    let qualifiedAnglers = [];
+    // Build flat result array sorted by total weight
+    const byWeight = Object.entries(anglerData)
+      .map(([anglerId, data]) => {
+        const totalWeight = Object.values(data.speciesWeights).reduce((s, w) => s + w, 0);
+        return { anglerId, totalWeight, hasFirstPlaceFish: data.hasFirstPlaceFish, speciesWeights: data.speciesWeights };
+      })
+      .sort((a, b) => b.totalWeight - a.totalWeight);
 
-    while (qualifiedAnglers.length < numPlaces && minSpeciesRequirement > 0) {
-      qualifiedAnglers = Object.entries(anglerWeights)
-        .filter(([anglerId, stats]) =>
-          stats.firstPlaceCount >= 1 && stats.uniqueSpecies.size >= minSpeciesRequirement
-        )
-        .map(([anglerId, stats]) => ({
-          anglerId,
-          totalWeight: stats.totalWeight,
-          speciesCount: stats.uniqueSpecies.size, // Use the size of the unique species set
-          firstPlaceCount: stats.firstPlaceCount,
-        }))
-        .sort((a, b) => b.totalWeight - a.totalWeight); // Sort by total weight (descending)
-      minSpeciesRequirement--;
+    // Champion (1st place) MUST have a first place fish — pull the highest-weight such angler to the top.
+    // All subsequent places (runner-up, etc.) are awarded purely by total weight with no restriction.
+    const championIdx = byWeight.findIndex((a) => a.hasFirstPlaceFish);
+    let ranked;
+    if (championIdx <= 0) {
+      // Either no one has a first place fish (championIdx === -1), or the heaviest angler already
+      // has one (championIdx === 0) — no reordering needed.
+      ranked = byWeight;
+    } else {
+      const champion = byWeight[championIdx];
+      const rest = byWeight.filter((_, i) => i !== championIdx);
+      ranked = [champion, ...rest];
     }
 
-    // Fetch angler details and map results
-    const result = qualifiedAnglers.slice(0, numPlaces).map((entry, index) => {
+    const result = ranked.slice(0, numPlaces).map((entry, index) => {
       const angler = anglers[entry.anglerId] || {};
+      // Spread individual species weights as top-level fields
+      const speciesFields = {};
+      for (const species of meatfishSpeciesList) {
+        speciesFields[species] = entry.speciesWeights[species]
+          ? parseFloat(entry.speciesWeights[species].toFixed(2))
+          : 0;
+      }
       return {
         place: index + 1,
         angler: angler.anglerName || "Unknown",
         division: angler.division,
         ageBracket: angler.ageBracket,
         hometown: angler.hometown,
-        totalWeight: entry.totalWeight,
-        speciesCount: entry.speciesCount,
-        firstPlaceCount: entry.firstPlaceCount,
+        hasFirstPlaceFish: entry.hasFirstPlaceFish ? "Yes" : "No",
+        ...speciesFields,
+        totalWeight: parseFloat(entry.totalWeight.toFixed(2)),
       };
     });
 
-    // Return result
     res.status(200).json(result);
   } catch (error) {
     console.error("Error fetching deepsea roundup bay/surf grand champion:", error);

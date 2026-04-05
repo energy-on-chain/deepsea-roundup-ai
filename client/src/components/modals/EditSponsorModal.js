@@ -66,9 +66,9 @@ const EditSponsorModal = (props) => {
 
   const fetchDuplicateNames = async () => {
     try {
-      const apiUrl = process.env.REACT_APP_NODE_ENV === 'staging'
-        ? process.env.REACT_APP_SERVER_URL_STAGING
-        : process.env.REACT_APP_SERVER_URL_PRODUCTION;
+      const apiUrl = import.meta.env.VITE_NODE_ENV === 'staging'
+        ? import.meta.env.VITE_SERVER_URL_STAGING
+        : import.meta.env.VITE_SERVER_URL_PRODUCTION;
 
       const response = await fetch(`${apiUrl}/api/${year}/admin_get_database_list`, {
         method: 'POST',
@@ -157,9 +157,9 @@ const EditSponsorModal = (props) => {
 
     setIsSubmitting(true);
     try {
-      const apiUrl = process.env.REACT_APP_NODE_ENV === 'staging'
-        ? process.env.REACT_APP_SERVER_URL_STAGING
-        : process.env.REACT_APP_SERVER_URL_PRODUCTION;
+      const apiUrl = import.meta.env.VITE_NODE_ENV === 'staging'
+        ? import.meta.env.VITE_SERVER_URL_STAGING
+        : import.meta.env.VITE_SERVER_URL_PRODUCTION;
 
       const formDataToSubmit = new FormData();
       formDataToSubmit.append('sponsorId', props.editInfo.sponsorId);

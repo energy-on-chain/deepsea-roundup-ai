@@ -21,6 +21,21 @@ const AddAnglerModal = (props) => {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm')); // Check if the screen size is small (mobile)
 
+  const [adminDefaults, setAdminDefaults] = useState({ phone: "", email: "", hometown: "" });
+
+  useEffect(() => {
+    if (props.isAdmin) {
+      loadConfigForYear(year).then(cfg => {
+        const { CONFIG_ADMIN_DEFAULT_PHONE, CONFIG_ADMIN_DEFAULT_EMAIL, CONFIG_ADMIN_DEFAULT_HOMETOWN } = cfg?.adminConfig || {};
+        setAdminDefaults({
+          phone: CONFIG_ADMIN_DEFAULT_PHONE || "",
+          email: CONFIG_ADMIN_DEFAULT_EMAIL || "",
+          hometown: CONFIG_ADMIN_DEFAULT_HOMETOWN || "",
+        });
+      }).catch(() => {});
+    }
+  }, [year, props.isAdmin]);
+
   const [numberOfAnglers, setNumberOfAnglers] = useState(0);
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
@@ -37,7 +52,7 @@ const AddAnglerModal = (props) => {
       Array.from({ length: count }, (_, index) => ({
         id: index,
         anglerName: "",
-        hometown: "",
+        hometown: props.isAdmin ? adminDefaults.hometown : "",
         boatName: "",
         ageBracket: "Adult",
         gender: "Male",
@@ -45,6 +60,10 @@ const AddAnglerModal = (props) => {
         over21: false,
       }))
     );
+    if (props.isAdmin) {
+      if (!email && adminDefaults.email) setEmail(adminDefaults.email);
+      if (!phone && adminDefaults.phone) setPhone(adminDefaults.phone);
+    }
   };
 
   const handleAnglerDetailChange = (id, field, value) => {
@@ -118,10 +137,10 @@ const AddAnglerModal = (props) => {
         toast.warning(`Angler ${index + 1}: Full name is required.`);
         isValid = false;
       }
-      // if (!angler.hometown) {
-      //   toast.warning(`Angler ${index + 1}: Hometown is required.`);
-      //   isValid = false;
-      // }
+      if (!props.isAdmin && !angler.hometown) {
+        toast.warning(`Angler ${index + 1}: Hometown is required.`);
+        isValid = false;
+      }
       if (!angler.boatName && angler.division === "Offshore") {
         toast.warning(
           `Angler ${index + 1}: Boat name is required for the offshore division.`
@@ -143,10 +162,10 @@ const AddAnglerModal = (props) => {
   const handlePayment = async () => {
     
     let apiUrl = null;
-    if (process.env.REACT_APP_NODE_ENV === "staging") {
-        apiUrl = process.env.REACT_APP_SERVER_URL_STAGING;
-    } else if (process.env.REACT_APP_NODE_ENV === "production") {
-        apiUrl = process.env.REACT_APP_SERVER_URL_PRODUCTION;
+    if (import.meta.env.VITE_NODE_ENV === "staging") {
+        apiUrl = import.meta.env.VITE_SERVER_URL_STAGING;
+    } else if (import.meta.env.VITE_NODE_ENV === "production") {
+        apiUrl = import.meta.env.VITE_SERVER_URL_PRODUCTION;
     }
 
     const adultFee = props.isEarlyBird ? props.earlyBirdData.adultEarlybirdFee : props.normalData.adultNormalfee;
@@ -287,6 +306,7 @@ const AddAnglerModal = (props) => {
                     handleAnglerDetailChange(angler.id, "hometown", e.target.value)
                   }
                   fullWidth
+                  required={!props.isAdmin}
                 />
                 <TextField
                   label="Boat Name (required for offshore division)"

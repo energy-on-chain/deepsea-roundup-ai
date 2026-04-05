@@ -8,6 +8,7 @@ function SimplifiedEntries({
   registeredTeamNameList,
   registeredAnglerNameList,
   potEntryData,
+  formatCurrency,
   config,
   teamNameListIsLoaded,
   anglerNameListIsLoaded
@@ -26,6 +27,20 @@ function SimplifiedEntries({
       type: 'angler'
     }))}
   ];
+
+  const getPotAmount = (potTitle) => {
+    // First try exact match from config
+    const boardList = config?.potsConfig?.CONFIG_POTS_BOARD_LIST || [];
+    for (const boardObj of boardList) {
+      const boardName = Object.keys(boardObj)[0];
+      const pot = boardObj[boardName].find(p => p.title === potTitle);
+      if (pot) return pot.amount;
+    }
+    // Fallback: parse amount from the title itself, e.g. "Flounder ($100)" → 100
+    const match = potTitle?.match(/\(\$(\d+)\)$/);
+    if (match) return parseInt(match[1], 10);
+    return 0;
+  };
 
   const getParticipantInfo = () => {
     if (!selectedParticipant || !potEntryData) return null;
@@ -112,6 +127,12 @@ function SimplifiedEntries({
 
           <p style={{ fontSize: '20px', marginBottom: '10px', color: config?.stylingConfig?.CONFIG_STYLING_POTS_TITLE_TEXT_COLOR }}>
             <strong>Entered Pots: ({participantInfo.allPots.length})</strong>
+          </p>
+          <p style={{ fontSize: '20px', marginBottom: '20px', color: config?.stylingConfig?.CONFIG_STYLING_POTS_TITLE_TEXT_COLOR }}>
+            <strong>Total Entry Amount: {formatCurrency
+              ? formatCurrency(participantInfo.allPots.reduce((sum, title) => sum + getPotAmount(title), 0))
+              : `$${participantInfo.allPots.reduce((sum, title) => sum + getPotAmount(title), 0)}`
+            }</strong>
           </p>
           {participantInfo.boards.map((board, index) => (
             <div key={index} style={{ marginLeft: '20px', marginBottom: '15px' }}>

@@ -1,0 +1,182 @@
+/**
+ * pressReports.js
+ *
+ * End-of-day press / in-progress report.
+ *
+ * Shows all category leaders (all divisions and species) at the current moment.
+ * Deliberately EXCLUDES overall tournament champions (Grand Champion Adult/Junior,
+ * Top Woman Angler, Bay/Surf Grand Champion) because those standings are not
+ * finalized until Sunday morning.
+ *
+ * Compact format: multiple categories per page, minimal whitespace.
+ */
+
+import jsPDF from 'jspdf';
+import 'jspdf-autotable';
+import dayjs from 'dayjs';
+import { loadConfigForYear } from '../config/masterConfig';
+
+// Categories to exclude from the press report (not finalized until tournament end)
+const EXCLUDE_FROM_PRESS = [
+  'grand champion',
+  'top woman angler',
+];
+
+const isExcluded = (title) =>
+  EXCLUDE_FROM_PRESS.some(keyword => title.toLowerCase().includes(keyword));
+
+const REPORT_NUM_PLACES = 2; // Press report: top 2 only (1st and 2nd place)
+const PAGE_MARGIN = 10;
+const PAGE_WIDTH = 297; // A4 landscape mm
+const MIN_ROWS_HEIGHT_MM = 18; // Minimum space needed to start a new table on current page
+
+const formatCellValue = (col, value) => {
+  if (!value && value !== 0) return '—';
+  if (col.isDateTime) return dayjs(value).format('M/D/YY h:mm A');
+  if (col.isCurrency) {
+    return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', minimumFractionDigits: 0 }).format(value);
+  }
+  return value.toString();
+};
+
+const addPageNumbers = (doc) => {
+  const pageCount = doc.internal.getNumberOfPages();
+  for (let i = 1; i <= pageCount; i++) {
+    doc.setPage(i);
+    doc.setFontSize(8);
+    doc.setTextColor(120);
+    const w = doc.internal.pageSize.getWidth();
+    const h = doc.internal.pageSize.getHeight();
+    doc.text(`Page ${i} of ${pageCount}`, w - PAGE_MARGIN, h - 5, { align: 'right' });
+    doc.setTextColor(0);
+  }
+};
+
+export const generatePressReport = async (year, tournamentName) => {
+  const config = await loadConfigForYear(year);
+  const apiUrl = import.meta.env.VITE_NODE_ENV === 'production'
+    ? import.meta.env.VITE_SERVER_URL_PRODUCTION
+    : import.meta.env.VITE_SERVER_URL_STAGING;
+
+  const generatedAt = dayjs().format('MMMM D, YYYY h:mm A');
+  const doc = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
+  const pageHeight = doc.internal.pageSize.getHeight();
+
+  // --- Filter and build queries (exclude grand champion / top woman angler) ---
+  // Note: intentionally ignores the admin visibility (display) flag — reporters see all data.
+  const categories = config.leaderboardConfig.CONFIG_LEADERBOARD_CATEGORIES.filter(
+    item => !isExcluded(item.title)
+  );
+
+  const queries = categories.map(item => ({
+    title: item.title,
+    subtitle: item.subtitle || '',
+    url: item.url,
+    desktopColumns: item.desktopColumns,
+    body: JSON.stringify({
+      catchYear: config.generalConfig.CONFIG_GENERAL_FIREBASE_CATCHES_TABLE_NAME,
+      anglerYear: config.generalConfig.CONFIG_GENERAL_FIREBASE_TEAMS_TABLE_NAME,
+      numPlaces: REPORT_NUM_PLACES,
+      isReport: true,
+      ...(item.inputs ? item.inputs.reduce((acc, inp) => ({ ...acc, ...inp }), {}) : {}),
+    }),
+  }));
+
+  const results = await Promise.all(
+    queries.map(q =>
+      fetch(`${apiUrl}/api/${year}/${q.url}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: q.body,
+      })
+        .then(r => r.json())
+        .then(data => ({
+          title: q.title,
+          subtitle: q.subtitle,
+          desktopColumns: q.desktopColumns,
+          rows: Array.isArray(data) ? data : Object.values(data),
+        }))
+        .catch(() => ({ title: q.title, subtitle: q.subtitle, desktopColumns: q.desktopColumns, rows: [] }))
+    )
+  );
+
+  // --- Page header helper ---
+  const drawPageHeader = () => {
+    doc.setFontSize(13);
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(2, 19, 62); // DSR navy
+    doc.text(
+      `${tournamentName || year + ' Deepsea Roundup'} — Category Leaders (In Progress)`,
+      PAGE_MARGIN, 10
+    );
+    doc.setFontSize(8);
+    doc.setFont('helvetica', 'normal');
+    doc.setTextColor(80);
+    doc.text(`Generated: ${generatedAt}  |  Overall champions not shown (not final until Sunday)`, PAGE_MARGIN, 16);
+    doc.setTextColor(0);
+    doc.line(PAGE_MARGIN, 18, PAGE_WIDTH - PAGE_MARGIN, 18);
+  };
+
+  drawPageHeader();
+  let cursorY = 21;
+
+  for (const category of results) {
+    if (category.rows.length === 0) continue;
+
+    const label = category.title + (category.subtitle ? ` — ${category.subtitle}` : '');
+    const tableColumns = category.desktopColumns.map(c => c.headerName);
+    const tableRows = category.rows.slice(0, REPORT_NUM_PLACES).map(row =>
+      category.desktopColumns.map(col => formatCellValue(col, row[col.field]))
+    );
+
+    // Estimate whether we have room (rough: header + rows * ~6mm each)
+    const estimatedHeight = 8 + tableRows.length * 6 + 4;
+    if (cursorY + estimatedHeight > pageHeight - 12) {
+      doc.addPage();
+      drawPageHeader();
+      cursorY = 21;
+    }
+
+    // Category label
+    doc.setFontSize(9);
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(2, 19, 62);
+    doc.text(label, PAGE_MARGIN, cursorY);
+    doc.setTextColor(0);
+    cursorY += 3;
+
+    doc.autoTable({
+      startY: cursorY,
+      head: [tableColumns],
+      body: tableRows,
+      theme: 'striped',
+      styles: {
+        fontSize: 8,
+        cellPadding: 1.5,
+        overflow: 'linebreak',
+        halign: 'center',
+        valign: 'middle',
+        lineColor: [200, 200, 200],
+        lineWidth: 0.1,
+      },
+      headStyles: {
+        fillColor: [2, 19, 62],
+        textColor: [255, 255, 255],
+        fontSize: 8,
+        fontStyle: 'bold',
+        halign: 'center',
+        cellPadding: 1.5,
+      },
+      margin: { left: PAGE_MARGIN, right: PAGE_MARGIN },
+      tableWidth: 'auto',
+      didDrawPage: () => {
+        drawPageHeader();
+      },
+    });
+
+    cursorY = doc.lastAutoTable.finalY + 4;
+  }
+
+  addPageNumbers(doc);
+  doc.save(`${year}_DSR_Category_Leaders_${dayjs().format('YYYY-MM-DD_HHmm')}.pdf`);
+};

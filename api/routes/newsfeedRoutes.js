@@ -1,5 +1,6 @@
 const express = require('express');
 const router = express.Router();
+const cache = require('../services/cache');
 const {
   getTypeCountDataForNewsfeedTable,
   getDivisionCountDataForNewsfeedTable,
@@ -9,12 +10,13 @@ const {
   getEventDataForNewsfeedTable,
 } = require('../controllers/newsfeedControllers');
 
-router.post('/api/:year/get_type_count_data_for_newsfeed_table', getTypeCountDataForNewsfeedTable);
-router.post('/api/:year/get_division_count_data_for_newsfeed_table', getDivisionCountDataForNewsfeedTable);
-router.post('/api/:year/get_species_count_data_for_newsfeed_table', getSpeciesCountDataForNewsfeedTable);
-router.post('/api/:year/get_team_count_data_for_newsfeed_table', getTeamCountDataForNewsfeedTable);
-router.post('/api/:year/get_date_count_data_for_newsfeed_table', getDateCountDataForNewsfeedTable);
-router.post('/api/:year/get_event_data_for_newsfeed_table', getEventDataForNewsfeedTable);
+const TTL = 60; // seconds
+
+router.post('/api/:year/get_type_count_data_for_newsfeed_table', cache.middleware(TTL), getTypeCountDataForNewsfeedTable);
+router.post('/api/:year/get_division_count_data_for_newsfeed_table', cache.middleware(TTL), getDivisionCountDataForNewsfeedTable);
+router.post('/api/:year/get_species_count_data_for_newsfeed_table', cache.middleware(TTL), getSpeciesCountDataForNewsfeedTable);
+router.post('/api/:year/get_team_count_data_for_newsfeed_table', cache.middleware(TTL), getTeamCountDataForNewsfeedTable);
+router.post('/api/:year/get_date_count_data_for_newsfeed_table', cache.middleware(TTL), getDateCountDataForNewsfeedTable);
+router.post('/api/:year/get_event_data_for_newsfeed_table', cache.middleware(TTL), getEventDataForNewsfeedTable);
 
 module.exports = router;
-

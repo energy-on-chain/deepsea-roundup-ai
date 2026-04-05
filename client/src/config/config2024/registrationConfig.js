@@ -1,7 +1,7 @@
 /////////////////////////////////////////////////////////////////////////////
 // REGISTRATION SETTINGS ////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////////////////////////
-module.exports = {
+export default {
   CONFIG_REGISTRATION_HAS_EARLYBIRD_REGISTRATION: true,
   CONFIG_REGISTRATION_EARLYBIRD_CUTOFF_IN_LOCAL_TIME_IN_MS: "1719810000000",    // 00:00 on July 1st, 2024 (CST)
   // CONFIG_REGISTRATION_EARLYBIRD_CUTOFF_IN_LOCAL_TIME_IN_MS: "1751349600000",    // 01:00 on July 15th, 2025 (CST)    FIXME: dev only

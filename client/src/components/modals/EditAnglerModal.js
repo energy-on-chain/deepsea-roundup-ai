@@ -61,9 +61,9 @@ const EditAnglerModal = (props) => {
   useEffect(() => {
     const fetchDuplicateNames = async () => {
       try {
-        const apiUrl = process.env.REACT_APP_NODE_ENV === 'staging'
-          ? process.env.REACT_APP_SERVER_URL_STAGING
-          : process.env.REACT_APP_SERVER_URL_PRODUCTION;
+        const apiUrl = import.meta.env.VITE_NODE_ENV === 'staging'
+          ? import.meta.env.VITE_SERVER_URL_STAGING
+          : import.meta.env.VITE_SERVER_URL_PRODUCTION;
 
         const response = await fetch(`${apiUrl}/api/${year}/admin_get_database_list`, {
           method: 'POST',
@@ -111,9 +111,9 @@ const EditAnglerModal = (props) => {
 
     setIsSubmitting(true);
     try {
-      const apiUrl = process.env.REACT_APP_NODE_ENV === 'staging'
-        ? process.env.REACT_APP_SERVER_URL_STAGING
-        : process.env.REACT_APP_SERVER_URL_PRODUCTION;
+      const apiUrl = import.meta.env.VITE_NODE_ENV === 'staging'
+        ? import.meta.env.VITE_SERVER_URL_STAGING
+        : import.meta.env.VITE_SERVER_URL_PRODUCTION;
 
       const submitData = {
         ...formData,

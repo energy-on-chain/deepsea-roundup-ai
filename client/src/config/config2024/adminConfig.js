@@ -1,7 +1,7 @@
 /////////////////////////////////////////////////////////////////////////////
 // ADMIN SETTINGS ////////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////////////////////////
-module.exports = {
+export default {
   CONFIG_ADMIN_DEFAULT_TAB_NAME: "Catches",
   CONFIG_ADMIN_DEFAULT_TAB_NAME_LIST: [
     "Anglers",
@@ -12,6 +12,9 @@ module.exports = {
     // "Auction",
     "Stats",
     "Reports",
+    "Champions",
+    "Pot Winners",
+    "Records",
   ],
   CONFIG_ADMIN_TOURNAMENT_START_DATE_STRING: "2024-07-11",
   // CONFIG_ADMIN_TOURNAMENT_START_DATE_STRING: "2024-07-17",

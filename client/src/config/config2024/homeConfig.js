@@ -1,7 +1,7 @@
 /////////////////////////////////////////////////////////////////////////////
 // HOMEPAGE SETTINGS ////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////////////////////////
-module.exports = {
+export default {
   CONFIG_HOME_TOURNAMENT_DATE_STRING: "July 11th - 14th, 2024",
   CONFIG_HOME_TOURNAMENT_HEADLINE_STRING: "Join the 88th edition of the Gulf Coast's oldest fishing tournament!",
   // CONFIG_HOME_TOURNAMENT_START_IN_LOCAL_TIME_IN_MS: "1752123600000",    // 10-Jul-2025

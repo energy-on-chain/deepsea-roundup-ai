@@ -16,6 +16,7 @@ import DashboardPage from "./pages/DashboardPage";
 import NewsfeedPage from "./pages/NewsfeedPage";
 import LeaderboardPage from "./pages/LeaderboardPage";
 import PotsPage from "./pages/PotsPage";
+import HistoricalRecordsPage from "./pages/HistoricalRecordsPage";
 // import AuctionPage from "./pages/AuctionPage";
 
 import './App.css';
@@ -56,8 +57,9 @@ function App() {
         { path: 'admin', element: <AdminPage /> },    
         { path: 'newsfeed', element: <NewsfeedPage /> },    
         { path: 'leaderboard', element: <LeaderboardPage /> },    
-        { path: 'pots', element: <PotsPage /> },    
-        // { path: 'auction', element: <AuctionPage /> },    
+        { path: 'pots', element: <PotsPage /> },
+        { path: 'records', element: <HistoricalRecordsPage /> },
+        // { path: 'auction', element: <AuctionPage /> },
       ],
     },
   ]);

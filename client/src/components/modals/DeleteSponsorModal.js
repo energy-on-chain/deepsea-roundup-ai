@@ -47,9 +47,9 @@ const DeleteSponsorModal = (props) => {
     setIsSubmitting(true); // Start the loading state
 
     try {
-      let apiUrl = process.env.REACT_APP_NODE_ENV === "staging"
-        ? process.env.REACT_APP_SERVER_URL_STAGING
-        : process.env.REACT_APP_SERVER_URL_PRODUCTION;
+      let apiUrl = import.meta.env.VITE_NODE_ENV === "staging"
+        ? import.meta.env.VITE_SERVER_URL_STAGING
+        : import.meta.env.VITE_SERVER_URL_PRODUCTION;
 
       const response = await fetch(`${apiUrl}/api/${year}/admin_delete_sponsor`, {
         method: 'POST',

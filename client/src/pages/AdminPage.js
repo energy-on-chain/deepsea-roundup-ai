@@ -14,14 +14,22 @@ import TabContext from '@mui/lab/TabContext';
 import TabList from '@mui/lab/TabList';
 import TabPanel from '@mui/lab/TabPanel';
 import CircularProgress from '@mui/material/CircularProgress';
+import Checkbox from '@mui/material/Checkbox';
+import FormControlLabel from '@mui/material/FormControlLabel';
+import Typography from '@mui/material/Typography';
+import TextField from '@mui/material/TextField';
 
 import AnimatedPage from './AnimatedPage';
 import CrudTable from '../components/tables/CrudTable';
+import LeaderboardResultTable from '../components/tables/LeaderboardResultTable';
+import PotsResultTable from '../components/tables/PotsResultTable';
 import Footer from '../components/Footer';
 import Login from '../components/Login';
 import { fetchAndGenerateRegistrationReport } from '../generators/registrationReports';
 import { generateLeaderboardReport } from '../generators/leaderboardReports';
 import { generatePotsReport } from '../generators/potReports';
+import { generatePressReport } from '../generators/pressReports';
+import { generateAnnouncerReport } from '../generators/announcerReports';
 import "./RegisterPage.css";
 import { loadConfigForYear } from '../config/masterConfig';
 
@@ -155,6 +163,8 @@ function AdminPage() {
   const [isRegistrationReportLoading, setIsRegistrationReportLoading] = useState(false);
   const [isLeaderboardReportLoading, setIsLeaderboardReportLoading] = useState(false);
   const [isPotsReportLoading, setIsPotsReportLoading] = useState(false);
+  const [isPressReportLoading, setIsPressReportLoading] = useState(false);
+  const [isAnnouncerReportLoading, setIsAnnouncerReportLoading] = useState(false);
 
   // INITIALIZE
   useEffect(() => {
@@ -246,9 +256,11 @@ function AdminPage() {
         setIsEarlyBird(true);
       }
 
-      const apiUrl = process.env.REACT_APP_NODE_ENV === 'production'
-        ? process.env.REACT_APP_SERVER_URL_PRODUCTION
-        : process.env.REACT_APP_SERVER_URL_STAGING;
+      const apiUrl = import.meta.env.VITE_NODE_ENV === 'production'
+        ? import.meta.env.VITE_SERVER_URL_PRODUCTION
+        : import.meta.env.VITE_SERVER_URL_STAGING;
+
+      setApiUrl(apiUrl);
 
       // Clear all row data
       setAnglerRows([]);
@@ -431,7 +443,7 @@ function AdminPage() {
         } catch (error) {
           console.error('Error fetching stats:', error);
         }
-      } else if (tab !== "Reports") {
+      } else if (tab !== "Reports" && tab !== "Champions" && tab !== "Pot Winners") {
         const res = await fetch(`${apiUrl}/api/${year}/admin_get_database_list`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -619,6 +631,28 @@ function AdminPage() {
     }
   };
 
+  const handleGeneratePressReport = async (year) => {
+    setIsPressReportLoading(true);
+    try {
+      await generatePressReport(year, config?.generalConfig?.CONFIG_GENERAL_TOURNAMENT_NAME);
+    } catch (error) {
+      console.error("Error generating press report:", error);
+    } finally {
+      setIsPressReportLoading(false);
+    }
+  };
+
+  const handleGenerateAnnouncerReport = async (year) => {
+    setIsAnnouncerReportLoading(true);
+    try {
+      await generateAnnouncerReport(year, config?.generalConfig?.CONFIG_GENERAL_TOURNAMENT_NAME);
+    } catch (error) {
+      console.error("Error generating announcer report:", error);
+    } finally {
+      setIsAnnouncerReportLoading(false);
+    }
+  };
+
   return (
     <AnimatedPage>
       <main>
@@ -786,8 +820,61 @@ function AdminPage() {
                             </div>
                           )}
 
+                          <div>
+                            <Button
+                              onClick={() => handleGeneratePressReport(config?.generalConfig?.CONFIG_GENERAL_YEAR)}
+                              color="secondary"
+                              variant="contained"
+                              disabled={isPressReportLoading}
+                            >
+                              {isPressReportLoading ? "Processing..." : "Download Press Report (End-of-Day)"}
+                            </Button>
+                            <br /><br />
+                          </div>
+
+                          <div>
+                            <Button
+                              onClick={() => handleGenerateAnnouncerReport(config?.generalConfig?.CONFIG_GENERAL_YEAR)}
+                              color="secondary"
+                              variant="contained"
+                              disabled={isAnnouncerReportLoading}
+                            >
+                              {isAnnouncerReportLoading ? "Processing..." : "Download Announcer Report (End-of-Tournament)"}
+                            </Button>
+                            <br /><br />
+                          </div>
+
                         </div>
                       </TabPanel>
+                    );
+                  } else if (tab === "Pot Winners") {
+                    return (
+                      <PotWinnersTab
+                        key="Pot Winners"
+                        year={year}
+                        apiUrl={apiUrl}
+                        config={config}
+                        matches={matches}
+                      />
+                    );
+                  } else if (tab === "Champions") {
+                    return (
+                      <ChampionsTab
+                        key="Champions"
+                        year={year}
+                        apiUrl={apiUrl}
+                        config={config}
+                        matches={matches}
+                      />
+                    );
+                  } else if (tab === "Records") {
+                    return (
+                      <RecordsTab
+                        key="Records"
+                        year={year}
+                        apiUrl={apiUrl}
+                        config={config}
+                      />
                     );
                   } else if (tab === "Anglers") {
                     return (
@@ -1056,6 +1143,487 @@ function AdminPage() {
         <Footer/>
       </main>
     </AnimatedPage>
+  );
+}
+
+/**
+ * PotWinnersTab — admin-only view of pot winner results.
+ * Two sub-views: "By Category" (each pot's winners) and "By Team" (total winnings per team/angler).
+ * Hidden from the public pots page until CONFIG_POTS_SHOW_WINNERS_PUBLICLY is set to true
+ * in the year's potsConfig.js (then redeploy).
+ */
+function PotWinnersTab({ year, apiUrl, config, matches }) {
+  const [results, setResults] = useState([]);
+  const [allPotDocs, setAllPotDocs] = useState(null);
+  const [loaded, setLoaded] = useState(false);
+  const [subTab, setSubTab] = useState('byCategory');
+
+  useEffect(() => {
+    if (!apiUrl || !config || loaded) return;
+
+    const {
+      generalConfig: {
+        CONFIG_GENERAL_FIREBASE_CATCHES_TABLE_NAME,
+        CONFIG_GENERAL_FIREBASE_POTS_TABLE_NAME,
+      },
+      potsConfig: { CONFIG_POTS_CATEGORIES },
+    } = config;
+
+    const queries = CONFIG_POTS_CATEGORIES.map(item => {
+      const bodyData = {
+        catchYear: CONFIG_GENERAL_FIREBASE_CATCHES_TABLE_NAME,
+        potYear: CONFIG_GENERAL_FIREBASE_POTS_TABLE_NAME,
+        isReport: false,
+        title: item.title,
+        subtitle: item.subtitle || '',
+        potName: item.potName,
+        entryAmount: item.entryAmount,
+        tournamentCut: item.tournamentCut,
+        payoutStructure: item.payoutStructure,
+        numPlaces: Object.keys(item.payoutStructure).length,
+        ...(item.inputs ? item.inputs.reduce((acc, inp) => ({ ...acc, ...inp }), {}) : {}),
+      };
+      return {
+        title: item.title,
+        subtitle: item.subtitle || '',
+        url: item.url,
+        entryAmount: item.entryAmount,
+        tournamentCut: item.tournamentCut,
+        body: JSON.stringify(bodyData),
+        desktopColumns: item.desktopColumns,
+        mobileColumns: item.mobileColumns,
+      };
+    });
+
+    const winnerPromises = queries.map(q =>
+      fetch(`${apiUrl}/api/${year}/${q.url}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: q.body,
+      })
+        .then(r => r.json())
+        .then(data => {
+          const rows = Array.isArray(data)
+            ? data.map((row, i) => ({ ...row, id: i }))
+            : Object.values(data).map((row, i) => ({ ...row, id: i }));
+          return { title: q.title, subtitle: q.subtitle, rows, url: q.url, entryAmount: q.entryAmount, tournamentCut: q.tournamentCut, desktopColumns: q.desktopColumns, mobileColumns: q.mobileColumns };
+        })
+        .catch(() => ({ title: q.title, subtitle: q.subtitle, rows: [], url: q.url, entryAmount: q.entryAmount, tournamentCut: q.tournamentCut, desktopColumns: q.desktopColumns, mobileColumns: q.mobileColumns }))
+    );
+
+    const potDocsPromise = fetch(`${apiUrl}/api/${year}/get_all_pot_data`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+    })
+      .then(r => r.json())
+      .then(d => d.data || [])
+      .catch(() => []);
+
+    Promise.all([Promise.all(winnerPromises), potDocsPromise]).then(([res, potDocs]) => {
+      setResults(res);
+      setAllPotDocs(potDocs);
+      setLoaded(true);
+    });
+  }, [apiUrl, config, year, loaded]);
+
+  const fmt = (n) => new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', minimumFractionDigits: 0 }).format(n || 0);
+
+  // Financial summary — uses raw pot docs for true entrant counts (includes pots with no catches)
+  const financials = React.useMemo(() => {
+    if (!loaded || !allPotDocs) return null;
+
+    // Build per-pot entrant count from all pot documents
+    const norm = (s) => (s || '').toString().trim().replace(/\s+/g, ' ').toLowerCase();
+    const potEntrantCounts = {};
+    allPotDocs.forEach(doc => {
+      let boardSelections;
+      try {
+        boardSelections = typeof doc.boardSelections === 'string'
+          ? JSON.parse(doc.boardSelections)
+          : (Array.isArray(doc.boardSelections) ? doc.boardSelections : []);
+      } catch { boardSelections = []; }
+      boardSelections.forEach(board => {
+        if (Array.isArray(board.potList)) {
+          board.potList.forEach(pot => {
+            const key = norm(pot);
+            potEntrantCounts[key] = (potEntrantCounts[key] || 0) + 1;
+          });
+        }
+      });
+    });
+
+    const boards = { 'Catch & Release': { gross: 0, cut: 0, net: 0, entries: 0 }, 'Offshore': { gross: 0, cut: 0, net: 0, entries: 0 }, 'Bay/Surf': { gross: 0, cut: 0, net: 0, entries: 0 } };
+    const cats = config.potsConfig.CONFIG_POTS_CATEGORIES.map(item => {
+      const entrantCount = potEntrantCounts[norm(item.potName)] || 0;
+      const gross = entrantCount * (item.entryAmount || 0);
+      const cut = gross * (item.tournamentCut || 0);
+      const net = gross - cut;
+      const board = item.url?.includes('catch_and_release') ? 'Catch & Release' : item.url?.includes('offshore') ? 'Offshore' : 'Bay/Surf';
+      const resultMatch = results.find(r => r.title === item.title);
+      const winner = resultMatch?.rows.find(row => (row.payout || 0) > 0);
+      const winnerName = winner ? (winner.angler || winner.team || '—') : (entrantCount > 0 ? 'No winner yet' : '—');
+      const winnerPayout = winner?.payout || 0;
+      if (boards[board]) { boards[board].gross += gross; boards[board].cut += cut; boards[board].net += net; boards[board].entries += entrantCount; }
+      return { title: item.title, board, entrantCount, gross, cut, net, winnerName, winnerPayout };
+    });
+    const totalGross = cats.reduce((s, c) => s + c.gross, 0);
+    const totalCut = cats.reduce((s, c) => s + c.cut, 0);
+    const totalNet = cats.reduce((s, c) => s + c.net, 0);
+    return { boards, cats, totalGross, totalCut, totalNet };
+  }, [loaded, allPotDocs, results, config]);
+
+  // By-team summary
+  const teamSummary = React.useMemo(() => {
+    if (!loaded) return [];
+    const teamMap = {};
+    results.forEach(category => {
+      category.rows.forEach(row => {
+        const name = row.angler || row.team || 'Unknown';
+        if (!teamMap[name]) teamMap[name] = { name, totalPayout: 0, wins: [] };
+        teamMap[name].totalPayout += row.payout || 0;
+        if (row.payout > 0) {
+          const place = row.place === 1 ? '1st' : row.place === 2 ? '2nd' : `${row.place}th`;
+          teamMap[name].wins.push(`${category.title} — ${place} (${fmt(row.payout)})`);
+        }
+      });
+    });
+    return Object.values(teamMap).filter(t => t.totalPayout > 0).sort((a, b) => b.totalPayout - a.totalPayout).map((t, i) => ({ ...t, id: i }));
+  }, [loaded, results]);
+
+  const teamColumns = [
+    { field: 'name', headerName: 'Angler / Team', flex: 2, headerClassName: 'super-app-theme--header', headerAlign: 'center', align: 'left' },
+    { field: 'totalPayout', headerName: 'Total Payout', flex: 1, headerClassName: 'super-app-theme--header', headerAlign: 'center', align: 'center',
+      valueFormatter: (value) => fmt(value) },
+    { field: 'wins', headerName: 'Pot Wins', flex: 4, headerClassName: 'super-app-theme--header', headerAlign: 'center', align: 'left',
+      valueFormatter: (value) => Array.isArray(value) ? value.join(' | ') : '' },
+  ];
+
+  const statCell = { p: 1.5, textAlign: 'center', minWidth: 110 };
+  const statLabel = { fontSize: '0.7rem', color: '#666', textTransform: 'uppercase', letterSpacing: '0.05em', mb: 0.25 };
+  const statValue = { fontWeight: 'bold', fontSize: '1.05rem' };
+
+  return (
+    <TabPanel key="Pot Winners" value="Pot Winners">
+      <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+        Pot winner standings are visible here only. To publish them on the public pots page,
+        set <code>CONFIG_POTS_SHOW_WINNERS_PUBLICLY: true</code> in the year's potsConfig.js and redeploy.
+      </Typography>
+
+      {!loaded && <CircularProgress />}
+
+      {/* Financial Summary */}
+      {loaded && financials && (
+        <Box sx={{ mb: 3 }}>
+          {/* Grand totals row */}
+          <Box sx={{ display: 'flex', gap: 1, mb: 1.5, flexWrap: 'wrap' }}>
+            {[
+              { label: 'Total Gross Collected', value: fmt(financials.totalGross), color: '#02133E' },
+              { label: 'Tournament Cut', value: fmt(financials.totalCut), color: '#b45309' },
+              { label: 'Total Net Payout', value: fmt(financials.totalNet), color: '#166534' },
+            ].map(s => (
+              <Box key={s.label} sx={{ flex: 1, minWidth: 160, bgcolor: s.color, borderRadius: 1.5, p: 1.5, color: '#fff', textAlign: 'center' }}>
+                <Box sx={{ fontSize: '0.7rem', opacity: 0.8, textTransform: 'uppercase', letterSpacing: '0.05em' }}>{s.label}</Box>
+                <Box sx={{ fontWeight: 'bold', fontSize: '1.3rem', mt: 0.25 }}>{s.value}</Box>
+              </Box>
+            ))}
+          </Box>
+
+          {/* Board-by-board breakdown */}
+          <Box sx={{ border: '1px solid #e0e0e0', borderRadius: 1.5, overflow: 'hidden', mb: 1.5 }}>
+            <Box sx={{ bgcolor: '#02133E', color: '#fff', px: 2, py: 0.75, fontWeight: 'bold', fontSize: '0.85rem' }}>By Board</Box>
+            <Box sx={{ display: 'grid', gridTemplateColumns: 'auto repeat(4, 1fr)', bgcolor: '#f5f5f5', borderBottom: '1px solid #e0e0e0' }}>
+              {['Board', 'Entries', 'Gross', 'Tournament Cut', 'Net Payout'].map(h => (
+                <Box key={h} sx={{ ...statCell, ...statLabel, fontWeight: 'bold', color: '#333' }}>{h}</Box>
+              ))}
+            </Box>
+            {Object.entries(financials.boards).map(([board, b]) => (
+              <Box key={board} sx={{ display: 'grid', gridTemplateColumns: 'auto repeat(4, 1fr)', borderBottom: '1px solid #f0f0f0', '&:last-child': { borderBottom: 0 } }}>
+                <Box sx={{ ...statCell, fontWeight: 'bold', textAlign: 'left', fontSize: '0.85rem' }}>{board}</Box>
+                <Box sx={{ ...statCell }}>{b.entries}</Box>
+                <Box sx={{ ...statCell }}>{fmt(b.gross)}</Box>
+                <Box sx={{ ...statCell, color: '#b45309' }}>{fmt(b.cut)}</Box>
+                <Box sx={{ ...statCell, color: '#166534', fontWeight: 'bold' }}>{fmt(b.net)}</Box>
+              </Box>
+            ))}
+          </Box>
+
+          {/* Category-level breakdown table */}
+          <Box sx={{ border: '1px solid #e0e0e0', borderRadius: 1.5, overflow: 'hidden' }}>
+            <Box sx={{ bgcolor: '#02133E', color: '#fff', px: 2, py: 0.75, fontWeight: 'bold', fontSize: '0.85rem' }}>By Category</Box>
+            <Box sx={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr 1fr 1fr 2fr', bgcolor: '#f5f5f5', borderBottom: '1px solid #e0e0e0' }}>
+              {['Pot', 'Entries', 'Gross', 'Cut', 'Net', 'Winner'].map(h => (
+                <Box key={h} sx={{ ...statCell, ...statLabel, fontWeight: 'bold', color: '#333' }}>{h}</Box>
+              ))}
+            </Box>
+            {financials.cats.filter(c => c.entrantCount > 0).map(c => (
+              <Box key={c.title} sx={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr 1fr 1fr 2fr', borderBottom: '1px solid #f0f0f0', '&:last-child': { borderBottom: 0 }, '&:hover': { bgcolor: '#fafafa' } }}>
+                <Box sx={{ ...statCell, textAlign: 'left', fontSize: '0.8rem', fontWeight: 500 }}>{c.title}</Box>
+                <Box sx={{ ...statCell, fontSize: '0.85rem' }}>{c.entrantCount}</Box>
+                <Box sx={{ ...statCell, fontSize: '0.85rem' }}>{fmt(c.gross)}</Box>
+                <Box sx={{ ...statCell, fontSize: '0.85rem', color: '#b45309' }}>{fmt(c.cut)}</Box>
+                <Box sx={{ ...statCell, fontSize: '0.85rem', color: '#166534', fontWeight: 'bold' }}>{fmt(c.net)}</Box>
+                <Box sx={{ ...statCell, fontSize: '0.8rem', textAlign: 'left' }}>{c.winnerName !== '—' ? `${c.winnerName} (${fmt(c.winnerPayout)})` : '—'}</Box>
+              </Box>
+            ))}
+            {financials.cats.every(c => c.entrantCount === 0) && (
+              <Box sx={{ p: 2, color: 'text.secondary', fontSize: '0.85rem' }}>No pot entries found.</Box>
+            )}
+          </Box>
+        </Box>
+      )}
+
+      {/* Sub-tab toggle */}
+      {loaded && (
+        <Box sx={{ display: 'flex', gap: 1, mb: 2 }}>
+          <Button variant={subTab === 'byCategory' ? 'contained' : 'outlined'} size="small" onClick={() => setSubTab('byCategory')}>By Category</Button>
+          <Button variant={subTab === 'byTeam' ? 'contained' : 'outlined'} size="small" onClick={() => setSubTab('byTeam')}>By Team / Angler</Button>
+        </Box>
+      )}
+
+      {loaded && subTab === 'byCategory' && (
+        <>
+          {results.map(result => (
+            result.rows.length > 0 ? (
+              <Box key={result.title} sx={{ mb: 1 }}>
+                <PotsResultTable
+                  style={{ width: '100%' }}
+                  title={`${result.title}${result.rows[0]?.entrantCount != null ? ` — ${result.rows[0].entrantCount} entrant${result.rows[0].entrantCount !== 1 ? 's' : ''}` : ''}`}
+                  subtitle={result.subtitle}
+                  rows={result.rows}
+                  columns={matches ? result.desktopColumns : result.mobileColumns}
+                  density="compact"
+                />
+              </Box>
+            ) : null
+          ))}
+          {results.every(r => r.rows.length === 0) && (
+            <Typography variant="body2" color="text.secondary">No pot results yet — catches need to be recorded first.</Typography>
+          )}
+        </>
+      )}
+
+      {loaded && subTab === 'byTeam' && (
+        <>
+          {teamSummary.length === 0 ? (
+            <Typography variant="body2" color="text.secondary">No pot payouts calculated yet.</Typography>
+          ) : (
+            <PotsResultTable style={{ width: '100%' }} title="Total Pot Winnings by Angler / Team" subtitle="" rows={teamSummary} columns={teamColumns} density="compact" />
+          )}
+        </>
+      )}
+    </TabPanel>
+  );
+}
+
+/**
+ * ChampionsTab — admin-only view of champion category standings (categories with display: false).
+ * These are hidden from the public leaderboard until CONFIG_LEADERBOARD_SHOW_CHAMPIONS_PUBLICLY
+ * is set to true in the year's leaderboardConfig.js (then redeploy).
+ */
+function ChampionsTab({ year, apiUrl, config, matches }) {
+  const [results, setResults] = useState([]);
+  const [loaded, setLoaded] = useState(false);
+
+  useEffect(() => {
+    if (!apiUrl || !config || loaded) return;
+
+    const {
+      generalConfig: { CONFIG_GENERAL_FIREBASE_CATCHES_TABLE_NAME, CONFIG_GENERAL_FIREBASE_TEAMS_TABLE_NAME },
+      leaderboardConfig: { CONFIG_LEADERBOARD_CATEGORIES },
+    } = config;
+
+    // Champion categories are those explicitly marked display: false
+    const championCategories = CONFIG_LEADERBOARD_CATEGORIES.filter(item => item.display === false);
+
+    const queries = championCategories.map(item => {
+      const bodyData = {
+        catchYear: CONFIG_GENERAL_FIREBASE_CATCHES_TABLE_NAME,
+        anglerYear: CONFIG_GENERAL_FIREBASE_TEAMS_TABLE_NAME,
+        numPlaces: item.numPlaces,
+        isReport: false,
+        ...(item.inputs ? item.inputs.reduce((acc, inp) => ({ ...acc, ...inp }), {}) : {}),
+      };
+      return {
+        title: item.title,
+        subtitle: item.subtitle || '',
+        url: item.url,
+        body: JSON.stringify(bodyData),
+        desktopColumns: item.desktopColumns,
+        mobileColumns: item.mobileColumns,
+      };
+    });
+
+    Promise.all(
+      queries.map(q =>
+        fetch(`${apiUrl}/api/${year}/${q.url}`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: q.body,
+        })
+          .then(r => r.json())
+          .then(data => {
+            const rows = Object.keys(data).map((k, i) => ({ ...data[k], id: i, catchId: k }));
+            return { title: q.title, subtitle: q.subtitle, rows, desktopColumns: q.desktopColumns, mobileColumns: q.mobileColumns };
+          })
+          .catch(() => ({ title: q.title, subtitle: q.subtitle, rows: [], desktopColumns: q.desktopColumns, mobileColumns: q.mobileColumns }))
+      )
+    ).then(res => {
+      setResults(res);
+      setLoaded(true);
+    });
+  }, [apiUrl, config, year, loaded]);
+
+  return (
+    <TabPanel key="Champions" value="Champions">
+      <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+        Champion standings are visible here only. To publish them on the public leaderboard after the tournament,
+        set <code>CONFIG_LEADERBOARD_SHOW_CHAMPIONS_PUBLICLY: true</code> in the year's leaderboardConfig.js and redeploy.
+      </Typography>
+      {!loaded && <CircularProgress />}
+      {loaded && results.map(result => (
+        result.rows.length > 0 ? (
+          <LeaderboardResultTable
+            key={result.title}
+            style={{ width: '100%' }}
+            title={result.title}
+            subtitle={result.subtitle}
+            rows={result.rows}
+            columns={matches ? result.desktopColumns : result.mobileColumns}
+            density="compact"
+          />
+        ) : (
+          <Typography key={result.title} variant="body2" sx={{ mb: 2, color: 'text.secondary' }}>
+            {result.title}: No results yet.
+          </Typography>
+        )
+      ))}
+    </TabPanel>
+  );
+}
+
+/**
+ * RecordsTab — admin view of DSR species record weights per year.
+ * Records are stored in Firebase (speciesRecords/{year}) and used for tiebreaker calculations.
+ * On first load, falls back to config defaults; after saving, Firebase values take over.
+ */
+function RecordsTab({ year, apiUrl, config }) {
+  const [records, setRecords] = useState({});
+  const [loaded, setLoaded] = useState(false);
+  const [saving, setSaving] = useState(false);
+
+  // Derive species list + config defaults from the Top Woman Angler leaderboard category
+  const twaCategory = config?.leaderboardConfig?.CONFIG_LEADERBOARD_CATEGORIES?.find(
+    c => c.url === 'get_deepsea_roundup_top_woman_angler'
+  );
+  const inputs = twaCategory?.inputs?.reduce((acc, inp) => ({ ...acc, ...inp }), {}) || {};
+  const configDefaults = inputs.historicalRecordCatchData || {};
+  const billfishSpecies = inputs.billfishSpeciesList || [];
+  const meatfishSpecies = inputs.meatfishSpeciesList || [];
+
+  // Bay/Surf-only species (same mapping used in leaderboard controller)
+  const baySurfOnlySpecies = new Set(['Black Drum', 'Flounder', 'Gafftop', 'Pompano', 'Redfish', 'Speckled Trout']);
+  const offshoreMeatfish = meatfishSpecies.filter(s => !baySurfOnlySpecies.has(s));
+  const baySurfMeatfish = meatfishSpecies.filter(s => baySurfOnlySpecies.has(s));
+
+  useEffect(() => {
+    if (!apiUrl || loaded) return;
+    fetch(`${apiUrl}/api/${year}/get_species_records`)
+      .then(r => r.json())
+      .then(data => {
+        // Merge config defaults with Firebase values (Firebase takes precedence)
+        setRecords({ ...configDefaults, ...data });
+        setLoaded(true);
+      })
+      .catch(() => {
+        setRecords({ ...configDefaults });
+        setLoaded(true);
+      });
+  }, [apiUrl, year, loaded]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const handleChange = (species, value) => {
+    setRecords(prev => ({ ...prev, [species]: value }));
+  };
+
+  const handleSave = () => {
+    setSaving(true);
+    // Convert all values to numbers before saving
+    const toSave = {};
+    for (const [species, val] of Object.entries(records)) {
+      const w = parseFloat(val);
+      if (!isNaN(w)) toSave[species] = w;
+    }
+    fetch(`${apiUrl}/api/${year}/set_species_records`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(toSave),
+    })
+      .then(r => r.json())
+      .then(() => {
+        toast.success('Species records saved!');
+        setSaving(false);
+      })
+      .catch(() => {
+        toast.error('Error saving records.');
+        setSaving(false);
+      });
+  };
+
+  const sectionStyle = { mb: 3 };
+  const rowStyle = { display: 'grid', gridTemplateColumns: '220px 120px 40px', alignItems: 'center', gap: 1, mb: 1 };
+
+  const renderSpeciesRows = (speciesList) =>
+    speciesList.map(species => (
+      <Box key={species} sx={rowStyle}>
+        <Typography variant="body2">{species}</Typography>
+        <TextField
+          type="number"
+          size="small"
+          inputProps={{ step: '0.1', min: '0' }}
+          value={records[species] ?? ''}
+          onChange={e => handleChange(species, e.target.value)}
+        />
+        <Typography variant="body2" color="text.secondary">lbs</Typography>
+      </Box>
+    ));
+
+  return (
+    <TabPanel key="Records" value="Records">
+      <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
+        DSR tournament species records for <strong>{year}</strong>. These are used for tiebreaker calculations
+        in the Offshore Grand Champion and Top Woman Angler standings. Update whenever a record is broken
+        during the tournament — changes take effect within 60 seconds (cache TTL).
+      </Typography>
+
+      {!loaded ? (
+        <CircularProgress />
+      ) : (
+        <>
+          <Box sx={sectionStyle}>
+            <Typography variant="subtitle1" sx={{ fontWeight: 'bold', mb: 1 }}>Billfish / Tarpon (Release)</Typography>
+            {renderSpeciesRows(billfishSpecies)}
+          </Box>
+
+          <Box sx={sectionStyle}>
+            <Typography variant="subtitle1" sx={{ fontWeight: 'bold', mb: 1 }}>Offshore Meatfish</Typography>
+            {renderSpeciesRows(offshoreMeatfish)}
+          </Box>
+
+          <Box sx={sectionStyle}>
+            <Typography variant="subtitle1" sx={{ fontWeight: 'bold', mb: 1 }}>Bay/Surf Species</Typography>
+            {renderSpeciesRows(baySurfMeatfish)}
+          </Box>
+
+          <Button
+            variant="contained"
+            onClick={handleSave}
+            disabled={saving}
+            sx={{ mt: 1 }}
+          >
+            {saving ? 'Saving...' : `Save ${year} Records`}
+          </Button>
+        </>
+      )}
+    </TabPanel>
   );
 }
 

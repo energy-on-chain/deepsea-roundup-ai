@@ -24,6 +24,7 @@ function HomePage() {
   const [numCatches, setNumCatches] = useState(0);
   const [potTotal, setPotTotal] = useState(0);
   const [isRegistrationDisabled, setIsRegistrationDisabled] = useState(false); // New state to track registration button state
+  const [pricesPendingConfirmation, setPricesPendingConfirmation] = useState(false);
 
   // INITIALIZE
   useEffect(() => {
@@ -77,16 +78,20 @@ function HomePage() {
 
     const {
       CONFIG_ANGLER_REGISTRATION_CUTOFF_IN_LOCAL_TIME_IN_MS,
+      CONFIG_REGISTRATION_PRICES_PENDING_CONFIRMATION,
     } = configs.registrationConfig;
 
-    const apiUrl = process.env.REACT_APP_NODE_ENV === "staging"
-      ? process.env.REACT_APP_SERVER_URL_STAGING
-      : process.env.REACT_APP_SERVER_URL_PRODUCTION;
+    const apiUrl = import.meta.env.VITE_NODE_ENV === "staging"
+      ? import.meta.env.VITE_SERVER_URL_STAGING
+      : import.meta.env.VITE_SERVER_URL_PRODUCTION;
 
     // Check if the current time is past the cutoff, and disable registration if so
     const currentTime = new Date().getTime();
     if (currentTime > CONFIG_ANGLER_REGISTRATION_CUTOFF_IN_LOCAL_TIME_IN_MS) {
       setIsRegistrationDisabled(true); // Disable the registration button
+    }
+    if (CONFIG_REGISTRATION_PRICES_PENDING_CONFIRMATION === true) {
+      setPricesPendingConfirmation(true);
     }
 
     // Fetch teams
@@ -202,18 +207,23 @@ function HomePage() {
         <section style={{backgroundColor: CONFIG_STYLING_HOME_INFO_BACKGROUND_COLOR}} className="section-hero2">
           {configs.generalConfig.CONFIG_GENERAL_HAS_REGISTRATION && (
             <div className="registration-info">
+              {pricesPendingConfirmation && (
+                <div style={{ backgroundColor: '#FFF3CD', border: '1px solid #FFC107', borderRadius: '6px', padding: '10px 14px', marginBottom: '12px', color: '#856404', fontSize: '14px' }}>
+                  <strong>Registration Coming Soon</strong> — Entry fees are pending final confirmation.
+                </div>
+              )}
               <Link to={`/${year}/register`}>
-                <button 
-                  style={{ 
-                    backgroundColor: isRegistrationDisabled ? '#AEBDC4' : CONFIG_STYLING_BUTTON_BACKGROUND_COLOR, // Grey background if disabled
-                    color: isRegistrationDisabled ? 'white' : CONFIG_STYLING_BUTTON_TEXT_COLOR,  // Light text color if disabled
-                    borderColor: isRegistrationDisabled ? 'black' : CONFIG_STYLING_BUTTON_BORDER_COLOR  // Grey border if disabled
-                  }} 
-                  className="home-signup-button" 
+                <button
+                  style={{
+                    backgroundColor: (isRegistrationDisabled || pricesPendingConfirmation) ? '#AEBDC4' : CONFIG_STYLING_BUTTON_BACKGROUND_COLOR,
+                    color: (isRegistrationDisabled || pricesPendingConfirmation) ? 'white' : CONFIG_STYLING_BUTTON_TEXT_COLOR,
+                    borderColor: (isRegistrationDisabled || pricesPendingConfirmation) ? 'black' : CONFIG_STYLING_BUTTON_BORDER_COLOR
+                  }}
+                  className="home-signup-button"
                   type="button"
-                  disabled={isRegistrationDisabled} // Disable the button if the cutoff is reached
+                  disabled={isRegistrationDisabled || pricesPendingConfirmation}
                 >
-                  {isRegistrationDisabled ? "Signup Closed!" : "Register Now!"} {/* Change the label */}
+                  {isRegistrationDisabled ? "Signup Closed!" : pricesPendingConfirmation ? "Coming Soon" : "Register Now!"}
                 </button>
               </Link>
               <br />

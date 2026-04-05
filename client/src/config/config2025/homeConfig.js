@@ -1,8 +1,7 @@
 /////////////////////////////////////////////////////////////////////////////
 // HOMEPAGE SETTINGS ////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////////////////////////
-module.exports = {
-  CONFIG_HOME_TOURNAMENT_DATE_STRING: "Dates coming soon!",
+export default {
   CONFIG_HOME_TOURNAMENT_DATE_STRING: "July 10th - 13th, 2025",
   CONFIG_HOME_TOURNAMENT_HEADLINE_STRING: "Join the 89th edition of the Gulf Coast's oldest fishing tournament!",
   CONFIG_HOME_TOURNAMENT_START_IN_LOCAL_TIME_IN_MS: "1752123600000",    // 10-Jul-2025

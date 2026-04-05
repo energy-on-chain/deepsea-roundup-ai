@@ -27,6 +27,7 @@ const AddCatchModal = (props) => {
   const [anglerDivision, setAnglerDivision] = useState(null);
   const [anglerAgeBracket, setAnglerAgeBracket] = useState(null);
   const [anglerBoatName, setAnglerBoatName] = useState(null);
+  const [anglerGender, setAnglerGender] = useState(null);
   const [registeredAnglerList, setRegisteredAnglerList] = useState([]);
   const [registeredAnglerNameList, setRegisteredAnglerNameList] = useState([]);
   const [catchData, setCatchData] = useState([]);
@@ -51,9 +52,9 @@ const AddCatchModal = (props) => {
         },
       } = loadedConfig;
 
-      const apiUrl = process.env.REACT_APP_NODE_ENV === 'production'
-        ? process.env.REACT_APP_SERVER_URL_PRODUCTION
-        : process.env.REACT_APP_SERVER_URL_STAGING;
+      const apiUrl = import.meta.env.VITE_NODE_ENV === 'production'
+        ? import.meta.env.VITE_SERVER_URL_PRODUCTION
+        : import.meta.env.VITE_SERVER_URL_STAGING;
 
       fetch(`${apiUrl}/api/${year}/admin_get_database_list`, {    // get list of registered anglers
         method: 'POST',    
@@ -99,7 +100,10 @@ const AddCatchModal = (props) => {
     setRegisteredAnglerList([]);
     setAnglerId();
     setAnglerName();
-    setAnglerId();
+    setAnglerDivision(null);
+    setAnglerAgeBracket(null);
+    setAnglerBoatName(null);
+    setAnglerGender(null);
     setAnglerIsSelected(false);
     setNumCatches(0);
     setCatchData([]);
@@ -160,31 +164,37 @@ const AddCatchModal = (props) => {
   };
   
   const handleChangeNumberOfCatches = (e) => {
+    const newCount = e.target.value;
+    const currentDateTime = dayjs().toISOString();
 
-    const currentDateTime = dayjs().toISOString(); // Get the current date and time in ISO format
-
-    setNumCatches(e.target.value);
-    if (e.target.value > 0) {
-      const catchDataList = [];
-      for (let i=0; i<e.target.value; i++) {
-        catchDataList.push(
-          {
-            id: i,
-            anglerId: anglerId,
-            anglerName: anglerName,
-            species: "",
-            division: anglerDivision,
-            type: "",
-            dateTime: currentDateTime,
-            length: 0,
-            girth: 0,
-            weight: 0,
-            points: 0,
-            catchPhoto: null,
+    setNumCatches(newCount);
+    if (newCount > 0) {
+      setCatchData(prev => {
+        if (newCount > prev.length) {
+          // Add new empty slots at the end, preserving existing entries
+          const newSlots = [];
+          for (let i = prev.length; i < newCount; i++) {
+            newSlots.push({
+              id: i,
+              anglerId: anglerId,
+              anglerName: anglerName,
+              species: "",
+              division: anglerDivision,
+              type: "",
+              dateTime: currentDateTime,
+              length: 0,
+              girth: 0,
+              weight: 0,
+              points: 0,
+              catchPhoto: null,
+            });
           }
-        )
-      }
-      setCatchData(catchDataList);
+          return [...prev, ...newSlots];
+        } else {
+          // Trim from the end, preserving data in remaining slots
+          return prev.slice(0, newCount);
+        }
+      });
     } else {
       setCatchData([]);
     }
@@ -228,7 +238,8 @@ const AddCatchModal = (props) => {
       setAnglerName(value["anglerData"]["anglerName"]);
       setAnglerDivision(value["anglerData"]["division"]); // Store the angler's division
       setAnglerAgeBracket(value["anglerData"]["ageBracket"]); // Store the angler's division
-      setAnglerBoatName(value["anglerData"]["boatName"]); 
+      setAnglerBoatName(value["anglerData"]["boatName"]);
+      setAnglerGender(value["anglerData"]["gender"] || null);
       setAnglerIsSelected(true);
     
       let updatedCatchData = catchData.map(catchEntry => ({
@@ -242,6 +253,7 @@ const AddCatchModal = (props) => {
       setAnglerDivision(null); // Reset division if no angler is selected
       setAnglerAgeBracket(null);
       setAnglerBoatName(null);
+      setAnglerGender(null);
       setAnglerIsSelected(false);
     }
   };  
@@ -545,10 +557,10 @@ const AddCatchModal = (props) => {
       formData.append('catchYear', props.catchYear);
   
       let apiUrl = null;
-      if (process.env.REACT_APP_NODE_ENV === 'staging') {
-        apiUrl = process.env.REACT_APP_SERVER_URL_STAGING;
-      } else if (process.env.REACT_APP_NODE_ENV === 'production') {
-        apiUrl = process.env.REACT_APP_SERVER_URL_PRODUCTION;
+      if (import.meta.env.VITE_NODE_ENV === 'staging') {
+        apiUrl = import.meta.env.VITE_SERVER_URL_STAGING;
+      } else if (import.meta.env.VITE_NODE_ENV === 'production') {
+        apiUrl = import.meta.env.VITE_SERVER_URL_PRODUCTION;
       }
   
       fetch(`${apiUrl}/api/${year}/admin_add_catch`, {
@@ -589,13 +601,15 @@ const AddCatchModal = (props) => {
                 options={registeredAnglerNameList}
                 renderInput={(params) => <TextField {...params} label="Angler name"/>}
                 onChange={handleAnglerSelection}
+                ListboxProps={{ style: { maxHeight: 300 } }}
               />
 
             {anglerIsSelected && (
               <>
                 <InputLabel id="angler-division-label"><strong>Division:</strong>  {anglerDivision}</InputLabel>
-                <InputLabel id="angler-division-label"><strong>Age Bracket:</strong>  {anglerAgeBracket}</InputLabel>
+                <InputLabel id="angler-age-bracket-label"><strong>Age Bracket:</strong>  {anglerAgeBracket}</InputLabel>
                 <InputLabel id="angler-boat-name-label"><strong>Boat Name:</strong>  {anglerBoatName}</InputLabel>
+                {anglerGender && <InputLabel id="angler-gender-label"><strong>Gender:</strong>  {anglerGender}</InputLabel>}
 
                 <InputLabel required id="num-catches-label">Select number of catches to add</InputLabel>
                 <Select labelId="num-catches-label" id="num-catches" value={numCatches} onChange={handleChangeNumberOfCatches}>
