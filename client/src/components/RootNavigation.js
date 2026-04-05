@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Link, NavLink, useParams, useSearchParams } from 'react-router-dom';
+import { Link, NavLink, useParams, useSearchParams, useLocation } from 'react-router-dom';
 import { loadConfigForYear } from '../config/masterConfig';
 import './RootNavigation.css';
 import logo from '../images/NavBarLogo.png';
@@ -14,6 +14,7 @@ function RootNavigation(props) {
   // Use year from URL params if available, otherwise fallback to query params or current year
   const year = yearFromParams || yearFromSearch || null; // Initially null, so we can wait for the year to be available
 
+  const location = useLocation();
   const currentUser = JSON.parse(window.localStorage.getItem('user'));
   const [isMobile, setIsMobile] = useState(window.innerWidth <= 950);
   const [config, setConfig] = useState(null); // Initially null, so we can show loading state
@@ -38,6 +39,14 @@ function RootNavigation(props) {
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
+  // Close hamburger menu on route change
+  useEffect(() => {
+    const menu = document.getElementById('menu-toggle');
+    const menuEl = document.getElementById('menu');
+    if (menu) menu.checked = false;
+    if (menuEl) menuEl.style.marginTop = '0px';
+  }, [location.pathname]);
+
   useEffect(() => {
     const menu = document.getElementById('menu-toggle');
   
@@ -49,7 +58,7 @@ function RootNavigation(props) {
           document.getElementById("menu").style.marginTop = "90px";
         }
       }
-      if (menu && event.target instanceof HTMLAnchorElement) {  // Ensure menu exists
+      if (menu && event.target.closest('a')) {  // Ensure menu exists; use closest to handle clicks on child elements
         menu.checked = false;
         document.getElementById("menu").style.marginTop = "0px";
       }

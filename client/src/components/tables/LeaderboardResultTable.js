@@ -53,11 +53,19 @@ function LeaderboardResultTable(props) {
 
   if (isMobile) {
     const placeCol = formattedColumns.find(c => c.field === 'place');
-    const nameCol = formattedColumns.find(c => /angler|^boat$|^name$/i.test(c.field) && c.field !== 'place')
-      || formattedColumns.find(c => /team|boat/i.test(c.field));
+    const anglerCol = formattedColumns.find(c => /^angler$/i.test(c.field));
+    const boatCol = formattedColumns.find(c => /^boatName$/i.test(c.field));
+    // Primary name: angler if present, otherwise first name-like column
+    const nameCol = anglerCol
+      || formattedColumns.find(c => /team|boat|^name$/i.test(c.field) && c.field !== 'place');
     const statCol = formattedColumns.find(c => /points|weight|payout/i.test(c.field));
     const dateCol = formattedColumns.find(c => c.isDateTime);
-    const otherCols = formattedColumns.filter(c => c !== placeCol && c !== nameCol && c !== statCol && c !== dateCol && c.field !== 'place');
+    // boatCol shown as secondary when different from the primary nameCol
+    const secondaryNameCol = (boatCol && boatCol !== nameCol) ? boatCol : null;
+    const otherCols = formattedColumns.filter(c =>
+      c !== placeCol && c !== nameCol && c !== secondaryNameCol &&
+      c !== statCol && c !== dateCol && c.field !== 'place'
+    );
 
     return (
       <Paper
@@ -80,8 +88,12 @@ function LeaderboardResultTable(props) {
           {(props.rows || []).map((row, rowIndex) => {
             const placeNum = placeCol ? row[placeCol.field] : rowIndex + 1;
             const nameVal = nameCol ? row[nameCol.field] : null;
+            const secondaryNameVal = secondaryNameCol ? row[secondaryNameCol.field] : null;
             const statVal = statCol ? row[statCol.field] : null;
             const dateVal = dateCol ? row[dateCol.field] : null;
+            // Use secondaryNameVal as primary if nameVal is empty (e.g. C&R uses boatName)
+            const displayName = nameVal || secondaryNameVal;
+            const displaySecondary = nameVal && secondaryNameVal ? secondaryNameVal : null;
             return (
               <Card
                 key={row.id ?? rowIndex}
@@ -100,9 +112,14 @@ function LeaderboardResultTable(props) {
                       </Typography>
                     </Box>
                     <Box sx={{ flexGrow: 1, minWidth: 0 }}>
-                      {nameVal && (
+                      {displayName && (
                         <Typography sx={{ fontWeight: 'bold', fontSize: '1rem', color: cellText, lineHeight: 1.2 }}>
-                          {nameVal}
+                          {displayName}
+                        </Typography>
+                      )}
+                      {displaySecondary && (
+                        <Typography sx={{ fontSize: '0.8rem', color: cellText, opacity: 0.75, lineHeight: 1.2 }}>
+                          {secondaryNameCol.headerName}: {displaySecondary}
                         </Typography>
                       )}
                       {statCol && statVal != null && (

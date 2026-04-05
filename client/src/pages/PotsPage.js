@@ -106,7 +106,7 @@ function PotsPage() {
       })
         .then(res => res.json())
         .then(data => {
-          const parsedData = data.data.map(entry => ({
+          const parsedData = (data?.data || []).map(entry => ({
             ...entry,
             boardSelections: typeof entry.boardSelections === 'string'
               ? JSON.parse(entry.boardSelections)
