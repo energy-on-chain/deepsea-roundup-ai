@@ -11,6 +11,10 @@ export default defineConfig({
     exclude: [],
   },
   optimizeDeps: {
+    include: [
+      'react-swipeable-views-react-18-fix',
+      'react-responsive-carousel',
+    ],
     esbuildOptions: {
       loader: { '.js': 'jsx' },
     },
