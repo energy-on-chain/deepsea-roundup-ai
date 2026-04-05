@@ -240,8 +240,12 @@ module.exports = ({ clientUrl, serverUrl, stripe, webhookSecret, redisClient }) 
             contentType: fileData.mimetype,
           },
         });
-        logoUrl = `https://storage.googleapis.com/${bucket.name}/${filename}`;
-        console.log(`Sponsor logo uploaded to URL: ${logoUrl}`);
+        const [signedUrl] = await fileUpload.getSignedUrl({
+          action: 'read',
+          expires: '01-01-2100',
+        });
+        logoUrl = signedUrl;
+        console.log(`Sponsor logo uploaded, signed URL generated.`);
       } catch (error) {
         console.error(`Error uploading sponsor logo ${fileName}:`, error);
       }
@@ -323,8 +327,12 @@ module.exports = ({ clientUrl, serverUrl, stripe, webhookSecret, redisClient }) 
                 contentType: req.file.mimetype,
               },
             });
-            logoUrl = `https://storage.googleapis.com/${bucket.name}/${sanitizedFilename}`;
-            console.log(`Sponsor logo uploaded to URL: ${logoUrl}`);
+            const [signedUrl] = await fileUpload.getSignedUrl({
+              action: 'read',
+              expires: '01-01-2100',
+            });
+            logoUrl = signedUrl;
+            console.log(`Sponsor logo uploaded, signed URL generated.`);
           } catch (error) {
             console.error(`Error uploading sponsor logo:`, error);
           }
