@@ -87,8 +87,13 @@ function LeaderboardResultTable(props) {
         <Box sx={{ p: 1 }}>
           {(props.rows || []).map((row, rowIndex) => {
             const placeNum = placeCol ? row[placeCol.field] : rowIndex + 1;
-            const nameVal = nameCol ? row[nameCol.field] : null;
-            const secondaryNameVal = secondaryNameCol ? row[secondaryNameCol.field] : null;
+            // Fall back to known API key names if the config field name doesn't match the row data
+            const nameVal = nameCol
+              ? (row[nameCol.field] || row.angler || row.boatName || null)
+              : (row.angler || row.boatName || null);
+            const secondaryNameVal = secondaryNameCol
+              ? (row[secondaryNameCol.field] || null)
+              : null;
             const statVal = statCol ? row[statCol.field] : null;
             const dateVal = dateCol ? row[dateCol.field] : null;
             // Use secondaryNameVal as primary if nameVal is empty (e.g. C&R uses boatName)
