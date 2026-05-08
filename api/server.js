@@ -21,6 +21,7 @@ const newsfeedRoutes = require('./routes/newsfeedRoutes');
 const leaderboardRoutes = require('./routes/leaderboardRoutes');
 const potRoutes = require('./routes/potRoutes');
 const settingsRoutes = require('./routes/settingsRoutes');
+const authorizeNetRoutes = require('./routes/authorizeNetRoutes');
 // const auctionRoutes = require('./routes/auctionRoutes');
 
 // ENVIRONMENT
@@ -155,6 +156,7 @@ app.use('/', newsfeedRoutes);
 app.use('/', leaderboardRoutes);
 app.use('/', potRoutes);
 app.use('/', settingsRoutes);
+app.use('/', authorizeNetRoutes);
 // app.use('/', auctionRoutes);
 
 // REDIRECT — serve React app for all non-API routes

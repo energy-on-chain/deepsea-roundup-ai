@@ -39,7 +39,7 @@ function RegisterSuccessPage(props) {
           </p>
           <br />
           <p style={{ color: pColor }}>
-            Your payment has been processed via Stripe, and you will receive a confirmation email receipt from them shortly.
+            Your payment has been processed and you will receive a confirmation email receipt shortly.
           </p>
           <br />
           <p style={{ color: pColor }}>

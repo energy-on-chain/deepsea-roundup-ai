@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { useParams, useSearchParams } from 'react-router-dom';
-import { InputLabel, Typography, Select, MenuItem, Button, CircularProgress, FormControl, Dialog, DialogContent, DialogTitle, IconButton, Stack, TextField } from "@mui/material";
+import { useParams, useSearchParams, useNavigate } from 'react-router-dom';
+import { InputLabel, Typography, Select, MenuItem, Button, CircularProgress, FormControl, Dialog, DialogContent, DialogTitle, IconButton, Stack, TextField, Alert } from "@mui/material";
 import CloseIcon from "@mui/icons-material/Close";
 import { toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
@@ -21,20 +21,45 @@ const AddAnglerModal = (props) => {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm')); // Check if the screen size is small (mobile)
 
+  const navigate = useNavigate();
   const [adminDefaults, setAdminDefaults] = useState({ phone: "", email: "", hometown: "" });
+  const [paymentProvider, setPaymentProvider] = useState('stripe');
+  const [acceptJsLoaded, setAcceptJsLoaded] = useState(false);
+  const [cardholderName, setCardholderName] = useState('');
+  const [cardNumber, setCardNumber] = useState('');
+  const [cardExpiry, setCardExpiry] = useState('');
+  const [cardCode, setCardCode] = useState('');
+  const [cardError, setCardError] = useState('');
 
   useEffect(() => {
-    if (props.isAdmin) {
-      loadConfigForYear(year).then(cfg => {
+    loadConfigForYear(year).then(cfg => {
+      const provider = cfg?.registrationConfig?.CONFIG_PAYMENT_PROVIDER || 'stripe';
+      setPaymentProvider(provider);
+
+      if (props.isAdmin) {
         const { CONFIG_ADMIN_DEFAULT_PHONE, CONFIG_ADMIN_DEFAULT_EMAIL, CONFIG_ADMIN_DEFAULT_HOMETOWN } = cfg?.adminConfig || {};
         setAdminDefaults({
           phone: CONFIG_ADMIN_DEFAULT_PHONE || "",
           email: CONFIG_ADMIN_DEFAULT_EMAIL || "",
           hometown: CONFIG_ADMIN_DEFAULT_HOMETOWN || "",
         });
-      }).catch(() => {});
-    }
+      }
+    }).catch(() => {});
   }, [year, props.isAdmin]);
+
+  // Load Accept.js when using Authorize.net
+  useEffect(() => {
+    if (paymentProvider !== 'authorize_net') return;
+    const src = import.meta.env.VITE_NODE_ENV === 'production'
+      ? 'https://js.authorize.net/v1/Accept.js'
+      : 'https://jstest.authorize.net/v1/Accept.js';
+    if (document.querySelector(`script[src="${src}"]`)) { setAcceptJsLoaded(true); return; }
+    const script = document.createElement('script');
+    script.src = src;
+    script.charset = 'utf-8';
+    script.onload = () => setAcceptJsLoaded(true);
+    document.head.appendChild(script);
+  }, [paymentProvider]);
 
   const [numberOfAnglers, setNumberOfAnglers] = useState(0);
   const [email, setEmail] = useState("");
@@ -159,82 +184,104 @@ const AddAnglerModal = (props) => {
     }
   };
 
-  const handlePayment = async () => {
-    
-    let apiUrl = null;
-    if (import.meta.env.VITE_NODE_ENV === "staging") {
-        apiUrl = import.meta.env.VITE_SERVER_URL_STAGING;
-    } else if (import.meta.env.VITE_NODE_ENV === "production") {
-        apiUrl = import.meta.env.VITE_SERVER_URL_PRODUCTION;
-    }
+  const getApiUrl = () =>
+    import.meta.env.VITE_NODE_ENV === 'production'
+      ? import.meta.env.VITE_SERVER_URL_PRODUCTION
+      : import.meta.env.VITE_SERVER_URL_STAGING;
 
+  const buildMetadata = () => {
     const adultFee = props.isEarlyBird ? props.earlyBirdData.adultEarlybirdFee : props.normalData.adultNormalfee;
     const juniorFee = props.isEarlyBird ? props.earlyBirdData.juniorEarlybirdFee : props.normalData.juniorNormalfee;
+    return {
+      type: "angler",
+      year: props.year,
+      tableName: props.tableName,
+      email: email || null,
+      phone: phone || null,
+      anglerDetails,
+      adultFee,
+      juniorFee,
+    };
+  };
 
-    let metaDataObject;
-    if (props.isAdmin) {
-      metaDataObject = {
-        type: "angler",
-        year: props.year,
-        tableName: props.tableName,
-        email: email,
-        phone: phone,
-        anglerDetails: anglerDetails,
-        adultFee: adultFee,
-        juniorFee: juniorFee,
-      };
-    } else {
-      metaDataObject = {
-        type: "angler",
-        year: props.year,
-        tableName: props.tableName,
-        anglerDetails: anglerDetails,
-        adultFee: adultFee,
-        juniorFee: juniorFee,
-      };
-    }
-
+  const handlePayment = async () => {
+    const apiUrl = getApiUrl();
+    const metaDataObject = buildMetadata();
     const formData = new FormData();
-    formData.append('metaDataObject', JSON.stringify(metaDataObject)); // Append the metaDataObject as a JSON string
+    formData.append('metaDataObject', JSON.stringify(metaDataObject));
 
-    if (props.isAdmin) { // register as admin, non-payment case
-
+    if (props.isAdmin) {
+      // Admin path — no payment, direct Firebase write
       fetch(`${apiUrl}/api/${props.year}/registration_by_admin`, {
-        method: 'POST',
-        body: formData,
-      }).then(res => {
-        if (res.ok) {
-          return res.json();
-        } else {
-          return res.json().then(json => Promise.reject(json));
-        }
-      }).then(({ url }) => {
-        setIsSubmitted(true);
-        window.location.reload();
-      }).catch(e => {
-        console.error(e.error);
-      });
+        method: 'POST', body: formData,
+      }).then(res => res.ok ? res.json() : res.json().then(j => Promise.reject(j)))
+        .then(() => { setIsSubmitted(true); window.location.reload(); })
+        .catch(e => { console.error(e); setIsSubmitting(false); });
+
+    } else if (paymentProvider === 'authorize_net') {
+      // Authorize.net path — tokenize card then charge
+      handleAuthorizeNetPayment(apiUrl, metaDataObject);
 
     } else {
-
+      // Stripe path — redirect to hosted checkout
       fetch(`${apiUrl}/api/${props.year}/registration_checkout_session`, {
-        method: 'POST',
-        body: formData,
-      }).then(res => {
-        if (res.ok) {
-          return res.json();
-        } else {
-          return res.json().then(json => Promise.reject(json));
-        }
-      }).then(({ url }) => {
-        setIsSubmitted(true);
-        window.location = url;
-      }).catch(e => {
-        console.error(e.error);
-      });
-
+        method: 'POST', body: formData,
+      }).then(res => res.ok ? res.json() : res.json().then(j => Promise.reject(j)))
+        .then(({ url }) => { setIsSubmitted(true); window.location = url; })
+        .catch(e => { console.error(e); setIsSubmitting(false); });
     }
-  }
+  };
+
+  const handleAuthorizeNetPayment = (apiUrl, metadata) => {
+    setCardError('');
+    const isProduction = import.meta.env.VITE_NODE_ENV === 'production';
+    const secureData = {
+      authData: {
+        clientKey: isProduction
+          ? import.meta.env.VITE_AUTHORIZE_NET_CLIENT_KEY_PRODUCTION
+          : import.meta.env.VITE_AUTHORIZE_NET_CLIENT_KEY_STAGING,
+        apiLoginID: isProduction
+          ? import.meta.env.VITE_AUTHORIZE_NET_API_LOGIN_ID_PRODUCTION
+          : import.meta.env.VITE_AUTHORIZE_NET_API_LOGIN_ID_STAGING,
+      },
+      cardData: {
+        cardNumber: cardNumber.replace(/\s/g, ''),
+        month: cardExpiry.split('/')[0]?.trim().padStart(2, '0'),
+        year: cardExpiry.split('/')[1]?.trim(),
+        cardCode,
+        fullName: cardholderName,
+      },
+    };
+
+    window.Accept.dispatchData(secureData, (response) => {
+      if (response.messages.resultCode === 'Error') {
+        const msg = response.messages.message.map(m => m.text).join(' ');
+        setCardError(msg);
+        setIsSubmitting(false);
+        return;
+      }
+
+      fetch(`${apiUrl}/api/${props.year}/authorize_net_charge`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ metadata, opaqueData: response.opaqueData }),
+      })
+        .then(res => res.json())
+        .then(data => {
+          if (data.success) {
+            setIsSubmitted(true);
+            navigate(`/${props.year}/register/success`);
+          } else {
+            setCardError(data.message || 'Payment was declined. Please try again.');
+            setIsSubmitting(false);
+          }
+        })
+        .catch(() => {
+          setCardError('A network error occurred. Please try again.');
+          setIsSubmitting(false);
+        });
+    });
+  };
 
   return (
     <Dialog open={props.status} onClose={handleClose} fullWidth maxWidth="lg">
@@ -375,19 +422,83 @@ const AddAnglerModal = (props) => {
             Juniors ({anglerDetails.filter((a) => a.ageBracket === "Junior").length} x {formatCurrency(props.isEarlyBird ? props.earlyBirdData.juniorEarlybirdFee : props.normalData.juniorNormalfee)}{props.isEarlyBird ? "each, early bird" : " each"}): {formatCurrency(juniorFee)}
           </Typography>
 
-          {!isSubmitted ? (
+          {/* Email + phone for non-admin Authorize.net registrations (Stripe collects these on its hosted page) */}
+          {!props.isAdmin && paymentProvider === 'authorize_net' && (
+            <Stack spacing={2} sx={{ border: '1px solid #ddd', p: 2 }}>
+              <Typography variant="subtitle2" sx={{ fontWeight: 'bold' }}>Contact Information</Typography>
+              <TextField label="Email" type="email" value={email} onChange={e => setEmail(e.target.value)} fullWidth required />
+              <TextField label="Phone" value={phone} onChange={e => setPhone(e.target.value)} fullWidth />
+            </Stack>
+          )}
+
+          {/* Authorize.net inline card form */}
+          {!props.isAdmin && paymentProvider === 'authorize_net' && !isSubmitted && (
+            <Stack spacing={2} sx={{ border: '1px solid #1976d2', borderRadius: 1, p: 2 }}>
+              <Typography variant="subtitle2" sx={{ fontWeight: 'bold', color: '#1976d2' }}>Card Information</Typography>
+              <TextField
+                label="Cardholder Name"
+                value={cardholderName}
+                onChange={e => setCardholderName(e.target.value)}
+                fullWidth
+                required
+              />
+              <Stack direction={isMobile ? 'column' : 'row'} spacing={2}>
+                <TextField
+                  label="Card Number"
+                  value={cardNumber}
+                  onChange={e => setCardNumber(e.target.value.replace(/[^\d\s]/g, '').slice(0, 19))}
+                  fullWidth
+                  required
+                  inputProps={{ inputMode: 'numeric', maxLength: 19 }}
+                />
+                <TextField
+                  label="MM/YY"
+                  value={cardExpiry}
+                  onChange={e => {
+                    let v = e.target.value.replace(/[^\d/]/g, '');
+                    if (v.length === 2 && !v.includes('/')) v = v + '/';
+                    setCardExpiry(v.slice(0, 5));
+                  }}
+                  sx={{ width: isMobile ? '100%' : 120 }}
+                  required
+                  inputProps={{ inputMode: 'numeric', maxLength: 5 }}
+                />
+                <TextField
+                  label="CVV"
+                  value={cardCode}
+                  onChange={e => setCardCode(e.target.value.replace(/\D/g, '').slice(0, 4))}
+                  sx={{ width: isMobile ? '100%' : 100 }}
+                  required
+                  inputProps={{ inputMode: 'numeric', maxLength: 4 }}
+                />
+              </Stack>
+              {cardError && <Alert severity="error">{cardError}</Alert>}
+              <Button
+                color="primary"
+                variant="contained"
+                disabled={numberOfAnglers === 0 || isSubmitting || !acceptJsLoaded || !cardholderName || !cardNumber || !cardExpiry || !cardCode}
+                onClick={handleFormSubmission}
+                startIcon={isSubmitting ? <CircularProgress size={20} /> : null}
+              >
+                {isSubmitting ? "Processing..." : `Pay ${formatCurrency(total)}`}
+              </Button>
+            </Stack>
+          )}
+
+          {/* Stripe / Admin submit button */}
+          {(props.isAdmin || paymentProvider === 'stripe') && !isSubmitted && (
             <Button
               color="primary"
               variant="contained"
-              disabled={numberOfAnglers === 0 || isSubmitting} // Enabled if anglers > 0
+              disabled={numberOfAnglers === 0 || isSubmitting}
               onClick={handleFormSubmission}
               startIcon={isSubmitting ? <CircularProgress size={20} /> : null}
             >
               {isSubmitting ? "Submitting..." : props.isAdmin ? "Register team (no payment)" : "Go to payment"}
             </Button>
-          ) : (
-            <h3>Submitted!</h3>
           )}
+
+          {isSubmitted && <h3>Submitted!</h3>}
 
         </Stack>
       </DialogContent>

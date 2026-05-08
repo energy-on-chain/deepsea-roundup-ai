@@ -21,8 +21,84 @@ const flattenObjectWithPrefix = (obj, prefix = '') => {
   }, {});
 };
 
+// Shared Firebase write helpers — used by both Stripe webhook and Authorize.net controller
+const handleAnglerCase = async (metadata, paymentEventData) => {
+  console.log('Handling angler case in processFirestore...');
+
+  const db = getFirestore();
+  const { anglerDetails, year, tableName } = metadata;
+  const customerDetails = paymentEventData.customer_details || {};
+
+  for (const angler of anglerDetails) {
+    const anglerData = {
+      ...angler,
+      hasCheckedIn: false,
+      tableName,
+      sponsorName: "None",
+      registrationFee: angler.ageBracket === "Adult" ? metadata.adultFee : metadata.juniorFee,
+      email: customerDetails.email || null,
+      phone: customerDetails.phone || null,
+      registrationTimestamp: new Date().toISOString(),
+      paymentStatus: paymentEventData.payment_status,
+    };
+    try {
+      const docRef = await db.collection(`anglers${year}`).add(anglerData);
+      await docRef.update({ anglerId: docRef.id });
+      console.log(`Angler ${angler.anglerName} added with ID: ${docRef.id}`);
+    } catch (error) {
+      console.error(`Error adding angler ${angler.anglerName}:`, error);
+    }
+  }
+};
+
+const handleSponsorCase = async (metadata, paymentEventData) => {
+  console.log('Handling sponsor case in processFirestore...');
+
+  const db = getFirestore();
+  const bucket = getStorage().bucket();
+  const { sponsorName, year, tableName, selectedTier, selectedSponsorships, totalFee, imageBuffers } = metadata;
+  const customerDetails = paymentEventData.customer_details || {};
+
+  let logoUrl = null;
+  if (imageBuffers && Object.keys(imageBuffers).length > 0) {
+    const [fileName, fileData] = Object.entries(imageBuffers)[0];
+    const buffer = Buffer.from(fileData.buffer, 'base64');
+    const sanitizedFilename = fileName.replace(/\s+/g, '-');
+    const filename = `${uuidv4()}-${sanitizedFilename}`;
+    const fileUpload = bucket.file(filename);
+    try {
+      await fileUpload.save(buffer, { metadata: { contentType: fileData.mimetype } });
+      const [signedUrl] = await fileUpload.getSignedUrl({ action: 'read', expires: '01-01-2100' });
+      logoUrl = signedUrl;
+      console.log(`Sponsor logo uploaded, signed URL generated.`);
+    } catch (error) {
+      console.error(`Error uploading sponsor logo ${fileName}:`, error);
+    }
+  }
+
+  const sponsorData = {
+    sponsorName,
+    tableName,
+    selectedTier,
+    selectedSponsorships,
+    totalFee,
+    logoUrl,
+    email: customerDetails.email || null,
+    phone: customerDetails.phone || null,
+    registrationTimestamp: new Date().toISOString(),
+    paymentStatus: paymentEventData.payment_status,
+  };
+  try {
+    const docRef = await db.collection(`sponsors${year}`).add(sponsorData);
+    await docRef.update({ sponsorId: docRef.id });
+    console.log(`Sponsor ${sponsorName} added with ID: ${docRef.id}`);
+  } catch (error) {
+    console.error(`Error adding sponsor ${sponsorName}:`, error);
+  }
+};
+
 // Endpoints
-module.exports = ({ clientUrl, serverUrl, stripe, webhookSecret, redisClient }) => {
+const registrationFactory = ({ clientUrl, serverUrl, stripe, webhookSecret, redisClient }) => {
   
   const registrationCheckoutSession = async (req, res) => {
     console.log('In api/registration_checkout_session...');
@@ -183,96 +259,7 @@ module.exports = ({ clientUrl, serverUrl, stripe, webhookSecret, redisClient }) 
     }
   };
   
-  const handleAnglerCase = async (metadata, stripeEventData) => {
-    console.log('Handling angler case in processFirestore...');
-    
-    const db = getFirestore();
-  
-    const { anglerDetails, year, tableName } = metadata;
-    const customerDetails = stripeEventData.customer_details || {};
-  
-    // Create a new entry in the Firebase database for every single angler
-    for (const angler of anglerDetails) {
-      const anglerData = {
-        ...angler,
-        hasCheckedIn: false,
-        tableName,
-        sponsorName: "None",
-        registrationFee: angler.ageBracket === "Adult" ? metadata.adultFee : metadata.juniorFee,
-        email: customerDetails.email || null,
-        phone: customerDetails.phone || null,
-        registrationTimestamp: new Date().toISOString(),
-        paymentStatus: stripeEventData.payment_status,
-      };
-  
-      try {
-        const docRef = await db.collection(`anglers${year}`).add(anglerData);
-        await docRef.update({ anglerId: docRef.id });
-        console.log(`Angler ${angler.anglerName} added with ID: ${docRef.id}`);
-        // FIXME: add a property called "anglerId" to the document where docRef.id is the value
-      } catch (error) {
-        console.error(`Error adding angler ${angler.anglerName}:`, error);
-      }
-    }
-  };
-  
-  const handleSponsorCase = async (metadata, stripeEventData) => {
-    console.log('Handling sponsor case in processFirestore...');
-    
-    const db = getFirestore();
-    const bucket = getStorage().bucket();
-  
-    const { sponsorName, year, tableName, selectedTier, selectedSponsorships, totalFee, imageBuffers } = metadata;
-    const customerDetails = stripeEventData.customer_details || {};
-  
-    // Upload sponsor logo to Google Cloud Storage if provided
-    let logoUrl = null;
-    if (imageBuffers && Object.keys(imageBuffers).length > 0) {
-      const [fileName, fileData] = Object.entries(imageBuffers)[0]; // Assuming one logo per sponsor
-      const buffer = Buffer.from(fileData.buffer, 'base64');
-      const sanitizedFilename = fileName.replace(/\s+/g, '-');
-      const filename = `${uuidv4()}-${sanitizedFilename}`;
-      const fileUpload = bucket.file(filename);
-  
-      try {
-        await fileUpload.save(buffer, {
-          metadata: {
-            contentType: fileData.mimetype,
-          },
-        });
-        const [signedUrl] = await fileUpload.getSignedUrl({
-          action: 'read',
-          expires: '01-01-2100',
-        });
-        logoUrl = signedUrl;
-        console.log(`Sponsor logo uploaded, signed URL generated.`);
-      } catch (error) {
-        console.error(`Error uploading sponsor logo ${fileName}:`, error);
-      }
-    }
-  
-    // Create a new entry in the Firebase database for the sponsor
-    const sponsorData = {
-      sponsorName,
-      tableName,
-      selectedTier,
-      selectedSponsorships,
-      totalFee,
-      logoUrl,
-      email: customerDetails.email || null,
-      phone: customerDetails.phone || null,
-      registrationTimestamp: new Date().toISOString(),
-      paymentStatus: stripeEventData.payment_status,
-    };
-  
-    try {
-      const docRef = await db.collection(`sponsors${year}`).add(sponsorData);
-      await docRef.update({ sponsorId: docRef.id });
-      console.log(`Sponsor ${sponsorName} added with ID: ${docRef.id}`);
-    } catch (error) {
-      console.error(`Error adding sponsor ${sponsorName}:`, error);
-    }
-  };  
+  // handleAnglerCase and handleSponsorCase are defined at module scope above.
 
   const registrationByAdmin = async (req, res) => {
     console.log('In api/registration_by_admin...');
@@ -490,4 +477,8 @@ module.exports = ({ clientUrl, serverUrl, stripe, webhookSecret, redisClient }) 
     upload
   };
 };
+
+module.exports = registrationFactory;
+module.exports.handleAnglerCase = handleAnglerCase;
+module.exports.handleSponsorCase = handleSponsorCase;
 

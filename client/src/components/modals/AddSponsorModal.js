@@ -1,20 +1,32 @@
 import React, { useState, useEffect } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import {
   InputLabel, Select, MenuItem, Button, FormControl, Dialog, DialogContent, DialogTitle,
-  IconButton, Stack, Checkbox, Typography, OutlinedInput, FormControlLabel, TextField
+  IconButton, Stack, Checkbox, Typography, OutlinedInput, FormControlLabel, TextField, Alert
 } from "@mui/material";
+import { CircularProgress } from "@mui/material";
 import CloseIcon from "@mui/icons-material/Close";
 import { toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
+import { useMediaQuery, useTheme } from "@mui/material";
 import { loadConfigForYear } from '../../config/masterConfig';
 
 const AddSponsorModal = (props) => {
 
   const { year } = useParams();
+  const navigate = useNavigate();
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
   const [config, setConfig] = useState(null);
-  const [isSubmitting, setIsSubmitting] = useState(false); // New state to track submission
-  const [isSubmitted, setIsSubmitted] = useState(false);   // Track if form has been submitted successfully
+  const [paymentProvider, setPaymentProvider] = useState('stripe');
+  const [acceptJsLoaded, setAcceptJsLoaded] = useState(false);
+  const [cardholderName, setCardholderName] = useState('');
+  const [cardNumber, setCardNumber] = useState('');
+  const [cardExpiry, setCardExpiry] = useState('');
+  const [cardCode, setCardCode] = useState('');
+  const [cardError, setCardError] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isSubmitted, setIsSubmitted] = useState(false);
 
   const [sponsorName, setSponsorName] = useState('');
   const [email, setEmail] = useState();
@@ -37,22 +49,28 @@ const AddSponsorModal = (props) => {
 
   const fetchConfigAndData = async () => {
     try {
-      // Load the dynamic configuration for the selected year
       const loadedConfig = await loadConfigForYear(year);
-      setConfig(loadedConfig); // Set the loaded configuration
-  
-      const {
-        registrationConfig: {
-          CONFIG_SPONSOR_REGISTRATION_TIERS,
-          CONFIG_SPONSOR_REGISTRATION_ADDITIONAL_SPONSORSHIPS,
-          CONFIG_SPONSOR_REGISTRATION_RULES_HYPERLINK,
-        }
-      } = loadedConfig;
-  
+      setConfig(loadedConfig);
+      const provider = loadedConfig?.registrationConfig?.CONFIG_PAYMENT_PROVIDER || 'stripe';
+      setPaymentProvider(provider);
     } catch (error) {
-      console.log('There was an error loading initial data from the server in the admin add team component: ' + error);
+      console.log('Error loading config in AddSponsorModal: ' + error);
     }
   };
+
+  // Load Accept.js when using Authorize.net
+  useEffect(() => {
+    if (paymentProvider !== 'authorize_net') return;
+    const src = import.meta.env.VITE_NODE_ENV === 'production'
+      ? 'https://js.authorize.net/v1/Accept.js'
+      : 'https://jstest.authorize.net/v1/Accept.js';
+    if (document.querySelector(`script[src="${src}"]`)) { setAcceptJsLoaded(true); return; }
+    const script = document.createElement('script');
+    script.src = src;
+    script.charset = 'utf-8';
+    script.onload = () => setAcceptJsLoaded(true);
+    document.head.appendChild(script);
+  }, [paymentProvider]);
 
   const calculateTotalFee = () => {
     const tierFee = selectedTier === "None" ? 0 : config?.registrationConfig?.CONFIG_SPONSOR_REGISTRATION_TIERS[selectedTier] || 0;
@@ -152,88 +170,114 @@ const AddSponsorModal = (props) => {
     }
   };
 
+  const getApiUrl = () =>
+    import.meta.env.VITE_NODE_ENV === 'production'
+      ? import.meta.env.VITE_SERVER_URL_PRODUCTION
+      : import.meta.env.VITE_SERVER_URL_STAGING;
+
+  const buildMetadata = () => ({
+    type: "sponsor",
+    year: props.year,
+    tableName: props.tableName,
+    sponsorName,
+    email: email || null,
+    phone: phone || null,
+    selectedTier,
+    selectedSponsorships,
+    totalFee,
+    tierFeeStructure: config.registrationConfig.CONFIG_SPONSOR_REGISTRATION_TIERS,
+    selectedSponsorshipsFeeStructure: config.registrationConfig.CONFIG_SPONSOR_REGISTRATION_ADDITIONAL_SPONSORSHIPS,
+  });
+
+  const readLogoAsBase64 = () =>
+    new Promise((resolve) => {
+      if (!sponsorLogo?.file) { resolve(null); return; }
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const base64 = e.target.result.split(',')[1];
+        resolve({ [sponsorLogo.file.name]: { buffer: base64, mimetype: sponsorLogo.file.type } });
+      };
+      reader.readAsDataURL(sponsorLogo.file);
+    });
+
   const handlePayment = async () => {
-    
-    let apiUrl = null;
-    if (import.meta.env.VITE_NODE_ENV === "staging") {
-        apiUrl = import.meta.env.VITE_SERVER_URL_STAGING;
-    } else if (import.meta.env.VITE_NODE_ENV === "production") {
-        apiUrl = import.meta.env.VITE_SERVER_URL_PRODUCTION;
-    }
-
-    let metaDataObject;
-    if (props.isAdmin) {
-      metaDataObject = {
-        type: "sponsor",
-        year: props.year,
-        tableName: props.tableName,
-        sponsorName: sponsorName,
-        email: email,
-        phone: phone,
-        selectedTier: selectedTier,
-        selectedSponsorships: selectedSponsorships,
-        totalFee: totalFee,
-        tierFeeStructure: config.registrationConfig.CONFIG_SPONSOR_REGISTRATION_TIERS,
-        selectedSponsorshipsFeeStructure: config.registrationConfig.CONFIG_SPONSOR_REGISTRATION_ADDITIONAL_SPONSORSHIPS,
-      };
-    } else {
-      metaDataObject = {
-        type: "sponsor",
-        year: props.year,
-        tableName: props.tableName,
-        sponsorName: sponsorName,
-        selectedTier: selectedTier,
-        selectedSponsorships: selectedSponsorships,
-        totalFee: totalFee,
-        tierFeeStructure: config.registrationConfig.CONFIG_SPONSOR_REGISTRATION_TIERS,
-        selectedSponsorshipsFeeStructure: config.registrationConfig.CONFIG_SPONSOR_REGISTRATION_ADDITIONAL_SPONSORSHIPS,
-      };
-    }
-
+    const apiUrl = getApiUrl();
+    const metaDataObject = buildMetadata();
     const formData = new FormData();
-    formData.append('metaDataObject', JSON.stringify(metaDataObject)); // Append the metaDataObject as a JSON string
-    if (sponsorLogo) {
-      formData.append('sponsorLogo', sponsorLogo.file); // Add the logo file if uploaded
-    }
+    formData.append('metaDataObject', JSON.stringify(metaDataObject));
+    if (sponsorLogo) formData.append('sponsorLogo', sponsorLogo.file);
 
-    if (props.isAdmin) { // register as admin, non-payment case
-
+    if (props.isAdmin) {
       fetch(`${apiUrl}/api/${props.year}/registration_by_admin`, {
-        method: 'POST',
-        body: formData,
-      }).then(res => {
-        if (res.ok) {
-          return res.json();
-        } else {
-          return res.json().then(json => Promise.reject(json));
-        }
-      }).then(({ url }) => {
-        setIsSubmitted(true);
-        window.location.reload();
-      }).catch(e => {
-        console.error(e.error);
-      });
+        method: 'POST', body: formData,
+      }).then(res => res.ok ? res.json() : res.json().then(j => Promise.reject(j)))
+        .then(() => { setIsSubmitted(true); window.location.reload(); })
+        .catch(e => { console.error(e); setIsSubmitting(false); });
+
+    } else if (paymentProvider === 'authorize_net') {
+      const imageBuffers = await readLogoAsBase64();
+      handleAuthorizeNetPayment(apiUrl, { ...metaDataObject, imageBuffers });
 
     } else {
-
+      // Stripe path
       fetch(`${apiUrl}/api/${props.year}/registration_checkout_session`, {
-        method: 'POST',
-        body: formData,
-      }).then(res => {
-        if (res.ok) {
-          return res.json();
-        } else {
-          return res.json().then(json => Promise.reject(json));
-        }
-      }).then(({ url }) => {
-        setIsSubmitted(true);
-        window.location = url;
-      }).catch(e => {
-        console.error(e.error);
-      });
-
+        method: 'POST', body: formData,
+      }).then(res => res.ok ? res.json() : res.json().then(j => Promise.reject(j)))
+        .then(({ url }) => { setIsSubmitted(true); window.location = url; })
+        .catch(e => { console.error(e); setIsSubmitting(false); });
     }
-  }
+  };
+
+  const handleAuthorizeNetPayment = (apiUrl, metadata) => {
+    setCardError('');
+    const isProduction = import.meta.env.VITE_NODE_ENV === 'production';
+    const secureData = {
+      authData: {
+        clientKey: isProduction
+          ? import.meta.env.VITE_AUTHORIZE_NET_CLIENT_KEY_PRODUCTION
+          : import.meta.env.VITE_AUTHORIZE_NET_CLIENT_KEY_STAGING,
+        apiLoginID: isProduction
+          ? import.meta.env.VITE_AUTHORIZE_NET_API_LOGIN_ID_PRODUCTION
+          : import.meta.env.VITE_AUTHORIZE_NET_API_LOGIN_ID_STAGING,
+      },
+      cardData: {
+        cardNumber: cardNumber.replace(/\s/g, ''),
+        month: cardExpiry.split('/')[0]?.trim().padStart(2, '0'),
+        year: cardExpiry.split('/')[1]?.trim(),
+        cardCode,
+        fullName: cardholderName,
+      },
+    };
+
+    window.Accept.dispatchData(secureData, (response) => {
+      if (response.messages.resultCode === 'Error') {
+        const msg = response.messages.message.map(m => m.text).join(' ');
+        setCardError(msg);
+        setIsSubmitting(false);
+        return;
+      }
+
+      fetch(`${apiUrl}/api/${props.year}/authorize_net_charge`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ metadata, opaqueData: response.opaqueData }),
+      })
+        .then(res => res.json())
+        .then(data => {
+          if (data.success) {
+            setIsSubmitted(true);
+            navigate(`/${props.year}/register/success`);
+          } else {
+            setCardError(data.message || 'Payment was declined. Please try again.');
+            setIsSubmitting(false);
+          }
+        })
+        .catch(() => {
+          setCardError('A network error occurred. Please try again.');
+          setIsSubmitting(false);
+        });
+    });
+  };
 
   return (
     <Dialog open={props.status} onClose={handleClose} fullWidth maxWidth="lg">
@@ -399,15 +443,69 @@ const AddSponsorModal = (props) => {
                 }
               />
 
-              {/* Submit Button */}
-              <Button
-                color="primary"
-                variant="contained"
-                onClick={handleSubmit}
-                disabled={!agreedToRules || totalFee === 0}
-              >
-                {props.isAdmin ? "Add sponsor (No Stripe)" : "Go to Payment"}
-              </Button>
+              {/* Email for non-admin Authorize.net (Stripe collects on its hosted page) */}
+              {!props.isAdmin && paymentProvider === 'authorize_net' && (
+                <Stack spacing={2} sx={{ border: '1px solid #ddd', p: 2 }}>
+                  <Typography variant="subtitle2" sx={{ fontWeight: 'bold' }}>Contact Information</Typography>
+                  <TextField label="Email" type="email" value={email || ''} onChange={e => setEmail(e.target.value)} fullWidth required />
+                  <TextField label="Phone" value={phone || ''} onChange={e => setPhone(e.target.value)} fullWidth />
+                </Stack>
+              )}
+
+              {/* Authorize.net inline card form */}
+              {!props.isAdmin && paymentProvider === 'authorize_net' && !isSubmitted && (
+                <Stack spacing={2} sx={{ border: '1px solid #1976d2', borderRadius: 1, p: 2 }}>
+                  <Typography variant="subtitle2" sx={{ fontWeight: 'bold', color: '#1976d2' }}>Card Information</Typography>
+                  <TextField label="Cardholder Name" value={cardholderName} onChange={e => setCardholderName(e.target.value)} fullWidth required />
+                  <Stack direction={isMobile ? 'column' : 'row'} spacing={2}>
+                    <TextField
+                      label="Card Number"
+                      value={cardNumber}
+                      onChange={e => setCardNumber(e.target.value.replace(/[^\d\s]/g, '').slice(0, 19))}
+                      fullWidth required inputProps={{ inputMode: 'numeric', maxLength: 19 }}
+                    />
+                    <TextField
+                      label="MM/YY"
+                      value={cardExpiry}
+                      onChange={e => {
+                        let v = e.target.value.replace(/[^\d/]/g, '');
+                        if (v.length === 2 && !v.includes('/')) v = v + '/';
+                        setCardExpiry(v.slice(0, 5));
+                      }}
+                      sx={{ width: isMobile ? '100%' : 120 }} required inputProps={{ inputMode: 'numeric', maxLength: 5 }}
+                    />
+                    <TextField
+                      label="CVV"
+                      value={cardCode}
+                      onChange={e => setCardCode(e.target.value.replace(/\D/g, '').slice(0, 4))}
+                      sx={{ width: isMobile ? '100%' : 100 }} required inputProps={{ inputMode: 'numeric', maxLength: 4 }}
+                    />
+                  </Stack>
+                  {cardError && <Alert severity="error">{cardError}</Alert>}
+                  <Button
+                    color="primary" variant="contained"
+                    disabled={!agreedToRules || totalFee === 0 || isSubmitting || !acceptJsLoaded || !cardholderName || !cardNumber || !cardExpiry || !cardCode}
+                    onClick={handleSubmit}
+                    startIcon={isSubmitting ? <CircularProgress size={20} /> : null}
+                  >
+                    {isSubmitting ? "Processing..." : `Pay $${totalFee.toLocaleString()}`}
+                  </Button>
+                </Stack>
+              )}
+
+              {/* Stripe / Admin submit button */}
+              {(props.isAdmin || paymentProvider === 'stripe') && !isSubmitted && (
+                <Button
+                  color="primary" variant="contained"
+                  onClick={handleSubmit}
+                  disabled={!agreedToRules || totalFee === 0 || isSubmitting}
+                  startIcon={isSubmitting ? <CircularProgress size={20} /> : null}
+                >
+                  {isSubmitting ? "Submitting..." : props.isAdmin ? "Add sponsor (no payment)" : "Go to Payment"}
+                </Button>
+              )}
+
+              {isSubmitted && <Typography variant="h6">Submitted!</Typography>}
             </Stack>
           </DialogContent>
         </>
