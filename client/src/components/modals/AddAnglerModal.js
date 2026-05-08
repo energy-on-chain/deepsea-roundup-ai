@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useSearchParams, useNavigate } from 'react-router-dom';
-import { InputLabel, Typography, Select, MenuItem, Button, CircularProgress, FormControl, Dialog, DialogContent, DialogTitle, IconButton, Stack, TextField, Alert } from "@mui/material";
+import { InputLabel, Typography, Select, MenuItem, Button, CircularProgress, FormControl, Dialog, DialogContent, DialogTitle, IconButton, Stack, TextField, Alert, Box, Divider } from "@mui/material";
 import CloseIcon from "@mui/icons-material/Close";
+import LockIcon from "@mui/icons-material/Lock";
 import { toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import { useMediaQuery, useTheme } from "@mui/material";
@@ -434,7 +435,22 @@ const AddAnglerModal = (props) => {
           {/* Authorize.net inline card form */}
           {!props.isAdmin && paymentProvider === 'authorize_net' && !isSubmitted && (
             <Stack spacing={2} sx={{ border: '1px solid #1976d2', borderRadius: 1, p: 2 }}>
-              <Typography variant="subtitle2" sx={{ fontWeight: 'bold', color: '#1976d2' }}>Card Information</Typography>
+              {/* Card form header: title + accepted cards + security badge */}
+              <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 1 }}>
+                <Typography variant="subtitle2" sx={{ fontWeight: 'bold', color: '#1976d2' }}>Card Information</Typography>
+                {/* Card brand logos */}
+                <Box sx={{ display: 'flex', gap: 0.5, alignItems: 'center' }}>
+                  {['visa', 'mastercard', 'amex', 'discover'].map(brand => (
+                    <Box key={brand} component="img"
+                      src={`https://js.authorize.net/v1/images/${brand}.png`}
+                      alt={brand}
+                      sx={{ height: 22, borderRadius: '3px', border: '1px solid #e0e0e0' }}
+                      onError={e => { e.target.style.display = 'none'; }}
+                    />
+                  ))}
+                </Box>
+              </Box>
+              <Divider />
               <TextField
                 label="Cardholder Name"
                 value={cardholderName}
@@ -482,6 +498,18 @@ const AddAnglerModal = (props) => {
               >
                 {isSubmitting ? "Processing..." : `Pay ${formatCurrency(total)}`}
               </Button>
+              {/* Authorize.net security badge */}
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75, justifyContent: 'center' }}>
+                <LockIcon sx={{ fontSize: 14, color: '#555' }} />
+                <Typography variant="caption" sx={{ color: '#555' }}>
+                  Secured by{' '}
+                  <Box component="a" href="https://verify.authorize.net" target="_blank" rel="noopener noreferrer"
+                    sx={{ color: '#555', fontWeight: 'bold', textDecoration: 'none', '&:hover': { textDecoration: 'underline' } }}>
+                    Authorize.net
+                  </Box>
+                  {' '}· 256-bit SSL encryption
+                </Typography>
+              </Box>
             </Stack>
           )}
 
