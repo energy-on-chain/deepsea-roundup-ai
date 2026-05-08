@@ -134,7 +134,7 @@ app.use(cors({
   },
   credentials: true,
 }));
-app.use(bodyParser.json({ verify: (req, res, buf) => { req.rawBody = buf.toString(); } }));
+app.use(bodyParser.json({ limit: '15mb', verify: (req, res, buf) => { req.rawBody = buf.toString(); } }));
 app.use(session({
   store: new RedisStore({ client: redisClient }),
   secret: sessionSecret,
