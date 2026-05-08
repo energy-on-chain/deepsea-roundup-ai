@@ -73,7 +73,7 @@ exports.authorizeNetCharge = (req, res) => {
 
         const resultCode = response.getMessages()?.getResultCode();
 
-        if (resultCode === APIContracts.MessageTypeEnum.Ok) {
+        if (resultCode === 'Ok') {
           const tResponse = response.getTransactionResponse();
 
           if (tResponse?.getMessages()) {
