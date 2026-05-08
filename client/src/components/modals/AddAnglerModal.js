@@ -193,6 +193,9 @@ const AddAnglerModal = (props) => {
   const buildMetadata = () => {
     const adultFee = props.isEarlyBird ? props.earlyBirdData.adultEarlybirdFee : props.normalData.adultNormalfee;
     const juniorFee = props.isEarlyBird ? props.earlyBirdData.juniorEarlybirdFee : props.normalData.juniorNormalfee;
+    const numAdults = anglerDetails.filter(a => a.ageBracket === 'Adult').length;
+    const numJuniors = anglerDetails.filter(a => a.ageBracket === 'Junior').length;
+    const totalFee = (numAdults * adultFee) + (numJuniors * juniorFee);
     return {
       type: "angler",
       year: props.year,
@@ -202,6 +205,7 @@ const AddAnglerModal = (props) => {
       anglerDetails,
       adultFee,
       juniorFee,
+      totalFee,
     };
   };
 
