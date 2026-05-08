@@ -275,7 +275,7 @@ const AddAnglerModal = (props) => {
         .then(data => {
           if (data.success) {
             setIsSubmitted(true);
-            navigate(`/${props.year}/register/success`);
+            navigate(`/${props.year}/registration_success`);
           } else {
             setCardError(data.message || 'Payment was declined. Please try again.');
             setIsSubmitting(false);
