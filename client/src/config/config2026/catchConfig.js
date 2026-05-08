@@ -341,11 +341,10 @@ export default {
       photoIsRequired: false,
     },
 
-    // Swordfish (new for 2026) — classified as Billfish; points = weight (weightExact)
     {
       species: "Swordfish",
       division: "Offshore",
-      type: "Billfish",
+      type: "Meatfish",
       points: 1,
       pointsCalculationMethod: "weightExact",
       weightIsRequired: true,
@@ -353,6 +352,20 @@ export default {
       girthIsRequired: true,
       dateTimeIsRequired: true,
       photoIsRequired: true,
+    },
+
+    // Bay/Surf
+    {
+      species: "Sheepshead",
+      division: "Bay/Surf",
+      type: "Meatfish",
+      points: 1,
+      pointsCalculationMethod: "weightExact",
+      weightIsRequired: true,
+      lengthIsRequired: true,
+      girthIsRequired: true,
+      dateTimeIsRequired: false,
+      photoIsRequired: false,
     },
 
   ],

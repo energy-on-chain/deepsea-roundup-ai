@@ -18,7 +18,7 @@ export default {
       url: "get_deepsea_roundup_offshore_grand_champion",
       inputs: [
         {ageBracket: "Adult"},
-        {billfishSpeciesList: ["Blue Marlin", "White Marlin", "Sailfish", "Tarpon", "Swordfish"]},
+        {billfishSpeciesList: ["Blue Marlin", "White Marlin", "Sailfish", "Tarpon"]},
         {meatfishSpeciesList: [
             "Barracuda",
             "Blackfin Tuna",
@@ -32,6 +32,7 @@ export default {
             "Spanish Mackerel",
             "Yellowfin Tuna",
             "Red Snapper",
+            "Swordfish",
           ]
         },
         {historicalRecordCatchData:
@@ -40,7 +41,6 @@ export default {
             "Sailfish": 95,
             "Tarpon": 88,
             "White Marlin": 85.3,
-            "Swordfish": 500,    // FIXME: update with actual DSR tournament record
             "Barracuda": 41.3,
             "Blackfin Tuna": 39.5,
             "Bonito (Little Tunny)": 16,
@@ -53,6 +53,7 @@ export default {
             "Spanish Mackerel": 7,
             "Yellowfin Tuna": 137.6,
             "Red Snapper": 25.9,
+            "Swordfish": 250,
           },
         },
       ],
@@ -86,7 +87,7 @@ export default {
       url: "get_deepsea_roundup_offshore_grand_champion",
       inputs: [
         {ageBracket: "Junior"},
-        {billfishSpeciesList: ["Blue Marlin", "White Marlin", "Sailfish", "Tarpon", "Swordfish"]},
+        {billfishSpeciesList: ["Blue Marlin", "White Marlin", "Sailfish", "Tarpon"]},
         {meatfishSpeciesList: [
             "Barracuda",
             "Blackfin Tuna",
@@ -100,6 +101,7 @@ export default {
             "Spanish Mackerel",
             "Yellowfin Tuna",
             "Red Snapper",
+            "Swordfish",
           ]
         },
         {historicalRecordCatchData:
@@ -108,7 +110,6 @@ export default {
             "Sailfish": 95,
             "Tarpon": 88,
             "White Marlin": 85.3,
-            "Swordfish": 500,    // FIXME: update with actual DSR tournament record
             "Barracuda": 41.3,
             "Blackfin Tuna": 39.5,
             "Bonito (Little Tunny)": 16,
@@ -121,6 +122,7 @@ export default {
             "Spanish Mackerel": 7,
             "Yellowfin Tuna": 137.6,
             "Red Snapper": 25.9,
+            "Swordfish": 250,
           },
         },
       ],
@@ -161,6 +163,7 @@ export default {
             "Gafftop",
             "Pompano",
             "Redfish",
+            "Sheepshead",
             "Speckled Trout",
             "Spanish Mackerel",
           ]
@@ -173,6 +176,7 @@ export default {
             "Gafftop" : 5.9,
             "Pompano" : 4.1,
             "Redfish" : 14.4,
+            "Sheepshead" : 9.5,
             "Speckled Trout" : 8.3,
             "Spanish Mackerel" : 7.0,
           },
@@ -189,6 +193,7 @@ export default {
         { field: 'Gafftop', headerName: 'Gafftop (lbs)', flex: 1, headerClassName: 'super-app-theme--header', headerAlign: 'center', align: 'center', isDateTime: false },
         { field: 'Pompano', headerName: 'Pompano (lbs)', flex: 1, headerClassName: 'super-app-theme--header', headerAlign: 'center', align: 'center', isDateTime: false },
         { field: 'Redfish', headerName: 'Redfish (lbs)', flex: 1, headerClassName: 'super-app-theme--header', headerAlign: 'center', align: 'center', isDateTime: false },
+        { field: 'Sheepshead', headerName: 'Sheepshead (lbs)', flex: 1, headerClassName: 'super-app-theme--header', headerAlign: 'center', align: 'center', isDateTime: false },
         { field: 'Speckled Trout', headerName: 'Speckled Trout (lbs)', flex: 1, headerClassName: 'super-app-theme--header', headerAlign: 'center', align: 'center', isDateTime: false },
         { field: 'Spanish Mackerel', headerName: 'Spanish Mackerel (lbs)', flex: 1, headerClassName: 'super-app-theme--header', headerAlign: 'center', align: 'center', isDateTime: false },
         { field: 'totalWeight', headerName: 'Total Weight (lbs)', flex: 1, headerClassName: 'super-app-theme--header', headerAlign: 'center', align: 'center', isDateTime: false },
@@ -204,11 +209,12 @@ export default {
         { field: 'Gafftop', headerName: 'Gafftop', width: 80, headerClassName: 'super-app-theme--header', headerAlign: 'center', align: 'center', isDateTime: false },
         { field: 'Pompano', headerName: 'Pompano', width: 90, headerClassName: 'super-app-theme--header', headerAlign: 'center', align: 'center', isDateTime: false },
         { field: 'Redfish', headerName: 'Redfish', width: 80, headerClassName: 'super-app-theme--header', headerAlign: 'center', align: 'center', isDateTime: false },
+        { field: 'Sheepshead', headerName: 'Sheepshead', width: 100, headerClassName: 'super-app-theme--header', headerAlign: 'center', align: 'center', isDateTime: false },
         { field: 'Speckled Trout', headerName: 'Sp. Trout', width: 90, headerClassName: 'super-app-theme--header', headerAlign: 'center', align: 'center', isDateTime: false },
         { field: 'Spanish Mackerel', headerName: 'Sp. Mack.', width: 90, headerClassName: 'super-app-theme--header', headerAlign: 'center', align: 'center', isDateTime: false },
         { field: 'totalWeight', headerName: 'Total (lbs)', width: 100, headerClassName: 'super-app-theme--header', headerAlign: 'center', align: 'center', isDateTime: false },
       ],
-    },    
+    },
     {
       title: "Bay/Surf Division Grand Champion (Junior)",
       subtitle: "",
@@ -225,6 +231,7 @@ export default {
           "Gafftop",
           "Pompano",
           "Redfish",
+          "Sheepshead",
           "Speckled Trout",
           "Spanish Mackerel",
         ]
@@ -237,6 +244,7 @@ export default {
           "Gafftop" : 5.9,
           "Pompano" : 4.1,
           "Redfish" : 14.4,
+          "Sheepshead" : 9.5,
           "Speckled Trout" : 8.3,
           "Spanish Mackerel" : 7.0,
         },
@@ -253,6 +261,7 @@ export default {
         { field: 'Gafftop', headerName: 'Gafftop (lbs)', flex: 1, headerClassName: 'super-app-theme--header', headerAlign: 'center', align: 'center', isDateTime: false },
         { field: 'Pompano', headerName: 'Pompano (lbs)', flex: 1, headerClassName: 'super-app-theme--header', headerAlign: 'center', align: 'center', isDateTime: false },
         { field: 'Redfish', headerName: 'Redfish (lbs)', flex: 1, headerClassName: 'super-app-theme--header', headerAlign: 'center', align: 'center', isDateTime: false },
+        { field: 'Sheepshead', headerName: 'Sheepshead (lbs)', flex: 1, headerClassName: 'super-app-theme--header', headerAlign: 'center', align: 'center', isDateTime: false },
         { field: 'Speckled Trout', headerName: 'Speckled Trout (lbs)', flex: 1, headerClassName: 'super-app-theme--header', headerAlign: 'center', align: 'center', isDateTime: false },
         { field: 'Spanish Mackerel', headerName: 'Spanish Mackerel (lbs)', flex: 1, headerClassName: 'super-app-theme--header', headerAlign: 'center', align: 'center', isDateTime: false },
         { field: 'totalWeight', headerName: 'Total Weight (lbs)', flex: 1, headerClassName: 'super-app-theme--header', headerAlign: 'center', align: 'center', isDateTime: false },
@@ -268,11 +277,12 @@ export default {
         { field: 'Gafftop', headerName: 'Gafftop', width: 80, headerClassName: 'super-app-theme--header', headerAlign: 'center', align: 'center', isDateTime: false },
         { field: 'Pompano', headerName: 'Pompano', width: 90, headerClassName: 'super-app-theme--header', headerAlign: 'center', align: 'center', isDateTime: false },
         { field: 'Redfish', headerName: 'Redfish', width: 80, headerClassName: 'super-app-theme--header', headerAlign: 'center', align: 'center', isDateTime: false },
+        { field: 'Sheepshead', headerName: 'Sheepshead', width: 100, headerClassName: 'super-app-theme--header', headerAlign: 'center', align: 'center', isDateTime: false },
         { field: 'Speckled Trout', headerName: 'Sp. Trout', width: 90, headerClassName: 'super-app-theme--header', headerAlign: 'center', align: 'center', isDateTime: false },
         { field: 'Spanish Mackerel', headerName: 'Sp. Mack.', width: 90, headerClassName: 'super-app-theme--header', headerAlign: 'center', align: 'center', isDateTime: false },
         { field: 'totalWeight', headerName: 'Total (lbs)', width: 100, headerClassName: 'super-app-theme--header', headerAlign: 'center', align: 'center', isDateTime: false },
       ],
-    },    
+    },
     {
       title: "Top Woman Angler",
       subtitle: "",
@@ -281,7 +291,7 @@ export default {
       display: false,
       url: "get_deepsea_roundup_top_woman_angler",
       inputs: [
-        {billfishSpeciesList: ["Blue Marlin", "White Marlin", "Sailfish", "Tarpon", "Swordfish"]},
+        {billfishSpeciesList: ["Blue Marlin", "White Marlin", "Sailfish", "Tarpon"]},
         {meatfishSpeciesList: [
           "Barracuda",
           "Blackfin Tuna",
@@ -295,12 +305,14 @@ export default {
           "Spanish Mackerel",
           "Yellowfin Tuna",
           "Red Snapper",
+          "Swordfish",
           "Black Drum",
           "Flounder",
           "Gafftop",
           "Pompano",
           "Redfish",
           "Speckled Trout",
+          "Sheepshead",
         ]
       },
       {historicalRecordCatchData:
@@ -309,7 +321,6 @@ export default {
           "Sailfish": 95,
           "Tarpon": 88,
           "White Marlin": 85.3,
-          "Swordfish": 500,    // FIXME: update with actual DSR tournament record
           "Barracuda": 41.3,
           "Blackfin Tuna": 39.5,
           "Bonito (Little Tunny)": 16,
@@ -322,12 +333,14 @@ export default {
           "Spanish Mackerel": 7,
           "Yellowfin Tuna": 137.6,
           "Red Snapper": 25.9,
+          "Swordfish": 250,
           "Black Drum": 11.6,
           "Flounder": 5.4,
           "Gafftop": 5.9,
           "Pompano": 4.1,
           "Redfish": 14.4,
           "Speckled Trout": 8.3,
+          "Sheepshead": 9.5,
         },
         },
       ],
@@ -1255,8 +1268,76 @@ export default {
       ]
     },
 
+    // Offshore - Swordfish
+    {
+      title: "Offshore - Swordfish (Adult)",
+      subtitle: "",
+      numPlaces: 5,
+      numTrophies: 2,
+      display: true,
+      url: "get_deepsea_roundup_meatfish_species_winner",
+      inputs: [
+        {
+          species: "Swordfish",
+          ageBracket: "Adult",
+          division: "Offshore",
+        }
+      ],
+      desktopColumns: [
+        { field: 'place', headerName: 'Place', flex: 1, headerClassName: 'super-app-theme--header', headerAlign: 'center', align: 'center', isDateTime: false},
+        { field: 'species', headerName: 'Species', flex: 1, headerClassName: 'super-app-theme--header', headerAlign: 'center', align: 'center', isDateTime: false},
+        { field: 'angler', headerName: 'Name', flex: 1, headerClassName: 'super-app-theme--header', headerAlign: 'center', align: 'center', isDateTime: false},
+        { field: 'hometown', headerName: 'Hometown', flex: 1, headerClassName: 'super-app-theme--header', headerAlign: 'center', align: 'center', isDateTime: false},
+        { field: 'weight', headerName: 'Weight (lbs)', flex: 1, headerClassName: 'super-app-theme--header', headerAlign: 'center', align: 'center', isDateTime: false},
+        { field: 'length', headerName: 'Length (in)', flex: 1, headerClassName: 'super-app-theme--header', headerAlign: 'center', align: 'center', isDateTime: false},
+        { field: 'girth', headerName: 'Girth (in)', flex: 1, headerClassName: 'super-app-theme--header', headerAlign: 'center', align: 'center', isDateTime: false},
+      ],
+      mobileColumns: [
+        { field: 'place', headerName: 'Place', width: 150, headerClassName: 'super-app-theme--header', headerAlign: 'center', align: 'center', isDateTime: false},
+        { field: 'species', headerName: 'Species', width: 150, headerClassName: 'super-app-theme--header', headerAlign: 'center', align: 'center', isDateTime: false},
+        { field: 'angler', headerName: 'Name', width: 150, headerClassName: 'super-app-theme--header', headerAlign: 'center', align: 'center', isDateTime: false},
+        { field: 'hometown', headerName: 'Hometown', width: 150, headerClassName: 'super-app-theme--header', headerAlign: 'center', align: 'center', isDateTime: false},
+        { field: 'weight', headerName: 'Weight (lbs)', width: 150, headerClassName: 'super-app-theme--header', headerAlign: 'center', align: 'center', isDateTime: false},
+        { field: 'length', headerName: 'Length (in)', width: 150, headerClassName: 'super-app-theme--header', headerAlign: 'center', align: 'center', isDateTime: false},
+        { field: 'girth', headerName: 'Girth (in)', width: 150, headerClassName: 'super-app-theme--header', headerAlign: 'center', align: 'center', isDateTime: false},
+      ]
+    },
+    {
+      title: "Offshore - Swordfish (Junior)",
+      subtitle: "",
+      numPlaces: 5,
+      numTrophies: 2,
+      display: true,
+      url: "get_deepsea_roundup_meatfish_species_winner",
+      inputs: [
+        {
+          species: "Swordfish",
+          ageBracket: "Junior",
+          division: "Offshore",
+        }
+      ],
+      desktopColumns: [
+        { field: 'place', headerName: 'Place', flex: 1, headerClassName: 'super-app-theme--header', headerAlign: 'center', align: 'center', isDateTime: false},
+        { field: 'species', headerName: 'Species', flex: 1, headerClassName: 'super-app-theme--header', headerAlign: 'center', align: 'center', isDateTime: false},
+        { field: 'angler', headerName: 'Name', flex: 1, headerClassName: 'super-app-theme--header', headerAlign: 'center', align: 'center', isDateTime: false},
+        { field: 'hometown', headerName: 'Hometown', flex: 1, headerClassName: 'super-app-theme--header', headerAlign: 'center', align: 'center', isDateTime: false},
+        { field: 'weight', headerName: 'Weight (lbs)', flex: 1, headerClassName: 'super-app-theme--header', headerAlign: 'center', align: 'center', isDateTime: false},
+        { field: 'length', headerName: 'Length (in)', flex: 1, headerClassName: 'super-app-theme--header', headerAlign: 'center', align: 'center', isDateTime: false},
+        { field: 'girth', headerName: 'Girth (in)', flex: 1, headerClassName: 'super-app-theme--header', headerAlign: 'center', align: 'center', isDateTime: false},
+      ],
+      mobileColumns: [
+        { field: 'place', headerName: 'Place', width: 150, headerClassName: 'super-app-theme--header', headerAlign: 'center', align: 'center', isDateTime: false},
+        { field: 'species', headerName: 'Species', width: 150, headerClassName: 'super-app-theme--header', headerAlign: 'center', align: 'center', isDateTime: false},
+        { field: 'angler', headerName: 'Name', width: 150, headerClassName: 'super-app-theme--header', headerAlign: 'center', align: 'center', isDateTime: false},
+        { field: 'hometown', headerName: 'Hometown', width: 150, headerClassName: 'super-app-theme--header', headerAlign: 'center', align: 'center', isDateTime: false},
+        { field: 'weight', headerName: 'Weight (lbs)', width: 150, headerClassName: 'super-app-theme--header', headerAlign: 'center', align: 'center', isDateTime: false},
+        { field: 'length', headerName: 'Length (in)', width: 150, headerClassName: 'super-app-theme--header', headerAlign: 'center', align: 'center', isDateTime: false},
+        { field: 'girth', headerName: 'Girth (in)', width: 150, headerClassName: 'super-app-theme--header', headerAlign: 'center', align: 'center', isDateTime: false},
+      ]
+    },
+
     // Bay/Surf
-    { 
+    {
       title: "Bay/Surf - Black Drum (Adult)", 
       subtitle: "",
       numPlaces: 5, 
@@ -1785,8 +1866,76 @@ export default {
       ]
     },
 
+    // Bay/Surf - Sheepshead
+    {
+      title: "Bay/Surf - Sheepshead (Adult)",
+      subtitle: "",
+      numPlaces: 5,
+      numTrophies: 2,
+      display: true,
+      url: "get_deepsea_roundup_meatfish_species_winner",
+      inputs: [
+        {
+          species: "Sheepshead",
+          ageBracket: "Adult",
+          division: "Bay/Surf",
+        }
+      ],
+      desktopColumns: [
+        { field: 'place', headerName: 'Place', flex: 1, headerClassName: 'super-app-theme--header', headerAlign: 'center', align: 'center', isDateTime: false},
+        { field: 'species', headerName: 'Species', flex: 1, headerClassName: 'super-app-theme--header', headerAlign: 'center', align: 'center', isDateTime: false},
+        { field: 'angler', headerName: 'Name', flex: 1, headerClassName: 'super-app-theme--header', headerAlign: 'center', align: 'center', isDateTime: false},
+        { field: 'hometown', headerName: 'Hometown', flex: 1, headerClassName: 'super-app-theme--header', headerAlign: 'center', align: 'center', isDateTime: false},
+        { field: 'weight', headerName: 'Weight (lbs)', flex: 1, headerClassName: 'super-app-theme--header', headerAlign: 'center', align: 'center', isDateTime: false},
+        { field: 'length', headerName: 'Length (in)', flex: 1, headerClassName: 'super-app-theme--header', headerAlign: 'center', align: 'center', isDateTime: false},
+        { field: 'girth', headerName: 'Girth (in)', flex: 1, headerClassName: 'super-app-theme--header', headerAlign: 'center', align: 'center', isDateTime: false},
+      ],
+      mobileColumns: [
+        { field: 'place', headerName: 'Place', width: 150, headerClassName: 'super-app-theme--header', headerAlign: 'center', align: 'center', isDateTime: false},
+        { field: 'species', headerName: 'Species', width: 150, headerClassName: 'super-app-theme--header', headerAlign: 'center', align: 'center', isDateTime: false},
+        { field: 'angler', headerName: 'Name', width: 150, headerClassName: 'super-app-theme--header', headerAlign: 'center', align: 'center', isDateTime: false},
+        { field: 'hometown', headerName: 'Hometown', width: 150, headerClassName: 'super-app-theme--header', headerAlign: 'center', align: 'center', isDateTime: false},
+        { field: 'weight', headerName: 'Weight (lbs)', width: 150, headerClassName: 'super-app-theme--header', headerAlign: 'center', align: 'center', isDateTime: false},
+        { field: 'length', headerName: 'Length (in)', width: 150, headerClassName: 'super-app-theme--header', headerAlign: 'center', align: 'center', isDateTime: false},
+        { field: 'girth', headerName: 'Girth (in)', width: 150, headerClassName: 'super-app-theme--header', headerAlign: 'center', align: 'center', isDateTime: false},
+      ]
+    },
+    {
+      title: "Bay/Surf - Sheepshead (Junior)",
+      subtitle: "",
+      numPlaces: 5,
+      numTrophies: 2,
+      display: true,
+      url: "get_deepsea_roundup_meatfish_species_winner",
+      inputs: [
+        {
+          species: "Sheepshead",
+          ageBracket: "Junior",
+          division: "Bay/Surf",
+        }
+      ],
+      desktopColumns: [
+        { field: 'place', headerName: 'Place', flex: 1, headerClassName: 'super-app-theme--header', headerAlign: 'center', align: 'center', isDateTime: false},
+        { field: 'species', headerName: 'Species', flex: 1, headerClassName: 'super-app-theme--header', headerAlign: 'center', align: 'center', isDateTime: false},
+        { field: 'angler', headerName: 'Name', flex: 1, headerClassName: 'super-app-theme--header', headerAlign: 'center', align: 'center', isDateTime: false},
+        { field: 'hometown', headerName: 'Hometown', flex: 1, headerClassName: 'super-app-theme--header', headerAlign: 'center', align: 'center', isDateTime: false},
+        { field: 'weight', headerName: 'Weight (lbs)', flex: 1, headerClassName: 'super-app-theme--header', headerAlign: 'center', align: 'center', isDateTime: false},
+        { field: 'length', headerName: 'Length (in)', flex: 1, headerClassName: 'super-app-theme--header', headerAlign: 'center', align: 'center', isDateTime: false},
+        { field: 'girth', headerName: 'Girth (in)', flex: 1, headerClassName: 'super-app-theme--header', headerAlign: 'center', align: 'center', isDateTime: false},
+      ],
+      mobileColumns: [
+        { field: 'place', headerName: 'Place', width: 150, headerClassName: 'super-app-theme--header', headerAlign: 'center', align: 'center', isDateTime: false},
+        { field: 'species', headerName: 'Species', width: 150, headerClassName: 'super-app-theme--header', headerAlign: 'center', align: 'center', isDateTime: false},
+        { field: 'angler', headerName: 'Name', width: 150, headerClassName: 'super-app-theme--header', headerAlign: 'center', align: 'center', isDateTime: false},
+        { field: 'hometown', headerName: 'Hometown', width: 150, headerClassName: 'super-app-theme--header', headerAlign: 'center', align: 'center', isDateTime: false},
+        { field: 'weight', headerName: 'Weight (lbs)', width: 150, headerClassName: 'super-app-theme--header', headerAlign: 'center', align: 'center', isDateTime: false},
+        { field: 'length', headerName: 'Length (in)', width: 150, headerClassName: 'super-app-theme--header', headerAlign: 'center', align: 'center', isDateTime: false},
+        { field: 'girth', headerName: 'Girth (in)', width: 150, headerClassName: 'super-app-theme--header', headerAlign: 'center', align: 'center', isDateTime: false},
+      ]
+    },
+
     // Flyfishing
-    { 
+    {
       title: "Flyfishing - Redfish (Adult)", 
       subtitle: "",
       numPlaces: 5, 

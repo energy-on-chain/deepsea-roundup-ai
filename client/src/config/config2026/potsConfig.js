@@ -35,9 +35,6 @@ export default {
       {title: "Sailfish ($100)", amount: 100, tournamentCut: 0.2},
       {title: "Sailfish ($250)", amount: 250, tournamentCut: 0.2},
       {title: "Sailfish ($500)", amount: 500, tournamentCut: 0.2},
-      {title: "Swordfish ($100)", amount: 100, tournamentCut: 0.2},
-      {title: "Swordfish ($250)", amount: 250, tournamentCut: 0.2},
-      {title: "Swordfish ($500)", amount: 500, tournamentCut: 0.2},
     ]},
     {"Offshore": [
       {title: "Barracuda ($100)", amount: 100, tournamentCut: 0.2},
@@ -50,6 +47,7 @@ export default {
       {title: "Ling (Cobia) ($100)", amount: 100, tournamentCut: 0.2},
       {title: "Red Snapper ($100)", amount: 100, tournamentCut: 0.2},
       {title: "Spanish Mackerel ($100)", amount: 100, tournamentCut: 0.2},
+      {title: "Swordfish ($100)", amount: 100, tournamentCut: 0.2},
       {title: "Wahoo ($100)", amount: 100, tournamentCut: 0.2},
       {title: "Yellowfin Tuna ($100)", amount: 100, tournamentCut: 0.2},
     ]},
@@ -59,6 +57,7 @@ export default {
       {title: "Gafftop ($75)", amount: 75, tournamentCut: 0.2},
       {title: "Pompano ($75)", amount: 75, tournamentCut: 0.2},
       {title: "Redfish ($75)", amount: 75, tournamentCut: 0.2},
+      {title: "Sheepshead ($75)", amount: 75, tournamentCut: 0.2},
       {title: "Spanish Mackerel ($75)", amount: 75, tournamentCut: 0.2},
       {title: "Speckled Trout ($75)", amount: 75, tournamentCut: 0.2},
     ]},
@@ -1052,7 +1051,7 @@ export default {
       ]
     },
 
-    // Swordfish — new for 2026, treated as billfish (same structure as Blue Marlin)
+    // Offshore - Swordfish
     {
       title: "Swordfish ($100)",
       subtitle: "",
@@ -1061,7 +1060,7 @@ export default {
       tournamentCut: 0.2,
       display: false,
       payoutStructure: { 1: 1.0, 2: 0.0, 3: 0.0, 4: 0.0, 5: 0.0 },
-      url: "get_deepsea_roundup_catch_and_release_pot_winner",
+      url: "get_deepsea_roundup_offshore_pot_winner",
       inputs: [
         {division: "Offshore"},
         {ageBracket: "Adult"},
@@ -1069,74 +1068,47 @@ export default {
       ],
       desktopColumns: [
         { field: 'place', headerName: 'Place', flex: 1, headerClassName: 'super-app-theme--header', headerAlign: 'center', align: 'center', isDateTime: false},
-        { field: 'team', headerName: 'Team', flex: 1, headerClassName: 'super-app-theme--header', headerAlign: 'center', align: 'center', isDateTime: false},
-        { field: 'points', headerName: 'Points', flex: 1, headerClassName: 'super-app-theme--header', headerAlign: 'center', align: 'center', isDateTime: false},
-        { field: 'lastCatch', headerName: 'Time of Last Catch', flex: 1, headerClassName: 'super-app-theme--header', headerAlign: 'center', align: 'center', isDateTime: true},
+        { field: 'angler', headerName: 'Angler', flex: 1, headerClassName: 'super-app-theme--header', headerAlign: 'center', align: 'center', isDateTime: false},
+        { field: 'weight', headerName: 'Points (Weight, lbs)', flex: 1, headerClassName: 'super-app-theme--header', headerAlign: 'center', align: 'center', isDateTime: false},
+        { field: 'length', headerName: 'Length (in)', flex: 1, headerClassName: 'super-app-theme--header', headerAlign: 'center', align: 'center', isDateTime: false},
         { field: 'payout', headerName: 'Payout', flex: 1, headerClassName: 'super-app-theme--header', headerAlign: 'center', align: 'center', isDateTime: false, isCurrency: true},
       ],
       mobileColumns: [
         { field: 'place', headerName: 'Place', width: 150, headerClassName: 'super-app-theme--header', headerAlign: 'center', align: 'center'},
-        { field: 'team', headerName: 'Team', width: 150, headerClassName: 'super-app-theme--header', headerAlign: 'center', align: 'center'},
-        { field: 'points', headerName: 'Points', width: 150, headerClassName: 'super-app-theme--header', headerAlign: 'center', align: 'center'},
-        { field: 'lastCatch', headerName: 'Time of Last Catch', width: 300, headerClassName: 'super-app-theme--header', headerAlign: 'center', align: 'center', isDateTime: true},
+        { field: 'angler', headerName: 'Angler', width: 150, headerClassName: 'super-app-theme--header', headerAlign: 'center', align: 'center'},
+        { field: 'weight', headerName: 'Points (Weight, lbs)', width: 150, headerClassName: 'super-app-theme--header', headerAlign: 'center', align: 'center', isDateTime: false},
+        { field: 'length', headerName: 'Length (in)', width: 150, headerClassName: 'super-app-theme--header', headerAlign: 'center', align: 'center', isDateTime: false},
         { field: 'payout', headerName: 'Payout', width: 150, headerClassName: 'super-app-theme--header', headerAlign: 'center', align: 'center', isDateTime: false, isCurrency: true},
       ]
     },
+
+    // Bay/Surf - Sheepshead
     {
-      title: "Swordfish ($250)",
+      title: "Sheepshead ($75)",
       subtitle: "",
-      potName: "Swordfish ($250)",
-      entryAmount: 250,
+      potName: "Sheepshead ($75)",
+      entryAmount: 75,
       tournamentCut: 0.2,
       display: false,
       payoutStructure: { 1: 1.0, 2: 0.0, 3: 0.0, 4: 0.0, 5: 0.0 },
-      url: "get_deepsea_roundup_catch_and_release_pot_winner",
+      url: "get_deepsea_roundup_bay_surf_pot_winner",
       inputs: [
-        {division: "Offshore"},
+        {division: "Bay/Surf"},
         {ageBracket: "Adult"},
-        {species: "Swordfish"}
+        {species: "Sheepshead"}
       ],
       desktopColumns: [
         { field: 'place', headerName: 'Place', flex: 1, headerClassName: 'super-app-theme--header', headerAlign: 'center', align: 'center', isDateTime: false},
-        { field: 'team', headerName: 'Team', flex: 1, headerClassName: 'super-app-theme--header', headerAlign: 'center', align: 'center', isDateTime: false},
-        { field: 'points', headerName: 'Points', flex: 1, headerClassName: 'super-app-theme--header', headerAlign: 'center', align: 'center', isDateTime: false},
-        { field: 'lastCatch', headerName: 'Time of Last Catch', flex: 1, headerClassName: 'super-app-theme--header', headerAlign: 'center', align: 'center', isDateTime: true},
+        { field: 'angler', headerName: 'Angler', flex: 1, headerClassName: 'super-app-theme--header', headerAlign: 'center', align: 'center', isDateTime: false},
+        { field: 'weight', headerName: 'Points (Weight, lbs)', flex: 1, headerClassName: 'super-app-theme--header', headerAlign: 'center', align: 'center', isDateTime: false},
+        { field: 'length', headerName: 'Length (in)', flex: 1, headerClassName: 'super-app-theme--header', headerAlign: 'center', align: 'center', isDateTime: false},
         { field: 'payout', headerName: 'Payout', flex: 1, headerClassName: 'super-app-theme--header', headerAlign: 'center', align: 'center', isDateTime: false, isCurrency: true},
       ],
       mobileColumns: [
         { field: 'place', headerName: 'Place', width: 150, headerClassName: 'super-app-theme--header', headerAlign: 'center', align: 'center'},
-        { field: 'team', headerName: 'Team', width: 150, headerClassName: 'super-app-theme--header', headerAlign: 'center', align: 'center'},
-        { field: 'points', headerName: 'Points', width: 150, headerClassName: 'super-app-theme--header', headerAlign: 'center', align: 'center'},
-        { field: 'lastCatch', headerName: 'Time of Last Catch', width: 300, headerClassName: 'super-app-theme--header', headerAlign: 'center', align: 'center', isDateTime: true},
-        { field: 'payout', headerName: 'Payout', width: 150, headerClassName: 'super-app-theme--header', headerAlign: 'center', align: 'center', isDateTime: false, isCurrency: true},
-      ]
-    },
-    {
-      title: "Swordfish ($500)",
-      subtitle: "",
-      potName: "Swordfish ($500)",
-      entryAmount: 500,
-      tournamentCut: 0.2,
-      display: false,
-      payoutStructure: { 1: 1.0, 2: 0.0, 3: 0.0, 4: 0.0, 5: 0.0 },
-      url: "get_deepsea_roundup_catch_and_release_pot_winner",
-      inputs: [
-        {division: "Offshore"},
-        {ageBracket: "Adult"},
-        {species: "Swordfish"}
-      ],
-      desktopColumns: [
-        { field: 'place', headerName: 'Place', flex: 1, headerClassName: 'super-app-theme--header', headerAlign: 'center', align: 'center', isDateTime: false},
-        { field: 'team', headerName: 'Team', flex: 1, headerClassName: 'super-app-theme--header', headerAlign: 'center', align: 'center', isDateTime: false},
-        { field: 'points', headerName: 'Points', flex: 1, headerClassName: 'super-app-theme--header', headerAlign: 'center', align: 'center', isDateTime: false},
-        { field: 'lastCatch', headerName: 'Time of Last Catch', flex: 1, headerClassName: 'super-app-theme--header', headerAlign: 'center', align: 'center', isDateTime: true},
-        { field: 'payout', headerName: 'Payout', flex: 1, headerClassName: 'super-app-theme--header', headerAlign: 'center', align: 'center', isDateTime: false, isCurrency: true},
-      ],
-      mobileColumns: [
-        { field: 'place', headerName: 'Place', width: 150, headerClassName: 'super-app-theme--header', headerAlign: 'center', align: 'center'},
-        { field: 'team', headerName: 'Team', width: 150, headerClassName: 'super-app-theme--header', headerAlign: 'center', align: 'center'},
-        { field: 'points', headerName: 'Points', width: 150, headerClassName: 'super-app-theme--header', headerAlign: 'center', align: 'center'},
-        { field: 'lastCatch', headerName: 'Time of Last Catch', width: 300, headerClassName: 'super-app-theme--header', headerAlign: 'center', align: 'center', isDateTime: true},
+        { field: 'angler', headerName: 'Angler', width: 150, headerClassName: 'super-app-theme--header', headerAlign: 'center', align: 'center'},
+        { field: 'weight', headerName: 'Points (Weight, lbs)', width: 150, headerClassName: 'super-app-theme--header', headerAlign: 'center', align: 'center', isDateTime: false},
+        { field: 'length', headerName: 'Length (in)', width: 150, headerClassName: 'super-app-theme--header', headerAlign: 'center', align: 'center', isDateTime: false},
         { field: 'payout', headerName: 'Payout', width: 150, headerClassName: 'super-app-theme--header', headerAlign: 'center', align: 'center', isDateTime: false, isCurrency: true},
       ]
     },

@@ -591,12 +591,10 @@ const AddCatchModal = (props) => {
     <Dialog open={props.status} onClose={handleClose} fullWidth maxWidth="xl">
       <form action="/" method="POST" onSubmit={(e) => { e.preventDefault(); alert('Submitted form!'); this.handleClose(); } }>
         <DialogTitle>Add {props.year} Catches<IconButton onClick={handleClose} style={{float:'right'}}><CloseIcon color="primary"></CloseIcon></IconButton>  </DialogTitle>
-        <DialogContent>
-        {/* <DialogContent style={{ height: '200px', overflowY: 'auto' }}> */}
+        <DialogContent sx={{ minHeight: 420 }}>
             <Stack xs spacing={2} margin={2}>
               <InputLabel required id="angler-label">Select angler</InputLabel>
               <Autocomplete
-                disablePortal
                 id="select-angler-autocomplete-box"
                 options={registeredAnglerNameList}
                 renderInput={(params) => <TextField {...params} label="Angler name"/>}
