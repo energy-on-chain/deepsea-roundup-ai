@@ -43,7 +43,7 @@ exports.authorizeNetCharge = (req, res) => {
     paymentType.setOpaqueData(opaqueDataObj);
 
     const transactionRequest = new APIContracts.TransactionRequestType();
-    transactionRequest.setTransactionType(APIContracts.TransactionTypeEnum.authCaptureTransaction);
+    transactionRequest.setTransactionType('authCaptureTransaction');
     transactionRequest.setAmount(Number(amount).toFixed(2));
     transactionRequest.setPayment(paymentType);
 
