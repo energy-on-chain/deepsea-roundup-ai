@@ -132,8 +132,8 @@ function HistoricalRecordsPage() {
         </section>
 
         {/* Content */}
-        <section className="section-leaderboard">
-          <Box sx={{ width: '90%', mx: 'auto', pb: 4 }}>
+        <section className="section-view">
+          <Box sx={{ width: '90%', maxWidth: 960, pb: 4, pt: 3 }}>
             <Typography
               variant="subtitle1"
               sx={{ color: cellText, mb: 3, fontStyle: 'italic', textAlign: 'center' }}
