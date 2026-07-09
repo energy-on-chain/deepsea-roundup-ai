@@ -13,6 +13,8 @@ import './BasePage.css';
 
 // All-time tournament records.
 // angler / boat / year: fill in as confirmed from tournament archives.
+// weight: defaults below are overridden at render time by live values from
+// speciesRecords/{year} in Firestore (same data the Admin > Records tab edits).
 const RECORD_GROUPS = [
   {
     division: 'Offshore — Billfish (Release)',
@@ -102,9 +104,21 @@ function HistoricalRecordsPage() {
   const theme = useTheme();
   const isMobile = !useMediaQuery(theme.breakpoints.up('md'));
   const [config, setConfig] = useState(null);
+  const [liveWeights, setLiveWeights] = useState({});
 
   useEffect(() => {
     loadConfigForYear(year).then(setConfig).catch(() => {});
+  }, [year]);
+
+  useEffect(() => {
+    const apiUrl = import.meta.env.VITE_NODE_ENV === "production"
+      ? import.meta.env.VITE_SERVER_URL_PRODUCTION
+      : import.meta.env.VITE_SERVER_URL_STAGING;
+
+    fetch(`${apiUrl}/api/${year}/get_species_records`)
+      .then(r => r.json())
+      .then(data => setLiveWeights(data || {}))
+      .catch(() => {});
   }, [year]);
 
   if (!config) {
@@ -156,7 +170,9 @@ function HistoricalRecordsPage() {
                 </Box>
 
                 <RecordTable
-                  records={group.records}
+                  records={group.records.map(r => (
+                    liveWeights[r.species] != null ? { ...r, weight: liveWeights[r.species] } : r
+                  ))}
                   headerBg={headerBg}
                   headerText={headerText}
                   cellText={cellText}
