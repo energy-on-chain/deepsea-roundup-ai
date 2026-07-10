@@ -25,6 +25,44 @@ const EXCLUDE_FROM_PRESS = [
 const isExcluded = (title) =>
   EXCLUDE_FROM_PRESS.some(keyword => title.toLowerCase().includes(keyword));
 
+// Billfish/release categories aren't split by age bracket -- they get their own
+// section rather than being silently folded into Offshore Adult.
+const BILLFISH_TITLES = new Set([
+  'Billfish Release Division',
+  'Offshore - Blue Marlin',
+  'Offshore - White Marlin',
+  'Offshore - Sailfish',
+]);
+
+// Report sections, in print order. Each always starts on a fresh page.
+const SECTIONS = [
+  'Billfish / Release Division',
+  'Offshore — Adult',
+  'Offshore — Junior',
+  'Bay/Surf — Adult',
+  'Bay/Surf — Junior',
+  'Kayak',
+  'Flyfishing',
+];
+
+// Classifies a leaderboard category into one of SECTIONS, using its title (for the
+// age-agnostic billfish categories) or its division/ageBracket inputs (everything else).
+const classifySection = (item) => {
+  if (BILLFISH_TITLES.has(item.title)) return 'Billfish / Release Division';
+
+  const inputs = (item.inputs || []).reduce((acc, inp) => ({ ...acc, ...inp }), {});
+  const { division, ageBracket } = inputs;
+
+  if (division === 'Offshore' && ageBracket === 'Adult') return 'Offshore — Adult';
+  if (division === 'Offshore' && ageBracket === 'Junior') return 'Offshore — Junior';
+  if (division === 'Bay/Surf' && ageBracket === 'Adult') return 'Bay/Surf — Adult';
+  if (division === 'Bay/Surf' && ageBracket === 'Junior') return 'Bay/Surf — Junior';
+  if (division === 'Kayak') return 'Kayak';
+  if (division === 'Flyfishing') return 'Flyfishing';
+
+  return null; // unclassified -- omitted from the report rather than guessed at
+};
+
 const REPORT_NUM_PLACES = 2; // Press report: top 2 only (1st and 2nd place)
 const PAGE_MARGIN = 10;
 const PAGE_WIDTH = 297; // A4 landscape mm
@@ -100,7 +138,8 @@ export const generatePressReport = async (year, tournamentName) => {
     )
   );
 
-  // --- Page header helper ---
+  // --- Page header helper (includes the current section name for clarity) ---
+  let currentSectionName = '';
   const drawPageHeader = () => {
     doc.setFontSize(13);
     doc.setFont('helvetica', 'bold');
@@ -109,72 +148,94 @@ export const generatePressReport = async (year, tournamentName) => {
       `${tournamentName || year + ' Deepsea Roundup'} — Category Leaders (In Progress)`,
       PAGE_MARGIN, 10
     );
+    doc.setFontSize(11);
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(150, 40, 20); // accent color so the section is easy to spot at a glance
+    doc.text(currentSectionName, PAGE_MARGIN, 16.5);
     doc.setFontSize(8);
     doc.setFont('helvetica', 'normal');
     doc.setTextColor(80);
-    doc.text(`Generated: ${generatedAt}  |  Overall champions not shown (not final until Sunday)`, PAGE_MARGIN, 16);
+    doc.text(`Generated: ${generatedAt}  |  Overall champions not shown (not final until Sunday)`, PAGE_WIDTH - PAGE_MARGIN, 10, { align: 'right' });
     doc.setTextColor(0);
-    doc.line(PAGE_MARGIN, 18, PAGE_WIDTH - PAGE_MARGIN, 18);
+    doc.line(PAGE_MARGIN, 19, PAGE_WIDTH - PAGE_MARGIN, 19);
   };
 
-  drawPageHeader();
-  let cursorY = 21;
+  // --- Group categories into sections, preserving each section's category order ---
+  const sectioned = new Map(SECTIONS.map(name => [name, []]));
+  results.forEach(category => {
+    const sourceItem = categories.find(c => c.title === category.title);
+    const section = sourceItem ? classifySection(sourceItem) : null;
+    if (section && sectioned.has(section)) sectioned.get(section).push(category);
+  });
 
-  for (const category of results) {
-    if (category.rows.length === 0) continue;
+  let isFirstPage = true;
+  let cursorY = 22;
 
-    const label = category.title + (category.subtitle ? ` — ${category.subtitle}` : '');
-    const tableColumns = category.desktopColumns.map(c => c.headerName);
-    const tableRows = category.rows.slice(0, REPORT_NUM_PLACES).map(row =>
-      category.desktopColumns.map(col => formatCellValue(col, row[col.field]))
-    );
+  for (const sectionName of SECTIONS) {
+    const sectionCategories = sectioned.get(sectionName).filter(c => c.rows.length > 0);
+    if (sectionCategories.length === 0) continue;
 
-    // Estimate whether we have room (rough: header + rows * ~6mm each)
-    const estimatedHeight = 8 + tableRows.length * 6 + 4;
-    if (cursorY + estimatedHeight > pageHeight - 12) {
-      doc.addPage();
-      drawPageHeader();
-      cursorY = 21;
-    }
+    // Every section starts on a fresh page.
+    if (!isFirstPage) doc.addPage();
+    isFirstPage = false;
+    currentSectionName = sectionName;
+    drawPageHeader();
+    cursorY = 22;
 
-    // Category label
-    doc.setFontSize(9);
-    doc.setFont('helvetica', 'bold');
-    doc.setTextColor(2, 19, 62);
-    doc.text(label, PAGE_MARGIN, cursorY);
-    doc.setTextColor(0);
-    cursorY += 3;
+    for (const category of sectionCategories) {
+      const label = category.title + (category.subtitle ? ` — ${category.subtitle}` : '');
+      const tableColumns = category.desktopColumns.map(c => c.headerName);
+      const tableRows = category.rows.slice(0, REPORT_NUM_PLACES).map(row =>
+        category.desktopColumns.map(col => formatCellValue(col, row[col.field]))
+      );
 
-    doc.autoTable({
-      startY: cursorY,
-      head: [tableColumns],
-      body: tableRows,
-      theme: 'striped',
-      styles: {
-        fontSize: 8,
-        cellPadding: 1.5,
-        overflow: 'linebreak',
-        halign: 'center',
-        valign: 'middle',
-        lineColor: [200, 200, 200],
-        lineWidth: 0.1,
-      },
-      headStyles: {
-        fillColor: [2, 19, 62],
-        textColor: [255, 255, 255],
-        fontSize: 8,
-        fontStyle: 'bold',
-        halign: 'center',
-        cellPadding: 1.5,
-      },
-      margin: { left: PAGE_MARGIN, right: PAGE_MARGIN },
-      tableWidth: 'auto',
-      didDrawPage: () => {
+      // Estimate whether we have room (rough: header + rows * ~6mm each)
+      const estimatedHeight = 8 + tableRows.length * 6 + 4;
+      if (cursorY + estimatedHeight > pageHeight - 12) {
+        doc.addPage();
         drawPageHeader();
-      },
-    });
+        cursorY = 22;
+      }
 
-    cursorY = doc.lastAutoTable.finalY + 4;
+      // Category label
+      doc.setFontSize(9);
+      doc.setFont('helvetica', 'bold');
+      doc.setTextColor(2, 19, 62);
+      doc.text(label, PAGE_MARGIN, cursorY);
+      doc.setTextColor(0);
+      cursorY += 3;
+
+      doc.autoTable({
+        startY: cursorY,
+        head: [tableColumns],
+        body: tableRows,
+        theme: 'striped',
+        styles: {
+          fontSize: 8,
+          cellPadding: 1.5,
+          overflow: 'linebreak',
+          halign: 'center',
+          valign: 'middle',
+          lineColor: [200, 200, 200],
+          lineWidth: 0.1,
+        },
+        headStyles: {
+          fillColor: [2, 19, 62],
+          textColor: [255, 255, 255],
+          fontSize: 8,
+          fontStyle: 'bold',
+          halign: 'center',
+          cellPadding: 1.5,
+        },
+        margin: { left: PAGE_MARGIN, right: PAGE_MARGIN },
+        tableWidth: 'auto',
+        didDrawPage: () => {
+          drawPageHeader();
+        },
+      });
+
+      cursorY = doc.lastAutoTable.finalY + 4;
+    }
   }
 
   addPageNumbers(doc);

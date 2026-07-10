@@ -25,132 +25,57 @@ export default {
     { field: 'payout', headerName: 'Payout', width: 125, headerClassName: 'super-app-theme--header', headerAlign: 'center', align: 'center', isDateTime: false, isCurrency: true},
   ],
   CONFIG_POTS_BOARD_LIST: [
-    {"Catch & Release": [
-      {title: "Blue Marlin ($100)", amount: 100, tournamentCut: 0.2,},
-      {title: "Blue Marlin ($250)", amount: 250, tournamentCut: 0.2},
-      {title: "Blue Marlin ($500)", amount: 500, tournamentCut: 0.2},
-      {title: "White Marlin ($100)", amount: 100, tournamentCut: 0.2},
-      {title: "White Marlin ($250)", amount: 250, tournamentCut: 0.2},
+    {"Billfish Pots": [
+      {title: "Blue Marlin ($500)", amount: 500, tournamentCut: 0.2,},
+      {title: "Blue Marlin ($1500)", amount: 1500, tournamentCut: 0.2},
+      {title: "Blue Marlin ($2000)", amount: 2000, tournamentCut: 0.2},
       {title: "White Marlin ($500)", amount: 500, tournamentCut: 0.2},
-      {title: "Sailfish ($100)", amount: 100, tournamentCut: 0.2},
-      {title: "Sailfish ($250)", amount: 250, tournamentCut: 0.2},
+      {title: "White Marlin ($1500)", amount: 1500, tournamentCut: 0.2},
+      {title: "White Marlin ($2000)", amount: 2000, tournamentCut: 0.2},
       {title: "Sailfish ($500)", amount: 500, tournamentCut: 0.2},
+      {title: "Sailfish ($1500)", amount: 1500, tournamentCut: 0.2},
+      {title: "Sailfish ($2000)", amount: 2000, tournamentCut: 0.2},
     ]},
-    {"Offshore": [
-      {title: "Barracuda ($100)", amount: 100, tournamentCut: 0.2},
-      {title: "Blackfin Tuna ($100)", amount: 100, tournamentCut: 0.2},
-      {title: "Blacktip (Spinner) Shark ($100)", amount: 100, tournamentCut: 0.2},
-      {title: "Bonito (Little Tunny) ($100)", amount: 100, tournamentCut: 0.2},
-      {title: "Dolphin (Dorado Mahi) ($100)", amount: 100, tournamentCut: 0.2},
-      {title: "Jack Crevalle (Jackfish) ($100)", amount: 100, tournamentCut: 0.2},
-      {title: "King Mackerel (Kingfish) ($100)", amount: 100, tournamentCut: 0.2},
-      {title: "Ling (Cobia) ($100)", amount: 100, tournamentCut: 0.2},
-      {title: "Red Snapper ($100)", amount: 100, tournamentCut: 0.2},
+    {"Offshore Fish Pots": [
+      {title: "Blackfin Tuna ($200)", amount: 200, tournamentCut: 0.2},
+      {title: "Blacktip/Spinner Shark ($200)", amount: 200, tournamentCut: 0.2},
+      {title: "Bonito (Little Tunny) ($200)", amount: 200, tournamentCut: 0.2},
+      {title: "Dolphin (Dorado Mahi) ($200)", amount: 200, tournamentCut: 0.2},
+      {title: "Jack Crevalle (Jackfish) ($200)", amount: 200, tournamentCut: 0.2},
+      {title: "King Mackerel (Kingfish) ($200)", amount: 200, tournamentCut: 0.2},
+      {title: "Ling (Cobia) ($200)", amount: 200, tournamentCut: 0.2},
+      {title: "Red Snapper ($200)", amount: 200, tournamentCut: 0.2},
+      {title: "Spanish Mackerel ($200)", amount: 200, tournamentCut: 0.2},
+      {title: "Wahoo ($200)", amount: 200, tournamentCut: 0.2},
+      {title: "Yellowfin Tuna ($200)", amount: 200, tournamentCut: 0.2},
+    ]},
+    {"Bay/Surf Fish Pots": [
+      {title: "Black Drum ($100)", amount: 100, tournamentCut: 0.2},
+      {title: "Flounder ($100)", amount: 100, tournamentCut: 0.2},
+      {title: "Gafftop ($100)", amount: 100, tournamentCut: 0.2},
+      {title: "Redfish ($100)", amount: 100, tournamentCut: 0.2},
+      {title: "Sheepshead ($100)", amount: 100, tournamentCut: 0.2},
       {title: "Spanish Mackerel ($100)", amount: 100, tournamentCut: 0.2},
-      {title: "Swordfish ($100)", amount: 100, tournamentCut: 0.2},
-      {title: "Wahoo ($100)", amount: 100, tournamentCut: 0.2},
-      {title: "Yellowfin Tuna ($100)", amount: 100, tournamentCut: 0.2},
+      {title: "Speckled Trout ($100)", amount: 100, tournamentCut: 0.2},
     ]},
-    {"Bay/Surf": [
-      {title: "Black Drum ($75)", amount: 75, tournamentCut: 0.2},
-      {title: "Flounder ($75)", amount: 75, tournamentCut: 0.2},
-      {title: "Gafftop ($75)", amount: 75, tournamentCut: 0.2},
-      {title: "Pompano ($75)", amount: 75, tournamentCut: 0.2},
-      {title: "Redfish ($75)", amount: 75, tournamentCut: 0.2},
-      {title: "Sheepshead ($75)", amount: 75, tournamentCut: 0.2},
-      {title: "Spanish Mackerel ($75)", amount: 75, tournamentCut: 0.2},
-      {title: "Speckled Trout ($75)", amount: 75, tournamentCut: 0.2},
+    {"Newly Added Pots": [
+      {title: "First Billfish Caught ($1000)", amount: 1000, tournamentCut: 0.2},
+      {title: "Swordfish ($1000)", amount: 1000, tournamentCut: 0.2},
     ]},
-
   ],
   CONFIG_POTS_CATEGORIES: [
 
-    // Catch & Release
-    { 
-      title: "Blue Marlin ($100)", 
-      subtitle: "",
-      potName: "Blue Marlin ($100)",
-      entryAmount: 100,
-      tournamentCut: 0.2,
-      display: false,
-      payoutStructure: {
-        1: 1.0,
-        2: 0.0,
-        3: 0.0,
-        4: 0.0,
-        5: 0.0,
-      },
-      url: "get_deepsea_roundup_catch_and_release_pot_winner",     
-      inputs: [
-        {division: "Offshore"},
-        {ageBracket: "Adult"},
-        {species: "Blue Marlin"}
-      ],
-      desktopColumns: [
-        { field: 'place', headerName: 'Place', flex: 1, headerClassName: 'super-app-theme--header', headerAlign: 'center', align: 'center', isDateTime: false},
-        { field: 'team', headerName: 'Team', flex: 1, headerClassName: 'super-app-theme--header', headerAlign: 'center', align: 'center', isDateTime: false},
-        { field: 'points', headerName: 'Points', flex: 1, headerClassName: 'super-app-theme--header', headerAlign: 'center', align: 'center', isDateTime: false},
-        { field: 'lastCatch', headerName: 'Time of Last Catch', flex: 1, headerClassName: 'super-app-theme--header', headerAlign: 'center', align: 'center', isDateTime: true},
-        { field: 'payout', headerName: 'Payout', flex: 1, headerClassName: 'super-app-theme--header', headerAlign: 'center', align: 'center', isDateTime: false, isCurrency: true},
-      ],
-      mobileColumns: [
-        { field: 'place', headerName: 'Place', width: 150, headerClassName: 'super-app-theme--header', headerAlign: 'center', align: 'center'},
-        { field: 'team', headerName: 'Team', width: 150, headerClassName: 'super-app-theme--header', headerAlign: 'center', align: 'center'},
-        { field: 'points', headerName: 'Points', width: 150, headerClassName: 'super-app-theme--header', headerAlign: 'center', align: 'center'},
-        { field: 'lastCatch', headerName: 'Time of Last Catch', width: 300, headerClassName: 'super-app-theme--header', headerAlign: 'center', align: 'center', isDateTime: true},
-        { field: 'payout', headerName: 'Payout', width: 150, headerClassName: 'super-app-theme--header', headerAlign: 'center', align: 'center', isDateTime: false, isCurrency: true},
-      ]
-    },
-    { 
-      title: "Blue Marlin ($250)", 
-      subtitle: "",
-      potName: "Blue Marlin ($250)",
-      entryAmount: 250,
-      tournamentCut: 0.2,
-      display: false,
-      payoutStructure: {
-        1: 1.0,
-        2: 0.0,
-        3: 0.0,
-        4: 0.0,
-        5: 0.0,
-      },
-      url: "get_deepsea_roundup_catch_and_release_pot_winner",     
-      inputs: [
-        {division: "Offshore"},
-        {ageBracket: "Adult"},
-        {species: "Blue Marlin"}
-      ],
-      desktopColumns: [
-        { field: 'place', headerName: 'Place', flex: 1, headerClassName: 'super-app-theme--header', headerAlign: 'center', align: 'center', isDateTime: false},
-        { field: 'team', headerName: 'Team', flex: 1, headerClassName: 'super-app-theme--header', headerAlign: 'center', align: 'center', isDateTime: false},
-        { field: 'points', headerName: 'Points', flex: 1, headerClassName: 'super-app-theme--header', headerAlign: 'center', align: 'center', isDateTime: false},
-        { field: 'lastCatch', headerName: 'Time of Last Catch', flex: 1, headerClassName: 'super-app-theme--header', headerAlign: 'center', align: 'center', isDateTime: true},
-        { field: 'payout', headerName: 'Payout', flex: 1, headerClassName: 'super-app-theme--header', headerAlign: 'center', align: 'center', isDateTime: false, isCurrency: true},
-      ],
-      mobileColumns: [
-        { field: 'place', headerName: 'Place', width: 150, headerClassName: 'super-app-theme--header', headerAlign: 'center', align: 'center'},
-        { field: 'team', headerName: 'Team', width: 150, headerClassName: 'super-app-theme--header', headerAlign: 'center', align: 'center'},
-        { field: 'points', headerName: 'Points', width: 150, headerClassName: 'super-app-theme--header', headerAlign: 'center', align: 'center'},
-        { field: 'lastCatch', headerName: 'Time of Last Catch', width: 300, headerClassName: 'super-app-theme--header', headerAlign: 'center', align: 'center', isDateTime: true},
-        { field: 'payout', headerName: 'Payout', width: 150, headerClassName: 'super-app-theme--header', headerAlign: 'center', align: 'center', isDateTime: false, isCurrency: true},
-      ]
-    },
-    { 
-      title: "Blue Marlin ($500)", 
+    // Billfish Pots
+    {
+      title: "Blue Marlin ($500)",
       subtitle: "",
       potName: "Blue Marlin ($500)",
       entryAmount: 500,
       tournamentCut: 0.2,
       display: false,
-      payoutStructure: {
-        1: 1.0,
-        2: 0.0,
-        3: 0.0,
-        4: 0.0,
-        5: 0.0,
-      },
-      url: "get_deepsea_roundup_catch_and_release_pot_winner",     
+      board: "Billfish Pots",
+      payoutStructure: { 1: 1.0, 2: 0.0, 3: 0.0, 4: 0.0, 5: 0.0 },
+      url: "get_deepsea_roundup_catch_and_release_pot_winner",
       inputs: [
         {division: "Offshore"},
         {ageBracket: "Adult"},
@@ -171,25 +96,20 @@ export default {
         { field: 'payout', headerName: 'Payout', width: 150, headerClassName: 'super-app-theme--header', headerAlign: 'center', align: 'center', isDateTime: false, isCurrency: true},
       ]
     },
-    { 
-      title: "White Marlin ($100)", 
+    {
+      title: "Blue Marlin ($1500)",
       subtitle: "",
-      potName: "White Marlin ($100)",
-      entryAmount: 100,
+      potName: "Blue Marlin ($1500)",
+      entryAmount: 1500,
       tournamentCut: 0.2,
       display: false,
-      payoutStructure: {
-        1: 1.0,
-        2: 0.0,
-        3: 0.0,
-        4: 0.0,
-        5: 0.0,
-      },
-      url: "get_deepsea_roundup_catch_and_release_pot_winner",     
+      board: "Billfish Pots",
+      payoutStructure: { 1: 1.0, 2: 0.0, 3: 0.0, 4: 0.0, 5: 0.0 },
+      url: "get_deepsea_roundup_catch_and_release_pot_winner",
       inputs: [
         {division: "Offshore"},
         {ageBracket: "Adult"},
-        {species: "White Marlin"}
+        {species: "Blue Marlin"}
       ],
       desktopColumns: [
         { field: 'place', headerName: 'Place', flex: 1, headerClassName: 'super-app-theme--header', headerAlign: 'center', align: 'center', isDateTime: false},
@@ -206,25 +126,20 @@ export default {
         { field: 'payout', headerName: 'Payout', width: 150, headerClassName: 'super-app-theme--header', headerAlign: 'center', align: 'center', isDateTime: false, isCurrency: true},
       ]
     },
-    { 
-      title: "White Marlin ($250)", 
+    {
+      title: "Blue Marlin ($2000)",
       subtitle: "",
-      potName: "White Marlin ($250)",
-      entryAmount: 250,
+      potName: "Blue Marlin ($2000)",
+      entryAmount: 2000,
       tournamentCut: 0.2,
       display: false,
-      payoutStructure: {
-        1: 1.0,
-        2: 0.0,
-        3: 0.0,
-        4: 0.0,
-        5: 0.0,
-      },
-      url: "get_deepsea_roundup_catch_and_release_pot_winner",     
+      board: "Billfish Pots",
+      payoutStructure: { 1: 1.0, 2: 0.0, 3: 0.0, 4: 0.0, 5: 0.0 },
+      url: "get_deepsea_roundup_catch_and_release_pot_winner",
       inputs: [
         {division: "Offshore"},
         {ageBracket: "Adult"},
-        {species: "White Marlin"}
+        {species: "Blue Marlin"}
       ],
       desktopColumns: [
         { field: 'place', headerName: 'Place', flex: 1, headerClassName: 'super-app-theme--header', headerAlign: 'center', align: 'center', isDateTime: false},
@@ -241,21 +156,16 @@ export default {
         { field: 'payout', headerName: 'Payout', width: 150, headerClassName: 'super-app-theme--header', headerAlign: 'center', align: 'center', isDateTime: false, isCurrency: true},
       ]
     },
-    { 
-      title: "White Marlin ($500)", 
+    {
+      title: "White Marlin ($500)",
       subtitle: "",
       potName: "White Marlin ($500)",
       entryAmount: 500,
       tournamentCut: 0.2,
       display: false,
-      payoutStructure: {
-        1: 1.0,
-        2: 0.0,
-        3: 0.0,
-        4: 0.0,
-        5: 0.0,
-      },
-      url: "get_deepsea_roundup_catch_and_release_pot_winner",     
+      board: "Billfish Pots",
+      payoutStructure: { 1: 1.0, 2: 0.0, 3: 0.0, 4: 0.0, 5: 0.0 },
+      url: "get_deepsea_roundup_catch_and_release_pot_winner",
       inputs: [
         {division: "Offshore"},
         {ageBracket: "Adult"},
@@ -276,25 +186,20 @@ export default {
         { field: 'payout', headerName: 'Payout', width: 150, headerClassName: 'super-app-theme--header', headerAlign: 'center', align: 'center', isDateTime: false, isCurrency: true},
       ]
     },
-    { 
-      title: "Sailfish ($100)", 
+    {
+      title: "White Marlin ($1500)",
       subtitle: "",
-      potName: "Sailfish ($100)",
-      entryAmount: 100,
+      potName: "White Marlin ($1500)",
+      entryAmount: 1500,
       tournamentCut: 0.2,
       display: false,
-      payoutStructure: {
-        1: 1.0,
-        2: 0.0,
-        3: 0.0,
-        4: 0.0,
-        5: 0.0,
-      },
-      url: "get_deepsea_roundup_catch_and_release_pot_winner",     
+      board: "Billfish Pots",
+      payoutStructure: { 1: 1.0, 2: 0.0, 3: 0.0, 4: 0.0, 5: 0.0 },
+      url: "get_deepsea_roundup_catch_and_release_pot_winner",
       inputs: [
         {division: "Offshore"},
         {ageBracket: "Adult"},
-        {species: "Sailfish"}
+        {species: "White Marlin"}
       ],
       desktopColumns: [
         { field: 'place', headerName: 'Place', flex: 1, headerClassName: 'super-app-theme--header', headerAlign: 'center', align: 'center', isDateTime: false},
@@ -311,25 +216,20 @@ export default {
         { field: 'payout', headerName: 'Payout', width: 150, headerClassName: 'super-app-theme--header', headerAlign: 'center', align: 'center', isDateTime: false, isCurrency: true},
       ]
     },
-    { 
-      title: "Sailfish ($250)", 
+    {
+      title: "White Marlin ($2000)",
       subtitle: "",
-      potName: "Sailfish ($250)",
-      entryAmount: 250,
+      potName: "White Marlin ($2000)",
+      entryAmount: 2000,
       tournamentCut: 0.2,
       display: false,
-      payoutStructure: {
-        1: 1.0,
-        2: 0.0,
-        3: 0.0,
-        4: 0.0,
-        5: 0.0,
-      },
-      url: "get_deepsea_roundup_catch_and_release_pot_winner",     
+      board: "Billfish Pots",
+      payoutStructure: { 1: 1.0, 2: 0.0, 3: 0.0, 4: 0.0, 5: 0.0 },
+      url: "get_deepsea_roundup_catch_and_release_pot_winner",
       inputs: [
         {division: "Offshore"},
         {ageBracket: "Adult"},
-        {species: "Sailfish"}
+        {species: "White Marlin"}
       ],
       desktopColumns: [
         { field: 'place', headerName: 'Place', flex: 1, headerClassName: 'super-app-theme--header', headerAlign: 'center', align: 'center', isDateTime: false},
@@ -346,25 +246,80 @@ export default {
         { field: 'payout', headerName: 'Payout', width: 150, headerClassName: 'super-app-theme--header', headerAlign: 'center', align: 'center', isDateTime: false, isCurrency: true},
       ]
     },
-    { 
-      title: "Sailfish ($500)", 
+    {
+      title: "Sailfish ($500)",
       subtitle: "",
       potName: "Sailfish ($500)",
       entryAmount: 500,
       tournamentCut: 0.2,
       display: false,
-      payoutStructure: {
-        1: 1.0,
-        2: 0.0,
-        3: 0.0,
-        4: 0.0,
-        5: 0.0,
-      },
-      url: "get_deepsea_roundup_catch_and_release_pot_winner",     
+      board: "Billfish Pots",
+      payoutStructure: { 1: 1.0, 2: 0.0, 3: 0.0, 4: 0.0, 5: 0.0 },
+      url: "get_deepsea_roundup_catch_and_release_pot_winner",
       inputs: [
         {division: "Offshore"},
         {ageBracket: "Adult"},
-        {species: "White Marlin"}
+        {species: "Sailfish"}
+      ],
+      desktopColumns: [
+        { field: 'place', headerName: 'Place', flex: 1, headerClassName: 'super-app-theme--header', headerAlign: 'center', align: 'center', isDateTime: false},
+        { field: 'team', headerName: 'Team', flex: 1, headerClassName: 'super-app-theme--header', headerAlign: 'center', align: 'center', isDateTime: false},
+        { field: 'points', headerName: 'Points', flex: 1, headerClassName: 'super-app-theme--header', headerAlign: 'center', align: 'center', isDateTime: false},
+        { field: 'lastCatch', headerName: 'Time of Last Catch', flex: 1, headerClassName: 'super-app-theme--header', headerAlign: 'center', align: 'center', isDateTime: true},
+        { field: 'payout', headerName: 'Payout', flex: 1, headerClassName: 'super-app-theme--header', headerAlign: 'center', align: 'center', isDateTime: false, isCurrency: true},
+      ],
+      mobileColumns: [
+        { field: 'place', headerName: 'Place', width: 150, headerClassName: 'super-app-theme--header', headerAlign: 'center', align: 'center'},
+        { field: 'team', headerName: 'Team', width: 150, headerClassName: 'super-app-theme--header', headerAlign: 'center', align: 'center'},
+        { field: 'points', headerName: 'Points', width: 150, headerClassName: 'super-app-theme--header', headerAlign: 'center', align: 'center'},
+        { field: 'lastCatch', headerName: 'Time of Last Catch', width: 300, headerClassName: 'super-app-theme--header', headerAlign: 'center', align: 'center', isDateTime: true},
+        { field: 'payout', headerName: 'Payout', width: 150, headerClassName: 'super-app-theme--header', headerAlign: 'center', align: 'center', isDateTime: false, isCurrency: true},
+      ]
+    },
+    {
+      title: "Sailfish ($1500)",
+      subtitle: "",
+      potName: "Sailfish ($1500)",
+      entryAmount: 1500,
+      tournamentCut: 0.2,
+      display: false,
+      board: "Billfish Pots",
+      payoutStructure: { 1: 1.0, 2: 0.0, 3: 0.0, 4: 0.0, 5: 0.0 },
+      url: "get_deepsea_roundup_catch_and_release_pot_winner",
+      inputs: [
+        {division: "Offshore"},
+        {ageBracket: "Adult"},
+        {species: "Sailfish"}
+      ],
+      desktopColumns: [
+        { field: 'place', headerName: 'Place', flex: 1, headerClassName: 'super-app-theme--header', headerAlign: 'center', align: 'center', isDateTime: false},
+        { field: 'team', headerName: 'Team', flex: 1, headerClassName: 'super-app-theme--header', headerAlign: 'center', align: 'center', isDateTime: false},
+        { field: 'points', headerName: 'Points', flex: 1, headerClassName: 'super-app-theme--header', headerAlign: 'center', align: 'center', isDateTime: false},
+        { field: 'lastCatch', headerName: 'Time of Last Catch', flex: 1, headerClassName: 'super-app-theme--header', headerAlign: 'center', align: 'center', isDateTime: true},
+        { field: 'payout', headerName: 'Payout', flex: 1, headerClassName: 'super-app-theme--header', headerAlign: 'center', align: 'center', isDateTime: false, isCurrency: true},
+      ],
+      mobileColumns: [
+        { field: 'place', headerName: 'Place', width: 150, headerClassName: 'super-app-theme--header', headerAlign: 'center', align: 'center'},
+        { field: 'team', headerName: 'Team', width: 150, headerClassName: 'super-app-theme--header', headerAlign: 'center', align: 'center'},
+        { field: 'points', headerName: 'Points', width: 150, headerClassName: 'super-app-theme--header', headerAlign: 'center', align: 'center'},
+        { field: 'lastCatch', headerName: 'Time of Last Catch', width: 300, headerClassName: 'super-app-theme--header', headerAlign: 'center', align: 'center', isDateTime: true},
+        { field: 'payout', headerName: 'Payout', width: 150, headerClassName: 'super-app-theme--header', headerAlign: 'center', align: 'center', isDateTime: false, isCurrency: true},
+      ]
+    },
+    {
+      title: "Sailfish ($2000)",
+      subtitle: "",
+      potName: "Sailfish ($2000)",
+      entryAmount: 2000,
+      tournamentCut: 0.2,
+      display: false,
+      board: "Billfish Pots",
+      payoutStructure: { 1: 1.0, 2: 0.0, 3: 0.0, 4: 0.0, 5: 0.0 },
+      url: "get_deepsea_roundup_catch_and_release_pot_winner",
+      inputs: [
+        {division: "Offshore"},
+        {ageBracket: "Adult"},
+        {species: "Sailfish"}
       ],
       desktopColumns: [
         { field: 'place', headerName: 'Place', flex: 1, headerClassName: 'super-app-theme--header', headerAlign: 'center', align: 'center', isDateTime: false},
@@ -382,57 +337,17 @@ export default {
       ]
     },
 
-    // Offshore
+    // Offshore Fish Pots
     {
-      title: "Barracuda ($100)", 
+      title: "Blackfin Tuna ($200)",
       subtitle: "",
-      potName: "Barracuda ($100)",
-      entryAmount: 100,
+      potName: "Blackfin Tuna ($200)",
+      entryAmount: 200,
       tournamentCut: 0.2,
       display: false,
-      payoutStructure: {
-        1: 1.0,
-        2: 0.0,
-        3: 0.0,
-        4: 0.0,
-        5: 0.0,
-      },
-      url: "get_deepsea_roundup_offshore_pot_winner",     
-      inputs: [
-        {division: "Offshore"},
-        {ageBracket: "Adult"},
-        {species: "Barracuda"}
-      ],
-      desktopColumns: [
-        { field: 'place', headerName: 'Place', flex: 1, headerClassName: 'super-app-theme--header', headerAlign: 'center', align: 'center', isDateTime: false},
-        { field: 'angler', headerName: 'Angler', flex: 1, headerClassName: 'super-app-theme--header', headerAlign: 'center', align: 'center', isDateTime: false},
-        { field: 'weight', headerName: 'Points (Weight, lbs)', flex: 1, headerClassName: 'super-app-theme--header', headerAlign: 'center', align: 'center', isDateTime: false},
-        { field: 'length', headerName: 'Length (in)', flex: 1, headerClassName: 'super-app-theme--header', headerAlign: 'center', align: 'center', isDateTime: false},
-        { field: 'payout', headerName: 'Payout', flex: 1, headerClassName: 'super-app-theme--header', headerAlign: 'center', align: 'center', isDateTime: false, isCurrency: true},
-      ],
-      mobileColumns: [
-        { field: 'place', headerName: 'Place', width: 150, headerClassName: 'super-app-theme--header', headerAlign: 'center', align: 'center'},
-        { field: 'angler', headerName: 'Angler', width: 150, headerClassName: 'super-app-theme--header', headerAlign: 'center', align: 'center'},
-        { field: 'weight', headerName: 'Points (Weight, lbs)', width: 150, headerClassName: 'super-app-theme--header', headerAlign: 'center', align: 'center', isDateTime: false},
-        { field: 'length', headerName: 'Length (in)', width: 150, headerClassName: 'super-app-theme--header', headerAlign: 'center', align: 'center', isDateTime: false},
-        { field: 'payout', headerName: 'Payout', width: 150, headerClassName: 'super-app-theme--header', headerAlign: 'center', align: 'center', isDateTime: false, isCurrency: true},
-      ]
-    },
-    {
-      title: "Blackfin Tuna ($100)", 
-      subtitle: "",
-      potName: "Blackfin Tuna ($100)",
-      entryAmount: 100,
-      tournamentCut: 0.2,
-      display: false,
-      payoutStructure: {
-        1: 1.0,
-        2: 0.0,
-        3: 0.0,
-        4: 0.0,
-        5: 0.0,
-      },
-      url: "get_deepsea_roundup_offshore_pot_winner",     
+      board: "Offshore Fish Pots",
+      payoutStructure: { 1: 1.0, 2: 0.0, 3: 0.0, 4: 0.0, 5: 0.0 },
+      url: "get_deepsea_roundup_offshore_pot_winner",
       inputs: [
         {division: "Offshore"},
         {ageBracket: "Adult"},
@@ -454,24 +369,19 @@ export default {
       ]
     },
     {
-      title: "Blacktip (Spinner) Shark ($100)", 
+      title: "Blacktip/Spinner Shark ($200)",
       subtitle: "",
-      potName: "Blacktip (Spinner) Shark ($100)",
-      entryAmount: 100,
+      potName: "Blacktip/Spinner Shark ($200)",
+      entryAmount: 200,
       tournamentCut: 0.2,
       display: false,
-      payoutStructure: {
-        1: 1.0,
-        2: 0.0,
-        3: 0.0,
-        4: 0.0,
-        5: 0.0,
-      },
-      url: "get_deepsea_roundup_offshore_pot_winner",     
+      board: "Offshore Fish Pots",
+      payoutStructure: { 1: 1.0, 2: 0.0, 3: 0.0, 4: 0.0, 5: 0.0 },
+      url: "get_deepsea_roundup_offshore_pot_winner",
       inputs: [
         {division: "Offshore"},
         {ageBracket: "Adult"},
-        {species: "Blacktip (Spinner) Shark"}
+        {species: "Blacktip/Spinner Shark"}
       ],
       desktopColumns: [
         { field: 'place', headerName: 'Place', flex: 1, headerClassName: 'super-app-theme--header', headerAlign: 'center', align: 'center', isDateTime: false},
@@ -489,20 +399,15 @@ export default {
       ]
     },
     {
-      title: "Bonito (Little Tunny) ($100)", 
+      title: "Bonito (Little Tunny) ($200)",
       subtitle: "",
-      potName: "Bonito (Little Tunny) ($100)",
-      entryAmount: 100,
+      potName: "Bonito (Little Tunny) ($200)",
+      entryAmount: 200,
       tournamentCut: 0.2,
       display: false,
-      payoutStructure: {
-        1: 1.0,
-        2: 0.0,
-        3: 0.0,
-        4: 0.0,
-        5: 0.0,
-      },
-      url: "get_deepsea_roundup_offshore_pot_winner",     
+      board: "Offshore Fish Pots",
+      payoutStructure: { 1: 1.0, 2: 0.0, 3: 0.0, 4: 0.0, 5: 0.0 },
+      url: "get_deepsea_roundup_offshore_pot_winner",
       inputs: [
         {division: "Offshore"},
         {ageBracket: "Adult"},
@@ -524,20 +429,15 @@ export default {
       ]
     },
     {
-      title: "Dolphin (Dorado Mahi) ($100)", 
+      title: "Dolphin (Dorado Mahi) ($200)",
       subtitle: "",
-      potName: "Dolphin (Dorado Mahi) ($100)",
-      entryAmount: 100,
+      potName: "Dolphin (Dorado Mahi) ($200)",
+      entryAmount: 200,
       tournamentCut: 0.2,
       display: false,
-      payoutStructure: {
-        1: 1.0,
-        2: 0.0,
-        3: 0.0,
-        4: 0.0,
-        5: 0.0,
-      },
-      url: "get_deepsea_roundup_offshore_pot_winner",     
+      board: "Offshore Fish Pots",
+      payoutStructure: { 1: 1.0, 2: 0.0, 3: 0.0, 4: 0.0, 5: 0.0 },
+      url: "get_deepsea_roundup_offshore_pot_winner",
       inputs: [
         {division: "Offshore"},
         {ageBracket: "Adult"},
@@ -559,20 +459,15 @@ export default {
       ]
     },
     {
-      title: "Jack Crevalle (Jackfish) ($100)", 
+      title: "Jack Crevalle (Jackfish) ($200)",
       subtitle: "",
-      potName: "Jack Crevalle (Jackfish) ($100)",
-      entryAmount: 100,
+      potName: "Jack Crevalle (Jackfish) ($200)",
+      entryAmount: 200,
       tournamentCut: 0.2,
       display: false,
-      payoutStructure: {
-        1: 1.0,
-        2: 0.0,
-        3: 0.0,
-        4: 0.0,
-        5: 0.0,
-      },
-      url: "get_deepsea_roundup_offshore_pot_winner",     
+      board: "Offshore Fish Pots",
+      payoutStructure: { 1: 1.0, 2: 0.0, 3: 0.0, 4: 0.0, 5: 0.0 },
+      url: "get_deepsea_roundup_offshore_pot_winner",
       inputs: [
         {division: "Offshore"},
         {ageBracket: "Adult"},
@@ -594,20 +489,15 @@ export default {
       ]
     },
     {
-      title: "King Mackerel (Kingfish) ($100)", 
+      title: "King Mackerel (Kingfish) ($200)",
       subtitle: "",
-      potName: "King Mackerel (Kingfish) ($100)",
-      entryAmount: 100,
+      potName: "King Mackerel (Kingfish) ($200)",
+      entryAmount: 200,
       tournamentCut: 0.2,
       display: false,
-      payoutStructure: {
-        1: 1.0,
-        2: 0.0,
-        3: 0.0,
-        4: 0.0,
-        5: 0.0,
-      },
-      url: "get_deepsea_roundup_offshore_pot_winner",     
+      board: "Offshore Fish Pots",
+      payoutStructure: { 1: 1.0, 2: 0.0, 3: 0.0, 4: 0.0, 5: 0.0 },
+      url: "get_deepsea_roundup_offshore_pot_winner",
       inputs: [
         {division: "Offshore"},
         {ageBracket: "Adult"},
@@ -629,20 +519,15 @@ export default {
       ]
     },
     {
-      title: "Ling (Cobia) ($100)", 
+      title: "Ling (Cobia) ($200)",
       subtitle: "",
-      potName: "Ling (Cobia) ($100)",
-      entryAmount: 100,
+      potName: "Ling (Cobia) ($200)",
+      entryAmount: 200,
       tournamentCut: 0.2,
       display: false,
-      payoutStructure: {
-        1: 1.0,
-        2: 0.0,
-        3: 0.0,
-        4: 0.0,
-        5: 0.0,
-      },
-      url: "get_deepsea_roundup_offshore_pot_winner",     
+      board: "Offshore Fish Pots",
+      payoutStructure: { 1: 1.0, 2: 0.0, 3: 0.0, 4: 0.0, 5: 0.0 },
+      url: "get_deepsea_roundup_offshore_pot_winner",
       inputs: [
         {division: "Offshore"},
         {ageBracket: "Adult"},
@@ -664,20 +549,15 @@ export default {
       ]
     },
     {
-      title: "Red Snapper ($100)", 
+      title: "Red Snapper ($200)",
       subtitle: "",
-      potName: "Red Snapper ($100)",
-      entryAmount: 100,
+      potName: "Red Snapper ($200)",
+      entryAmount: 200,
       tournamentCut: 0.2,
       display: false,
-      payoutStructure: {
-        1: 1.0,
-        2: 0.0,
-        3: 0.0,
-        4: 0.0,
-        5: 0.0,
-      },
-      url: "get_deepsea_roundup_offshore_pot_winner",     
+      board: "Offshore Fish Pots",
+      payoutStructure: { 1: 1.0, 2: 0.0, 3: 0.0, 4: 0.0, 5: 0.0 },
+      url: "get_deepsea_roundup_offshore_pot_winner",
       inputs: [
         {division: "Offshore"},
         {ageBracket: "Adult"},
@@ -699,20 +579,15 @@ export default {
       ]
     },
     {
-      title: "Spanish Mackerel ($100)", 
+      title: "Spanish Mackerel ($200)",
       subtitle: "",
-      potName: "Spanish Mackerel ($100)",
-      entryAmount: 100,
+      potName: "Spanish Mackerel ($200)",
+      entryAmount: 200,
       tournamentCut: 0.2,
       display: false,
-      payoutStructure: {
-        1: 1.0,
-        2: 0.0,
-        3: 0.0,
-        4: 0.0,
-        5: 0.0,
-      },
-      url: "get_deepsea_roundup_offshore_pot_winner",     
+      board: "Offshore Fish Pots",
+      payoutStructure: { 1: 1.0, 2: 0.0, 3: 0.0, 4: 0.0, 5: 0.0 },
+      url: "get_deepsea_roundup_offshore_pot_winner",
       inputs: [
         {division: "Offshore"},
         {ageBracket: "Adult"},
@@ -734,20 +609,15 @@ export default {
       ]
     },
     {
-      title: "Wahoo ($100)", 
+      title: "Wahoo ($200)",
       subtitle: "",
-      potName: "Wahoo ($100)",
-      entryAmount: 100,
+      potName: "Wahoo ($200)",
+      entryAmount: 200,
       tournamentCut: 0.2,
       display: false,
-      payoutStructure: {
-        1: 1.0,
-        2: 0.0,
-        3: 0.0,
-        4: 0.0,
-        5: 0.0,
-      },
-      url: "get_deepsea_roundup_offshore_pot_winner",     
+      board: "Offshore Fish Pots",
+      payoutStructure: { 1: 1.0, 2: 0.0, 3: 0.0, 4: 0.0, 5: 0.0 },
+      url: "get_deepsea_roundup_offshore_pot_winner",
       inputs: [
         {division: "Offshore"},
         {ageBracket: "Adult"},
@@ -769,20 +639,15 @@ export default {
       ]
     },
     {
-      title: "Yellowfin Tuna ($100)", 
+      title: "Yellowfin Tuna ($200)",
       subtitle: "",
-      potName: "Yellowfin Tuna ($100)",
-      entryAmount: 100,
+      potName: "Yellowfin Tuna ($200)",
+      entryAmount: 200,
       tournamentCut: 0.2,
       display: false,
-      payoutStructure: {
-        1: 1.0,
-        2: 0.0,
-        3: 0.0,
-        4: 0.0,
-        5: 0.0,
-      },
-      url: "get_deepsea_roundup_offshore_pot_winner",     
+      board: "Offshore Fish Pots",
+      payoutStructure: { 1: 1.0, 2: 0.0, 3: 0.0, 4: 0.0, 5: 0.0 },
+      url: "get_deepsea_roundup_offshore_pot_winner",
       inputs: [
         {division: "Offshore"},
         {ageBracket: "Adult"},
@@ -804,22 +669,17 @@ export default {
       ]
     },
 
-    // Bay / Surf
+    // Bay/Surf Fish Pots
     {
-      title: "Black Drum ($75)", 
+      title: "Black Drum ($100)",
       subtitle: "",
-      potName: "Black Drum ($75)",
-      entryAmount: 75,
+      potName: "Black Drum ($100)",
+      entryAmount: 100,
       tournamentCut: 0.2,
       display: false,
-      payoutStructure: {
-        1: 1.0,
-        2: 0.0,
-        3: 0.0,
-        4: 0.0,
-        5: 0.0,
-      },
-      url: "get_deepsea_roundup_bay_surf_pot_winner",     
+      board: "Bay/Surf Fish Pots",
+      payoutStructure: { 1: 1.0, 2: 0.0, 3: 0.0, 4: 0.0, 5: 0.0 },
+      url: "get_deepsea_roundup_bay_surf_pot_winner",
       inputs: [
         {division: "Bay/Surf"},
         {ageBracket: "Adult"},
@@ -841,20 +701,15 @@ export default {
       ]
     },
     {
-      title: "Flounder ($75)", 
+      title: "Flounder ($100)",
       subtitle: "",
-      potName: "Flounder ($75)",
-      entryAmount: 75,
+      potName: "Flounder ($100)",
+      entryAmount: 100,
       tournamentCut: 0.2,
       display: false,
-      payoutStructure: {
-        1: 1.0,
-        2: 0.0,
-        3: 0.0,
-        4: 0.0,
-        5: 0.0,
-      },
-      url: "get_deepsea_roundup_bay_surf_pot_winner",     
+      board: "Bay/Surf Fish Pots",
+      payoutStructure: { 1: 1.0, 2: 0.0, 3: 0.0, 4: 0.0, 5: 0.0 },
+      url: "get_deepsea_roundup_bay_surf_pot_winner",
       inputs: [
         {division: "Bay/Surf"},
         {ageBracket: "Adult"},
@@ -876,20 +731,15 @@ export default {
       ]
     },
     {
-      title: "Gafftop ($75)", 
+      title: "Gafftop ($100)",
       subtitle: "",
-      potName: "Gafftop ($75)",
-      entryAmount: 75,
+      potName: "Gafftop ($100)",
+      entryAmount: 100,
       tournamentCut: 0.2,
       display: false,
-      payoutStructure: {
-        1: 1.0,
-        2: 0.0,
-        3: 0.0,
-        4: 0.0,
-        5: 0.0,
-      },
-      url: "get_deepsea_roundup_bay_surf_pot_winner",     
+      board: "Bay/Surf Fish Pots",
+      payoutStructure: { 1: 1.0, 2: 0.0, 3: 0.0, 4: 0.0, 5: 0.0 },
+      url: "get_deepsea_roundup_bay_surf_pot_winner",
       inputs: [
         {division: "Bay/Surf"},
         {ageBracket: "Adult"},
@@ -911,55 +761,15 @@ export default {
       ]
     },
     {
-      title: "Pompano ($75)", 
+      title: "Redfish ($100)",
       subtitle: "",
-      potName: "Pompano ($75)",
-      entryAmount: 75,
+      potName: "Redfish ($100)",
+      entryAmount: 100,
       tournamentCut: 0.2,
       display: false,
-      payoutStructure: {
-        1: 1.0,
-        2: 0.0,
-        3: 0.0,
-        4: 0.0,
-        5: 0.0,
-      },
-      url: "get_deepsea_roundup_bay_surf_pot_winner",     
-      inputs: [
-        {division: "Bay/Surf"},
-        {ageBracket: "Adult"},
-        {species: "Pompano"}
-      ],
-      desktopColumns: [
-        { field: 'place', headerName: 'Place', flex: 1, headerClassName: 'super-app-theme--header', headerAlign: 'center', align: 'center', isDateTime: false},
-        { field: 'angler', headerName: 'Angler', flex: 1, headerClassName: 'super-app-theme--header', headerAlign: 'center', align: 'center', isDateTime: false},
-        { field: 'weight', headerName: 'Points (Weight, lbs)', flex: 1, headerClassName: 'super-app-theme--header', headerAlign: 'center', align: 'center', isDateTime: false},
-        { field: 'length', headerName: 'Length (in)', flex: 1, headerClassName: 'super-app-theme--header', headerAlign: 'center', align: 'center', isDateTime: false},
-        { field: 'payout', headerName: 'Payout', flex: 1, headerClassName: 'super-app-theme--header', headerAlign: 'center', align: 'center', isDateTime: false, isCurrency: true},
-      ],
-      mobileColumns: [
-        { field: 'place', headerName: 'Place', width: 150, headerClassName: 'super-app-theme--header', headerAlign: 'center', align: 'center'},
-        { field: 'angler', headerName: 'Angler', width: 150, headerClassName: 'super-app-theme--header', headerAlign: 'center', align: 'center'},
-        { field: 'weight', headerName: 'Points (Weight, lbs)', width: 150, headerClassName: 'super-app-theme--header', headerAlign: 'center', align: 'center', isDateTime: false},
-        { field: 'length', headerName: 'Length (in)', width: 150, headerClassName: 'super-app-theme--header', headerAlign: 'center', align: 'center', isDateTime: false},
-        { field: 'payout', headerName: 'Payout', width: 150, headerClassName: 'super-app-theme--header', headerAlign: 'center', align: 'center', isDateTime: false, isCurrency: true},
-      ]
-    },
-    {
-      title: "Redfish ($75)", 
-      subtitle: "",
-      potName: "Redfish ($75)",
-      entryAmount: 75,
-      tournamentCut: 0.2,
-      display: false,
-      payoutStructure: {
-        1: 1.0,
-        2: 0.0,
-        3: 0.0,
-        4: 0.0,
-        5: 0.0,
-      },
-      url: "get_deepsea_roundup_bay_surf_pot_winner",     
+      board: "Bay/Surf Fish Pots",
+      payoutStructure: { 1: 1.0, 2: 0.0, 3: 0.0, 4: 0.0, 5: 0.0 },
+      url: "get_deepsea_roundup_bay_surf_pot_winner",
       inputs: [
         {division: "Bay/Surf"},
         {ageBracket: "Adult"},
@@ -981,115 +791,13 @@ export default {
       ]
     },
     {
-      title: "Spanish Mackerel ($75)", 
+      title: "Sheepshead ($100)",
       subtitle: "",
-      potName: "Spanish Mackerel ($75)",
-      entryAmount: 75,
-      tournamentCut: 0.2,
-      display: false,
-      payoutStructure: {
-        1: 1.0,
-        2: 0.0,
-        3: 0.0,
-        4: 0.0,
-        5: 0.0,
-      },
-      url: "get_deepsea_roundup_bay_surf_pot_winner",     
-      inputs: [
-        {division: "Bay/Surf"},
-        {ageBracket: "Adult"},
-        {species: "Spanish Mackerel"}
-      ],
-      desktopColumns: [
-        { field: 'place', headerName: 'Place', flex: 1, headerClassName: 'super-app-theme--header', headerAlign: 'center', align: 'center', isDateTime: false},
-        { field: 'angler', headerName: 'Angler', flex: 1, headerClassName: 'super-app-theme--header', headerAlign: 'center', align: 'center', isDateTime: false},
-        { field: 'weight', headerName: 'Points (Weight, lbs)', flex: 1, headerClassName: 'super-app-theme--header', headerAlign: 'center', align: 'center', isDateTime: false},
-        { field: 'length', headerName: 'Length (in)', flex: 1, headerClassName: 'super-app-theme--header', headerAlign: 'center', align: 'center', isDateTime: false},
-        { field: 'payout', headerName: 'Payout', flex: 1, headerClassName: 'super-app-theme--header', headerAlign: 'center', align: 'center', isDateTime: false, isCurrency: true},
-      ],
-      mobileColumns: [
-        { field: 'place', headerName: 'Place', width: 150, headerClassName: 'super-app-theme--header', headerAlign: 'center', align: 'center'},
-        { field: 'angler', headerName: 'Angler', width: 150, headerClassName: 'super-app-theme--header', headerAlign: 'center', align: 'center'},
-        { field: 'weight', headerName: 'Points (Weight, lbs)', width: 150, headerClassName: 'super-app-theme--header', headerAlign: 'center', align: 'center', isDateTime: false},
-        { field: 'length', headerName: 'Length (in)', width: 150, headerClassName: 'super-app-theme--header', headerAlign: 'center', align: 'center', isDateTime: false},
-        { field: 'payout', headerName: 'Payout', width: 150, headerClassName: 'super-app-theme--header', headerAlign: 'center', align: 'center', isDateTime: false, isCurrency: true},
-      ]
-    },
-    {
-      title: "Speckled Trout ($75)", 
-      subtitle: "",
-      potName: "Speckled Trout ($75)",
-      entryAmount: 75,
-      tournamentCut: 0.2,
-      display: false,
-      payoutStructure: {
-        1: 1.0,
-        2: 0.0,
-        3: 0.0,
-        4: 0.0,
-        5: 0.0,
-      },
-      url: "get_deepsea_roundup_bay_surf_pot_winner",     
-      inputs: [
-        {division: "Bay/Surf"},
-        {ageBracket: "Adult"},
-        {species: "Speckled Trout"}
-      ],
-      desktopColumns: [
-        { field: 'place', headerName: 'Place', flex: 1, headerClassName: 'super-app-theme--header', headerAlign: 'center', align: 'center', isDateTime: false},
-        { field: 'angler', headerName: 'Angler', flex: 1, headerClassName: 'super-app-theme--header', headerAlign: 'center', align: 'center', isDateTime: false},
-        { field: 'weight', headerName: 'Points (Weight, lbs)', flex: 1, headerClassName: 'super-app-theme--header', headerAlign: 'center', align: 'center', isDateTime: false},
-        { field: 'length', headerName: 'Length (in)', flex: 1, headerClassName: 'super-app-theme--header', headerAlign: 'center', align: 'center', isDateTime: false},
-        { field: 'payout', headerName: 'Payout', flex: 1, headerClassName: 'super-app-theme--header', headerAlign: 'center', align: 'center', isDateTime: false, isCurrency: true},
-      ],
-      mobileColumns: [
-        { field: 'place', headerName: 'Place', width: 150, headerClassName: 'super-app-theme--header', headerAlign: 'center', align: 'center'},
-        { field: 'angler', headerName: 'Angler', width: 150, headerClassName: 'super-app-theme--header', headerAlign: 'center', align: 'center'},
-        { field: 'weight', headerName: 'Points (Weight, lbs)', width: 150, headerClassName: 'super-app-theme--header', headerAlign: 'center', align: 'center', isDateTime: false},
-        { field: 'length', headerName: 'Length (in)', width: 150, headerClassName: 'super-app-theme--header', headerAlign: 'center', align: 'center', isDateTime: false},
-        { field: 'payout', headerName: 'Payout', width: 150, headerClassName: 'super-app-theme--header', headerAlign: 'center', align: 'center', isDateTime: false, isCurrency: true},
-      ]
-    },
-
-    // Offshore - Swordfish
-    {
-      title: "Swordfish ($100)",
-      subtitle: "",
-      potName: "Swordfish ($100)",
+      potName: "Sheepshead ($100)",
       entryAmount: 100,
       tournamentCut: 0.2,
       display: false,
-      payoutStructure: { 1: 1.0, 2: 0.0, 3: 0.0, 4: 0.0, 5: 0.0 },
-      url: "get_deepsea_roundup_offshore_pot_winner",
-      inputs: [
-        {division: "Offshore"},
-        {ageBracket: "Adult"},
-        {species: "Swordfish"}
-      ],
-      desktopColumns: [
-        { field: 'place', headerName: 'Place', flex: 1, headerClassName: 'super-app-theme--header', headerAlign: 'center', align: 'center', isDateTime: false},
-        { field: 'angler', headerName: 'Angler', flex: 1, headerClassName: 'super-app-theme--header', headerAlign: 'center', align: 'center', isDateTime: false},
-        { field: 'weight', headerName: 'Points (Weight, lbs)', flex: 1, headerClassName: 'super-app-theme--header', headerAlign: 'center', align: 'center', isDateTime: false},
-        { field: 'length', headerName: 'Length (in)', flex: 1, headerClassName: 'super-app-theme--header', headerAlign: 'center', align: 'center', isDateTime: false},
-        { field: 'payout', headerName: 'Payout', flex: 1, headerClassName: 'super-app-theme--header', headerAlign: 'center', align: 'center', isDateTime: false, isCurrency: true},
-      ],
-      mobileColumns: [
-        { field: 'place', headerName: 'Place', width: 150, headerClassName: 'super-app-theme--header', headerAlign: 'center', align: 'center'},
-        { field: 'angler', headerName: 'Angler', width: 150, headerClassName: 'super-app-theme--header', headerAlign: 'center', align: 'center'},
-        { field: 'weight', headerName: 'Points (Weight, lbs)', width: 150, headerClassName: 'super-app-theme--header', headerAlign: 'center', align: 'center', isDateTime: false},
-        { field: 'length', headerName: 'Length (in)', width: 150, headerClassName: 'super-app-theme--header', headerAlign: 'center', align: 'center', isDateTime: false},
-        { field: 'payout', headerName: 'Payout', width: 150, headerClassName: 'super-app-theme--header', headerAlign: 'center', align: 'center', isDateTime: false, isCurrency: true},
-      ]
-    },
-
-    // Bay/Surf - Sheepshead
-    {
-      title: "Sheepshead ($75)",
-      subtitle: "",
-      potName: "Sheepshead ($75)",
-      entryAmount: 75,
-      tournamentCut: 0.2,
-      display: false,
+      board: "Bay/Surf Fish Pots",
       payoutStructure: { 1: 1.0, 2: 0.0, 3: 0.0, 4: 0.0, 5: 0.0 },
       url: "get_deepsea_roundup_bay_surf_pot_winner",
       inputs: [
@@ -1112,7 +820,128 @@ export default {
         { field: 'payout', headerName: 'Payout', width: 150, headerClassName: 'super-app-theme--header', headerAlign: 'center', align: 'center', isDateTime: false, isCurrency: true},
       ]
     },
+    {
+      title: "Spanish Mackerel ($100)",
+      subtitle: "",
+      potName: "Spanish Mackerel ($100)",
+      entryAmount: 100,
+      tournamentCut: 0.2,
+      display: false,
+      board: "Bay/Surf Fish Pots",
+      payoutStructure: { 1: 1.0, 2: 0.0, 3: 0.0, 4: 0.0, 5: 0.0 },
+      url: "get_deepsea_roundup_bay_surf_pot_winner",
+      inputs: [
+        {division: "Bay/Surf"},
+        {ageBracket: "Adult"},
+        {species: "Spanish Mackerel"}
+      ],
+      desktopColumns: [
+        { field: 'place', headerName: 'Place', flex: 1, headerClassName: 'super-app-theme--header', headerAlign: 'center', align: 'center', isDateTime: false},
+        { field: 'angler', headerName: 'Angler', flex: 1, headerClassName: 'super-app-theme--header', headerAlign: 'center', align: 'center', isDateTime: false},
+        { field: 'weight', headerName: 'Points (Weight, lbs)', flex: 1, headerClassName: 'super-app-theme--header', headerAlign: 'center', align: 'center', isDateTime: false},
+        { field: 'length', headerName: 'Length (in)', flex: 1, headerClassName: 'super-app-theme--header', headerAlign: 'center', align: 'center', isDateTime: false},
+        { field: 'payout', headerName: 'Payout', flex: 1, headerClassName: 'super-app-theme--header', headerAlign: 'center', align: 'center', isDateTime: false, isCurrency: true},
+      ],
+      mobileColumns: [
+        { field: 'place', headerName: 'Place', width: 150, headerClassName: 'super-app-theme--header', headerAlign: 'center', align: 'center'},
+        { field: 'angler', headerName: 'Angler', width: 150, headerClassName: 'super-app-theme--header', headerAlign: 'center', align: 'center'},
+        { field: 'weight', headerName: 'Points (Weight, lbs)', width: 150, headerClassName: 'super-app-theme--header', headerAlign: 'center', align: 'center', isDateTime: false},
+        { field: 'length', headerName: 'Length (in)', width: 150, headerClassName: 'super-app-theme--header', headerAlign: 'center', align: 'center', isDateTime: false},
+        { field: 'payout', headerName: 'Payout', width: 150, headerClassName: 'super-app-theme--header', headerAlign: 'center', align: 'center', isDateTime: false, isCurrency: true},
+      ]
+    },
+    {
+      title: "Speckled Trout ($100)",
+      subtitle: "",
+      potName: "Speckled Trout ($100)",
+      entryAmount: 100,
+      tournamentCut: 0.2,
+      display: false,
+      board: "Bay/Surf Fish Pots",
+      payoutStructure: { 1: 1.0, 2: 0.0, 3: 0.0, 4: 0.0, 5: 0.0 },
+      url: "get_deepsea_roundup_bay_surf_pot_winner",
+      inputs: [
+        {division: "Bay/Surf"},
+        {ageBracket: "Adult"},
+        {species: "Speckled Trout"}
+      ],
+      desktopColumns: [
+        { field: 'place', headerName: 'Place', flex: 1, headerClassName: 'super-app-theme--header', headerAlign: 'center', align: 'center', isDateTime: false},
+        { field: 'angler', headerName: 'Angler', flex: 1, headerClassName: 'super-app-theme--header', headerAlign: 'center', align: 'center', isDateTime: false},
+        { field: 'weight', headerName: 'Points (Weight, lbs)', flex: 1, headerClassName: 'super-app-theme--header', headerAlign: 'center', align: 'center', isDateTime: false},
+        { field: 'length', headerName: 'Length (in)', flex: 1, headerClassName: 'super-app-theme--header', headerAlign: 'center', align: 'center', isDateTime: false},
+        { field: 'payout', headerName: 'Payout', flex: 1, headerClassName: 'super-app-theme--header', headerAlign: 'center', align: 'center', isDateTime: false, isCurrency: true},
+      ],
+      mobileColumns: [
+        { field: 'place', headerName: 'Place', width: 150, headerClassName: 'super-app-theme--header', headerAlign: 'center', align: 'center'},
+        { field: 'angler', headerName: 'Angler', width: 150, headerClassName: 'super-app-theme--header', headerAlign: 'center', align: 'center'},
+        { field: 'weight', headerName: 'Points (Weight, lbs)', width: 150, headerClassName: 'super-app-theme--header', headerAlign: 'center', align: 'center', isDateTime: false},
+        { field: 'length', headerName: 'Length (in)', width: 150, headerClassName: 'super-app-theme--header', headerAlign: 'center', align: 'center', isDateTime: false},
+        { field: 'payout', headerName: 'Payout', width: 150, headerClassName: 'super-app-theme--header', headerAlign: 'center', align: 'center', isDateTime: false, isCurrency: true},
+      ]
+    },
+
+    // Newly Added Pots
+    {
+      title: "Swordfish ($1000)",
+      subtitle: "",
+      potName: "Swordfish ($1000)",
+      entryAmount: 1000,
+      tournamentCut: 0.2,
+      display: false,
+      board: "Newly Added Pots",
+      payoutStructure: { 1: 1.0, 2: 0.0, 3: 0.0, 4: 0.0, 5: 0.0 },
+      url: "get_deepsea_roundup_offshore_pot_winner",
+      inputs: [
+        {division: "Offshore"},
+        {ageBracket: "Adult"},
+        {species: "Swordfish"}
+      ],
+      desktopColumns: [
+        { field: 'place', headerName: 'Place', flex: 1, headerClassName: 'super-app-theme--header', headerAlign: 'center', align: 'center', isDateTime: false},
+        { field: 'angler', headerName: 'Angler', flex: 1, headerClassName: 'super-app-theme--header', headerAlign: 'center', align: 'center', isDateTime: false},
+        { field: 'weight', headerName: 'Points (Weight, lbs)', flex: 1, headerClassName: 'super-app-theme--header', headerAlign: 'center', align: 'center', isDateTime: false},
+        { field: 'length', headerName: 'Length (in)', flex: 1, headerClassName: 'super-app-theme--header', headerAlign: 'center', align: 'center', isDateTime: false},
+        { field: 'payout', headerName: 'Payout', flex: 1, headerClassName: 'super-app-theme--header', headerAlign: 'center', align: 'center', isDateTime: false, isCurrency: true},
+      ],
+      mobileColumns: [
+        { field: 'place', headerName: 'Place', width: 150, headerClassName: 'super-app-theme--header', headerAlign: 'center', align: 'center'},
+        { field: 'angler', headerName: 'Angler', width: 150, headerClassName: 'super-app-theme--header', headerAlign: 'center', align: 'center'},
+        { field: 'weight', headerName: 'Points (Weight, lbs)', width: 150, headerClassName: 'super-app-theme--header', headerAlign: 'center', align: 'center', isDateTime: false},
+        { field: 'length', headerName: 'Length (in)', width: 150, headerClassName: 'super-app-theme--header', headerAlign: 'center', align: 'center', isDateTime: false},
+        { field: 'payout', headerName: 'Payout', width: 150, headerClassName: 'super-app-theme--header', headerAlign: 'center', align: 'center', isDateTime: false, isCurrency: true},
+      ]
+    },
+    {
+      title: "First Billfish Caught ($1000)",
+      subtitle: "Winner-take-all — earliest logged Blue Marlin, White Marlin, or Sailfish catch by an entrant boat",
+      potName: "First Billfish Caught ($1000)",
+      entryAmount: 1000,
+      tournamentCut: 0.2,
+      display: false,
+      board: "Newly Added Pots",
+      // Single winner takes 100% of the net pot — no runner-up places.
+      payoutStructure: { 1: 1.0 },
+      url: "get_deepsea_roundup_first_billfish_caught_pot_winner",
+      inputs: [
+        {division: "Offshore"},
+        {ageBracket: "Adult"}
+      ],
+      desktopColumns: [
+        { field: 'place', headerName: 'Place', flex: 1, headerClassName: 'super-app-theme--header', headerAlign: 'center', align: 'center', isDateTime: false},
+        { field: 'team', headerName: 'Team', flex: 1, headerClassName: 'super-app-theme--header', headerAlign: 'center', align: 'center', isDateTime: false},
+        { field: 'species', headerName: 'Species', flex: 1, headerClassName: 'super-app-theme--header', headerAlign: 'center', align: 'center', isDateTime: false},
+        { field: 'catchTime', headerName: 'Time of Catch', flex: 1, headerClassName: 'super-app-theme--header', headerAlign: 'center', align: 'center', isDateTime: true},
+        { field: 'payout', headerName: 'Payout', flex: 1, headerClassName: 'super-app-theme--header', headerAlign: 'center', align: 'center', isDateTime: false, isCurrency: true},
+      ],
+      mobileColumns: [
+        { field: 'place', headerName: 'Place', width: 150, headerClassName: 'super-app-theme--header', headerAlign: 'center', align: 'center'},
+        { field: 'team', headerName: 'Team', width: 150, headerClassName: 'super-app-theme--header', headerAlign: 'center', align: 'center'},
+        { field: 'species', headerName: 'Species', width: 150, headerClassName: 'super-app-theme--header', headerAlign: 'center', align: 'center'},
+        { field: 'catchTime', headerName: 'Time of Catch', width: 300, headerClassName: 'super-app-theme--header', headerAlign: 'center', align: 'center', isDateTime: true},
+        { field: 'payout', headerName: 'Payout', width: 150, headerClassName: 'super-app-theme--header', headerAlign: 'center', align: 'center', isDateTime: false, isCurrency: true},
+      ]
+    },
 
   ],
 }
-

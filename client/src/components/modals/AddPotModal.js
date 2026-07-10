@@ -77,8 +77,9 @@ const AdminAddPotModal = (props) => {
     const participants = [];
     
     switch(selectedBoard) {
-      case 'Catch & Release':
-      case 'Offshore':
+      case 'Billfish Pots':
+      case 'Offshore Fish Pots':
+      case 'Newly Added Pots':
         // Get unique boat names
         const uniqueBoats = [...new Set(anglerData
           .filter(angler => angler.boatName && angler.boatName.trim() !== '')
@@ -90,8 +91,8 @@ const AdminAddPotModal = (props) => {
           type: 'boat'
         })));
         break;
-  
-      case 'Bay/Surf':
+
+      case 'Bay/Surf Fish Pots':
         // Get unique Bay/Surf Adult anglers
         const baySurfAnglers = anglerData.filter(angler => 
           angler.division === 'Bay/Surf' && 
@@ -201,16 +202,15 @@ const AdminAddPotModal = (props) => {
   };
 
   const validateUserInput = () => {
-    // For Catch & Release board we expect teamName
-    // For Offshore/Bay/Surf boards we expect anglerName
-    if (selectedBoard === 'Catch & Release') {
+    // Bay/Surf Fish Pots are entered by individual angler; all other boards by team/boat.
+    if (selectedBoard === 'Bay/Surf Fish Pots') {
       if (!teamName) {
-        toast.warning("Please select a team.");
+        toast.warning("Please select an angler.");
         return false;
       }
     } else {
-      if (!teamName) {  // teamName holds the angler name for non-Catch & Release boards
-        toast.warning("Please select an angler.");
+      if (!teamName) {
+        toast.warning("Please select a team.");
         return false;
       }
     }
@@ -252,7 +252,7 @@ const AdminAddPotModal = (props) => {
         const duplicateData = await checkDuplicateResponse.json();
 
         if (duplicateData.exists) {
-          toast.warning(`This ${selectedBoard === 'Bay/Surf' ? 'angler' : 'team'} has already been entered for the selected board.`);
+          toast.warning(`This ${selectedBoard === 'Bay/Surf Fish Pots' ? 'angler' : 'team'} has already been entered for the selected board.`);
           setIsSubmitting(false);
           return;
         }
@@ -260,7 +260,7 @@ const AdminAddPotModal = (props) => {
         // Prepare submission data
         let formData = {
           potYear: `pots${year}`,
-          name: selectedBoard === 'Bay/Surf' ? teamName : teamId, // Use our state values
+          name: selectedBoard === 'Bay/Surf Fish Pots' ? teamName : teamId, // Use our state values
           boardType: selectedBoard,
           boardSelections,
           timestamp: new Date().toISOString(),
@@ -327,7 +327,7 @@ const AdminAddPotModal = (props) => {
           {selectedBoard && (
             <>
               <InputLabel required>
-                Select {selectedBoard === 'Bay/Surf' ? 'Angler' : 'Team'}
+                Select {selectedBoard === 'Bay/Surf Fish Pots' ? 'Angler' : 'Team'}
               </InputLabel>
               <Autocomplete
                 value={eligibleParticipants.find(p => p.id === teamId) || null}
@@ -335,7 +335,7 @@ const AdminAddPotModal = (props) => {
                 options={eligibleParticipants}
                 getOptionLabel={(option) => option.label}
                 renderInput={(params) => <TextField {...params} label={
-                  selectedBoard === 'Bay/Surf' ? 'Angler name' : 'Team name'
+                  selectedBoard === 'Bay/Surf Fish Pots' ? 'Angler name' : 'Team name'
                 }/>}
                 disabled={!isLoaded}
               />

@@ -1252,13 +1252,13 @@ function PotWinnersTab({ year, apiUrl, config, matches }) {
       });
     });
 
-    const boards = { 'Catch & Release': { gross: 0, cut: 0, net: 0, entries: 0 }, 'Offshore': { gross: 0, cut: 0, net: 0, entries: 0 }, 'Bay/Surf': { gross: 0, cut: 0, net: 0, entries: 0 } };
+    const boards = { 'Billfish Pots': { gross: 0, cut: 0, net: 0, entries: 0 }, 'Offshore Fish Pots': { gross: 0, cut: 0, net: 0, entries: 0 }, 'Bay/Surf Fish Pots': { gross: 0, cut: 0, net: 0, entries: 0 }, 'Newly Added Pots': { gross: 0, cut: 0, net: 0, entries: 0 } };
     const cats = config.potsConfig.CONFIG_POTS_CATEGORIES.map(item => {
       const entrantCount = potEntrantCounts[norm(item.potName)] || 0;
       const gross = entrantCount * (item.entryAmount || 0);
       const cut = gross * (item.tournamentCut || 0);
       const net = gross - cut;
-      const board = item.url?.includes('catch_and_release') ? 'Catch & Release' : item.url?.includes('offshore') ? 'Offshore' : 'Bay/Surf';
+      const board = item.board;
       const resultMatch = results.find(r => r.title === item.title);
       const winner = resultMatch?.rows.find(row => (row.payout || 0) > 0);
       const winnerName = winner ? (winner.angler || winner.team || '—') : (entrantCount > 0 ? 'No winner yet' : '—');

@@ -79,10 +79,11 @@ const DeletePotModal = (props) => {
 
   const getNameLabel = (boardType) => {
     switch(boardType) {
-      case 'Catch & Release':
-      case 'Offshore':
+      case 'Billfish Pots':
+      case 'Offshore Fish Pots':
+      case 'Newly Added Pots':
         return 'Team Name';
-      case 'Bay/Surf':
+      case 'Bay/Surf Fish Pots':
         return 'Angler Name';
       default:
         return 'Name';
@@ -110,19 +111,24 @@ const DeletePotModal = (props) => {
           {/* Show individual board fees */}
           {props.deleteInfo && (
             <>
-              {props.deleteInfo['totalCatch&ReleaseFee'] > 0 && (
+              {props.deleteInfo['totalBillfishPotsFee'] > 0 && (
                 <InputLabel>
-                  Catch & Release Fee: {formatCurrency(props.deleteInfo['totalCatch&ReleaseFee'])}
+                  Billfish Pots Fee: {formatCurrency(props.deleteInfo['totalBillfishPotsFee'])}
                 </InputLabel>
               )}
-              {props.deleteInfo['totalOffshoreFee'] > 0 && (
+              {props.deleteInfo['totalOffshoreFishPotsFee'] > 0 && (
                 <InputLabel>
-                  Offshore Fee: {formatCurrency(props.deleteInfo['totalOffshoreFee'])}
+                  Offshore Fish Pots Fee: {formatCurrency(props.deleteInfo['totalOffshoreFishPotsFee'])}
                 </InputLabel>
               )}
-              {props.deleteInfo['totalBaySurfFee'] > 0 && (
+              {props.deleteInfo['totalBaySurfFishPotsFee'] > 0 && (
                 <InputLabel>
-                  Bay/Surf Fee: {formatCurrency(props.deleteInfo['totalBaySurfFee'])}
+                  Bay/Surf Fish Pots Fee: {formatCurrency(props.deleteInfo['totalBaySurfFishPotsFee'])}
+                </InputLabel>
+              )}
+              {props.deleteInfo['totalNewlyAddedPotsFee'] > 0 && (
+                <InputLabel>
+                  Newly Added Pots Fee: {formatCurrency(props.deleteInfo['totalNewlyAddedPotsFee'])}
                 </InputLabel>
               )}
             </>

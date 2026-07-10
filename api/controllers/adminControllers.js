@@ -157,7 +157,7 @@ module.exports = ({redisClient}) => {
         
         const potDeletePromises = potSnapshot.docs.map(async doc => {
           const potData = doc.data();
-          if (potData.totalOffshoreFee > 0 || potData.totalBaySurfFee > 0) {
+          if (potData.totalOffshoreFishPotsFee > 0 || potData.totalBaySurfFishPotsFee > 0) {
             return doc.ref.delete();
           }
         });
@@ -683,26 +683,17 @@ module.exports = ({redisClient}) => {
 
       // Initialize board fees with zero values using exact property names
       const boardFees = {
-        'totalCatch&ReleaseFee': 0,
-        'totalOffshoreFee': 0,
-        'totalBaySurfFee': 0
+        totalBillfishPotsFee: 0,
+        totalOffshoreFishPotsFee: 0,
+        totalBaySurfFishPotsFee: 0,
+        totalNewlyAddedPotsFee: 0,
       };
 
       // Calculate total fees and set individual board fees
       let totalPotFee = 0;
       boardSelections.forEach(selection => {
-        let boardFeeKey;
-        switch(selection.board) {
-          case 'Catch & Release':
-            boardFeeKey = 'totalCatch&ReleaseFee';
-            break;
-          case 'Offshore':
-            boardFeeKey = 'totalOffshoreFee';
-            break;
-          case 'Bay/Surf':
-            boardFeeKey = 'totalBaySurfFee';
-            break;
-        }
+        const boardKey = (selection.board || '').replace(/[^a-zA-Z0-9]/g, '');
+        const boardFeeKey = `total${boardKey}Fee`;
         boardFees[boardFeeKey] = selection.totalFee;
         totalPotFee += selection.totalFee;
       });
@@ -748,16 +739,9 @@ module.exports = ({redisClient}) => {
         const data = doc.data();
         console.log('req.body', req.body)
         console.log('data returned', data)
-        switch(boardType) {
-          case 'Catch & Release':
-            return data['totalCatch&ReleaseFee'] > 0;
-          case 'Offshore':
-            return data.totalOffshoreFee > 0;
-          case 'Bay/Surf':
-            return data.totalBaySurfFee > 0;
-          default:
-            return false;
-        }
+        if (!boardType) return false;
+        const boardKey = boardType.replace(/[^a-zA-Z0-9]/g, '');
+        return data[`total${boardKey}Fee`] > 0;
       });
   
       return res.status(200).json({ exists });
@@ -779,31 +763,22 @@ module.exports = ({redisClient}) => {
   
       // Initialize board fees with zero values
       const boardFees = {
-        'totalCatch&ReleaseFee': 0,
-        'totalOffshoreFee': 0,
-        'totalBaySurfFee': 0
+        totalBillfishPotsFee: 0,
+        totalOffshoreFishPotsFee: 0,
+        totalBaySurfFishPotsFee: 0,
+        totalNewlyAddedPotsFee: 0,
       };
-  
+
       // Parse boardSelections if it's a string
-      const parsedBoardSelections = typeof boardSelections === 'string' 
-        ? JSON.parse(boardSelections) 
+      const parsedBoardSelections = typeof boardSelections === 'string'
+        ? JSON.parse(boardSelections)
         : boardSelections;
-  
+
       // Calculate total fees and set individual board fees
       let totalPotFee = 0;
       parsedBoardSelections.forEach(selection => {
-        let boardFeeKey;
-        switch(selection.board) {
-          case 'Catch & Release':
-            boardFeeKey = 'totalCatch&ReleaseFee';
-            break;
-          case 'Offshore':
-            boardFeeKey = 'totalOffshoreFee';
-            break;
-          case 'Bay/Surf':
-            boardFeeKey = 'totalBaySurfFee';
-            break;
-        }
+        const boardKey = (selection.board || '').replace(/[^a-zA-Z0-9]/g, '');
+        const boardFeeKey = `total${boardKey}Fee`;
         boardFees[boardFeeKey] = selection.totalFee;
         totalPotFee += selection.totalFee;
       });

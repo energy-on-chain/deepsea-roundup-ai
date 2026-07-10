@@ -86,18 +86,8 @@ const EditPotModal = (props) => {
   
       // Only send the active board selections
       const activeSelections = boardSelections.filter(selection => {
-        let boardFeeKey;
-        switch(selection.board) {
-          case 'Catch & Release':
-            boardFeeKey = 'totalCatch&ReleaseFee';
-            break;
-          case 'Offshore':
-            boardFeeKey = 'totalOffshoreFee';
-            break;
-          case 'Bay/Surf':
-            boardFeeKey = 'totalBaySurfFee';
-            break;
-        }
+        const boardKey = (selection.board || '').replace(/[^a-zA-Z0-9]/g, '');
+        const boardFeeKey = `total${boardKey}Fee`;
         return props.editInfo[boardFeeKey] > 0;
       });
   
@@ -198,27 +188,18 @@ const EditPotModal = (props) => {
   };
 
   const isActiveBoard = (boardName) => {
-    let feeKey;
-    switch(boardName) {
-      case 'Catch & Release':
-        feeKey = 'totalCatch&ReleaseFee';
-        break;
-      case 'Offshore':
-        feeKey = 'totalOffshoreFee';
-        break;
-      case 'Bay/Surf':
-        feeKey = 'totalBaySurfFee';
-        break;
-    }
+    const boardKey = (boardName || '').replace(/[^a-zA-Z0-9]/g, '');
+    const feeKey = `total${boardKey}Fee`;
     return props.editInfo && props.editInfo[feeKey] > 0;
   };
 
   const getNameLabel = (boardType) => {
     switch(boardType) {
-      case 'Catch & Release':
-      case 'Offshore':
+      case 'Billfish Pots':
+      case 'Offshore Fish Pots':
+      case 'Newly Added Pots':
         return 'Team Name';
-      case 'Bay/Surf':
+      case 'Bay/Surf Fish Pots':
         return 'Angler Name';
       default:
         return 'Name';
