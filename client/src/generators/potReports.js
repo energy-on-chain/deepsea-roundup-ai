@@ -137,16 +137,14 @@ export const generatePotsReport = async (year, tournamentName) => {
   });
 
   // --- Compute financial data using true entrant counts ---
-  const boardMap = { 'Catch & Release': { gross: 0, cut: 0, net: 0 }, Offshore: { gross: 0, cut: 0, net: 0 }, 'Bay/Surf': { gross: 0, cut: 0, net: 0 } };
+  const boardMap = { 'Billfish Pots': { gross: 0, cut: 0, net: 0 }, 'Offshore Fish Pots': { gross: 0, cut: 0, net: 0 }, 'Bay/Surf Fish Pots': { gross: 0, cut: 0, net: 0 }, 'Newly Added Pots': { gross: 0, cut: 0, net: 0 } };
   const catFinancials = config.potsConfig.CONFIG_POTS_CATEGORIES.map(item => {
     const entrantCount = potEntrantCounts[norm(item.potName)] || 0;
     const gross = entrantCount * (item.entryAmount || 0);
     const cut = gross * (item.tournamentCut || 0);
     const net = gross - cut;
 
-    const board = item.url?.includes('catch_and_release') ? 'Catch & Release'
-      : item.url?.includes('offshore') ? 'Offshore'
-      : 'Bay/Surf';
+    const board = item.board;
 
     boardMap[board].gross += gross;
     boardMap[board].cut += cut;

@@ -30,7 +30,7 @@ function PotsPage() {
 
   const viewOptions = ["Board", "By Pot", "By Entrant"];
   const [viewSelection, setViewSelection] = useState("Board");
-  const [selectedBoard, setSelectedBoard] = useState("Catch & Release");
+  const [selectedBoard, setSelectedBoard] = useState("Billfish Pots");
 
   const [registeredTeamNameList, setRegisteredTeamNameList] = useState([]);
   const [registeredAnglerNameList, setRegisteredAnglerNameList] = useState([]);
@@ -352,7 +352,7 @@ function PotsPage() {
                                 <thead>
                                   <tr>
                                     <th className="sticky-col" style={headerCellStyle}>
-                                      {selectedBoard === "Bay/Surf" ? "Angler" : "Team"}
+                                      {selectedBoard === "Bay/Surf Fish Pots" ? "Angler" : "Team"}
                                     </th>
                                     {boardPots.map((pot, i) => (
                                       <th key={i} style={headerCellStyle}>{pot.title}</th>
@@ -427,7 +427,7 @@ function PotsPage() {
                             <strong>Pot:</strong> {entriesPotSelection}
                           </p>
                           <p style={{ fontSize: '20px', color: titleColor }}>
-                            <strong>{potDetails?.boardName === 'Bay/Surf' ? 'Anglers' : 'Teams'} Entered: {entries.length}</strong>
+                            <strong>{potDetails?.boardName === 'Bay/Surf Fish Pots' ? 'Anglers' : 'Teams'} Entered: {entries.length}</strong>
                           </p>
                           {entries.length === 0 ? (
                             <p style={{ fontSize: '16px', color: titleColor, marginLeft: '20px', fontStyle: 'italic' }}>

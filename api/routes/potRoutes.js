@@ -7,6 +7,7 @@ const {
   getDeepseaRoundupCatchAndReleasePotWinner,
   getDeepseaRoundupOffshorePotWinner,
   getDeepseaRoundupBaySurfPotWinner,
+  getDeepseaRoundupFirstBillfishCaughtPotWinner,
 } = require('../controllers/potControllers');
 
 const TTL = 60; // seconds
@@ -16,5 +17,6 @@ router.post('/api/:year/get_total_pot_size_data', cache.middleware(TTL), getTota
 router.post('/api/:year/get_deepsea_roundup_catch_and_release_pot_winner', cache.middleware(TTL), getDeepseaRoundupCatchAndReleasePotWinner);
 router.post('/api/:year/get_deepsea_roundup_offshore_pot_winner', cache.middleware(TTL), getDeepseaRoundupOffshorePotWinner);
 router.post('/api/:year/get_deepsea_roundup_bay_surf_pot_winner', cache.middleware(TTL), getDeepseaRoundupBaySurfPotWinner);
+router.post('/api/:year/get_deepsea_roundup_first_billfish_caught_pot_winner', cache.middleware(TTL), getDeepseaRoundupFirstBillfishCaughtPotWinner);
 
 module.exports = router;
