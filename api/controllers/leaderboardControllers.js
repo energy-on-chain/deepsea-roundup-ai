@@ -630,11 +630,16 @@ exports.getDeepseaRoundupBaySurfGrandChampion = async (req, res) => {
     }
 
     // Build flat result array sorted by total weight
+    // Per rules, Champion and Runner-Up must each have the highest total weight of AT LEAST
+    // FOUR of the eligible species -- anglers with fewer than 4 species can still show up
+    // elsewhere on the leaderboard, but are not in contention for Grand Champion/Runner-Up.
+    const MIN_ELIGIBLE_SPECIES_FOR_CHAMPION = 4;
     const byWeight = Object.entries(anglerData)
       .map(([anglerId, data]) => {
         const totalWeight = Object.values(data.speciesWeights).reduce((s, w) => s + w, 0);
         return { anglerId, totalWeight, hasFirstPlaceFish: data.hasFirstPlaceFish, speciesWeights: data.speciesWeights };
       })
+      .filter((a) => Object.keys(a.speciesWeights).length >= MIN_ELIGIBLE_SPECIES_FOR_CHAMPION)
       .sort((a, b) => b.totalWeight - a.totalWeight);
 
     // Champion (1st place) MUST have a first place fish — pull the highest-weight such angler to the top.
