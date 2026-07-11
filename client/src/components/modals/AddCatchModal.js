@@ -205,11 +205,13 @@ const AddCatchModal = (props) => {
     console.log(catchEntry);
 
     let points = 0;
-    const { pointsCalculationMethod, weight, length, species } = catchEntry;
-  
+    const { pointsCalculationMethod, weight, length, species, division } = catchEntry;
+
     if (pointsCalculationMethod === "flat") {
-      let filteredSpeciesList = speciesList.filter((species) => species.division === anglerDivision) 
-      let speciesInfo = filteredSpeciesList.find((element) => element.species === species);
+      // Match on (species, division) from the entry itself -- not the angler's division -- since
+      // a catch row's species/division may be chosen before an angler is selected at all, and some
+      // species (e.g. Bonito, Spanish Mackerel) exist in more than one division.
+      let speciesInfo = speciesList.find((element) => element.species === species && element.division === division);
       points = speciesInfo.points;  // Assume points are predefined
     } else if (pointsCalculationMethod.includes("weight")) {
       if (pointsCalculationMethod === "weightRoundUp") {
@@ -260,13 +262,15 @@ const AddCatchModal = (props) => {
 
   const handleSpeciesSelection = (event, value, index) => {
     if (!value) return;
-  
+
     let newCatchData = [...catchData];
 
-    const filteredSpeciesList = speciesList.filter((species) => species.division === anglerDivision) 
-    const speciesInfo = filteredSpeciesList.find((species) => species.species === value.label);
-    // const speciesInfo = speciesList.find((species) => species.species === value.label);
-  
+    // Match on (species, division) carried by the clicked option itself -- not the angler's
+    // division -- so this works whether an angler has been selected yet, and so species that
+    // exist in more than one division (e.g. Bonito, Spanish Mackerel) resolve to the one the
+    // user actually clicked rather than whichever happens to match first.
+    const speciesInfo = speciesList.find((species) => species.species === value.label && species.division === value.division);
+
     if (speciesInfo) {
       newCatchData[index] = {
         ...newCatchData[index],
@@ -602,34 +606,36 @@ const AddCatchModal = (props) => {
                 ListboxProps={{ style: { maxHeight: 300 } }}
               />
 
-            {anglerIsSelected && (
+            {anglerIsSelected ? (
               <>
                 <InputLabel id="angler-division-label"><strong>Division:</strong>  {anglerDivision}</InputLabel>
                 <InputLabel id="angler-age-bracket-label"><strong>Age Bracket:</strong>  {anglerAgeBracket}</InputLabel>
                 <InputLabel id="angler-boat-name-label"><strong>Boat Name:</strong>  {anglerBoatName}</InputLabel>
                 {anglerGender && <InputLabel id="angler-gender-label"><strong>Gender:</strong>  {anglerGender}</InputLabel>}
-
-                <InputLabel required id="num-catches-label">Select number of catches to add</InputLabel>
-                <Select labelId="num-catches-label" id="num-catches" value={numCatches} onChange={handleChangeNumberOfCatches}>
-                  {[...Array(11).keys()].map(i => <MenuItem key={i} value={i}>{i}</MenuItem>)}
-                </Select>
-
-                {catchData.length > 0 && addCatches()}
-
-                {!isSubmitted ? (
-                  <Button
-                    disabled={isSubmitting || numCatches <= 0}
-                    color="primary"
-                    variant="contained"
-                    onClick={handleCreateCatches}
-                    startIcon={isSubmitting ? <CircularProgress size={20} /> : null}
-                  >
-                    {isSubmitting ? "Submitting..." : "Submit"}
-                  </Button>
-                ) : (
-                  <h3>Submitted!</h3>
-                )}
               </>
+            ) : (
+              <InputLabel>No angler selected yet -- you can start with the species below and pick the angler after.</InputLabel>
+            )}
+
+            <InputLabel required id="num-catches-label">Select number of catches to add</InputLabel>
+            <Select labelId="num-catches-label" id="num-catches" value={numCatches} onChange={handleChangeNumberOfCatches}>
+              {[...Array(11).keys()].map(i => <MenuItem key={i} value={i}>{i}</MenuItem>)}
+            </Select>
+
+            {catchData.length > 0 && addCatches()}
+
+            {!isSubmitted ? (
+              <Button
+                disabled={isSubmitting || numCatches <= 0}
+                color="primary"
+                variant="contained"
+                onClick={handleCreateCatches}
+                startIcon={isSubmitting ? <CircularProgress size={20} /> : null}
+              >
+                {isSubmitting ? "Submitting..." : "Submit"}
+              </Button>
+            ) : (
+              <h3>Submitted!</h3>
             )}
 
             </Stack>

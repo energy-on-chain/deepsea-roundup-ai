@@ -72,6 +72,7 @@ function Carousel(props) {
                 columns={matches ? (result.desktopColumns || []) : (result.mobileColumns || [])}
                 scroll={matches ? (null) : ("scroll")}
                 density="compact"
+                largeFont={props.largeFont}
               />
             ) : null}
           </div>

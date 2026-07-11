@@ -490,6 +490,7 @@ exports.getDeepseaRoundupOffshoreGrandChampion = async (req, res) => {
       // Add points based on place
       acc[winner.anglerId].points += winner.place === 1 ? 2 : 1;
       acc[winner.anglerId].weights.push({
+        species: winner.species,
         weight: winner.weight || 0,
         recordWeight: historicalRecordCatchData[winner.species] || 1,
         isBillfish: billfishSpeciesList.includes(winner.species),
@@ -499,15 +500,23 @@ exports.getDeepseaRoundupOffshoreGrandChampion = async (req, res) => {
       return acc;
     }, {});
 
-    // Calculate average weight percentage for tiebreakers
+    // Calculate average weight percentage for tiebreakers, and keep each species' individual
+    // contribution to that average so the report can show how a tie was actually broken --
+    // same purpose as the Bay/Surf report's per-species weight columns.
     // Per rules: for release species (billfish), use fixed % (70% for 1st, 55% for 2nd).
     // For weight species: individual weight/record %, then average across all species.
+    const allSpecies = [...billfishSpeciesList, ...meatfishSpeciesList];
     const anglerStats = Object.entries(anglerScores).map(([anglerId, stats]) => {
+      const speciesContributions = {};
       const sumOfPcts = stats.weights.reduce((sum, item) => {
-        if (item.isBillfish) {
-          return sum + (item.place === 1 ? 70 : 55);
+        const contribution = item.isBillfish
+          ? (item.place === 1 ? 70 : 55)
+          : (item.recordWeight > 0 ? (item.weight / item.recordWeight) * 100 : 0);
+        // If an angler somehow places in the same species twice, keep the better contribution.
+        if (!speciesContributions[item.species] || contribution > speciesContributions[item.species]) {
+          speciesContributions[item.species] = contribution;
         }
-        return sum + (item.recordWeight > 0 ? (item.weight / item.recordWeight) * 100 : 0);
+        return sum + contribution;
       }, 0);
       const avgWeightPercentage = stats.weights.length > 0 ? sumOfPcts / stats.weights.length : 0;
 
@@ -515,6 +524,7 @@ exports.getDeepseaRoundupOffshoreGrandChampion = async (req, res) => {
         anglerId,
         points: stats.points,
         avgWeightPercentage,
+        speciesContributions,
       };
     });
 
@@ -529,6 +539,13 @@ exports.getDeepseaRoundupOffshoreGrandChampion = async (req, res) => {
     // Map results
     const result = sortedAnglers.slice(0, numPlaces).map((entry, index) => {
       const angler = anglers[entry.anglerId] || {};
+      // Spread each species' % contribution to the tiebreaker as its own top-level field --
+      // 0 where the angler didn't place 1st/2nd in that species.
+      const speciesFields = {};
+      for (const species of allSpecies) {
+        const pct = entry.speciesContributions[species];
+        speciesFields[species] = pct ? `${pct.toFixed(2)}%` : "—";
+      }
       return {
         place: index + 1,
         angler: angler.anglerName || "Unknown",
@@ -537,6 +554,7 @@ exports.getDeepseaRoundupOffshoreGrandChampion = async (req, res) => {
         ageBracket: angler.ageBracket,
         hometown: angler.hometown,
         points: entry.points,
+        ...speciesFields,
         tiebreaker: `${entry.avgWeightPercentage.toFixed(2)}%`,
       };
     });

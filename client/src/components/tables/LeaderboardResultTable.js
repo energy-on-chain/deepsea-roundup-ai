@@ -51,6 +51,15 @@ function LeaderboardResultTable(props) {
   const titleLabel = props.title;
   const subtitleLabel = props.subtitle;
 
+  // Opt-in larger text for kiosk/monitor display (LeaderboardSlideshowPage only) --
+  // row/header heights grow along with font size so text doesn't clip or overflow.
+  const largeFont = !!props.largeFont;
+  const cellFontSize = largeFont ? '22px' : '16px';
+  const dataGridRowHeight = largeFont ? 52 : undefined;
+  const dataGridHeaderHeight = largeFont ? 56 : undefined;
+  const desktopTitleFontSize = largeFont ? '1.6rem' : '1.15rem';
+  const desktopSubtitleFontSize = largeFont ? '1.15rem' : '0.95rem';
+
   if (isMobile) {
     const placeCol = formattedColumns.find(c => c.field === 'place');
     const anglerCol = formattedColumns.find(c => /^angler$/i.test(c.field));
@@ -160,11 +169,11 @@ function LeaderboardResultTable(props) {
     >
       {/* Card header */}
       <Box sx={{ backgroundColor: headerBg, px: 3, py: 1.5 }}>
-        <Typography sx={{ color: headerText, fontWeight: 'bold', fontSize: '1.15rem', display: 'inline' }}>
+        <Typography sx={{ color: headerText, fontWeight: 'bold', fontSize: desktopTitleFontSize, display: 'inline' }}>
           {titleLabel}
         </Typography>
         {subtitleLabel && (
-          <Typography component="span" sx={{ color: headerText, fontSize: '0.95rem', fontStyle: subtitleStyle, opacity: 0.85, ml: 1.5 }}>
+          <Typography component="span" sx={{ color: headerText, fontSize: desktopSubtitleFontSize, fontStyle: subtitleStyle, opacity: 0.85, ml: 1.5 }}>
             ({subtitleLabel})
           </Typography>
         )}
@@ -179,11 +188,11 @@ function LeaderboardResultTable(props) {
             borderRadius: 0,
             '.MuiDataGrid-row.Mui-odd': {
               backgroundColor: config.stylingConfig.CONFIG_STYLING_TABLE_ODD_ROW_BACKGROUND_COLOR,
-              fontSize: '16px',
+              fontSize: cellFontSize,
             },
             '.MuiDataGrid-columnHeaderTitleContainer': {
               backgroundColor: config.stylingConfig.CONFIG_STYLING_TABLE_HEADER_BACKGROUND_COLOR,
-              fontSize: '16px',
+              fontSize: cellFontSize,
               color: config.stylingConfig.CONFIG_STYLING_TABLE_HEADER_TEXT_COLOR,
               '.MuiSvgIcon-root': {
                 color: config.stylingConfig.CONFIG_STYLING_TABLE_HEADER_TEXT_COLOR,
@@ -191,16 +200,18 @@ function LeaderboardResultTable(props) {
             },
             '& .super-app-theme--header': {
               backgroundColor: config.stylingConfig.CONFIG_STYLING_TABLE_HEADER_BACKGROUND_COLOR,
-              fontSize: '16px',
+              fontSize: cellFontSize,
               color: config.stylingConfig.CONFIG_STYLING_TABLE_HEADER_TEXT_COLOR,
             },
             '& .MuiDataGrid-cell': {
-              fontSize: '16px',
+              fontSize: cellFontSize,
               color: config.stylingConfig.CONFIG_STYLING_TABLE_CELL_TEXT_COLOR,
             },
           }}
           hideFooter={true}
           density='compact'
+          rowHeight={dataGridRowHeight}
+          columnHeaderHeight={dataGridHeaderHeight}
           getRowClassName={(params) =>
             params.indexRelativeToCurrentPage % 2 === 0 ? 'Mui-even' : 'Mui-odd'
           }
