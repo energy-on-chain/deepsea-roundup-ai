@@ -25,6 +25,41 @@ const CHAMPION_KEYWORDS = [
 const isChampion = (title) =>
   CHAMPION_KEYWORDS.some(keyword => title.toLowerCase().includes(keyword));
 
+// Billfish/Tarpon results each get their own page(s), separate from offshore meatfish.
+// Billfish group = boat division + the three individual angler trophies it covers.
+// Tarpon group = boat division + its one individual angler trophy.
+const BILLFISH_GROUP_TITLES = ['Billfish Release Division', 'Offshore - Blue Marlin', 'Offshore - White Marlin', 'Offshore - Sailfish'];
+const TARPON_GROUP_TITLES = ['Tarpon Release Division', 'Offshore - Tarpon'];
+const GROUPED_TITLES = new Set([...BILLFISH_GROUP_TITLES, ...TARPON_GROUP_TITLES]);
+
+const getForcedGroup = (title) => {
+  if (BILLFISH_GROUP_TITLES.includes(title)) return 'billfish';
+  if (TARPON_GROUP_TITLES.includes(title)) return 'tarpon';
+  return null;
+};
+
+// The billfish/tarpon categories aren't contiguous in CONFIG_LEADERBOARD_CATEGORIES order
+// (Tarpon Release Division sits between Billfish Release Division and the individual Blue
+// Marlin/White Marlin/Sailfish trophies), so group membership alone isn't enough to force
+// clean page breaks -- pull each group's categories together first, in the position the
+// first one of either group originally occupied.
+const reorderGroups = (list) => {
+  const firstGroupedIdx = list.findIndex(c => GROUPED_TITLES.has(c.title));
+  if (firstGroupedIdx === -1) return list;
+
+  const ungrouped = list.filter(c => !GROUPED_TITLES.has(c.title));
+  const billfishItems = BILLFISH_GROUP_TITLES.map(t => list.find(c => c.title === t)).filter(Boolean);
+  const tarponItems = TARPON_GROUP_TITLES.map(t => list.find(c => c.title === t)).filter(Boolean);
+  const insertAt = list.slice(0, firstGroupedIdx).filter(c => !GROUPED_TITLES.has(c.title)).length;
+
+  return [
+    ...ungrouped.slice(0, insertAt),
+    ...billfishItems,
+    ...tarponItems,
+    ...ungrouped.slice(insertAt),
+  ];
+};
+
 const REPORT_NUM_PLACES = 2; // Announcer report: top 2 only (1st and 2nd place)
 const PAGE_MARGIN = 10;
 const PAGE_WIDTH = 297;
@@ -104,9 +139,9 @@ export const generateAnnouncerReport = async (year, tournamentName) => {
     )
   );
 
-  // Champions first, then other categories
+  // Champions first, then other categories (billfish/tarpon regrouped so each gets its own page)
   const champions = rawResults.filter(r => r.isChampion);
-  const others = rawResults.filter(r => !r.isChampion);
+  const others = reorderGroups(rawResults.filter(r => !r.isChampion));
   const results = [...champions, ...others];
 
   // --- Page header helper ---
@@ -142,6 +177,10 @@ export const generateAnnouncerReport = async (year, tournamentName) => {
   // (which fires once per page a table touches, INCLUDING the page it starts on) never
   // redraws a header on top of one already drawn manually for that same page.
   let lastHeaderPage = doc.internal.getCurrentPageInfo().pageNumber;
+  // Tracks the billfish/tarpon group (if any) the previous category belonged to, so a
+  // fresh page is forced whenever that group changes -- entering a group, leaving one, or
+  // switching from one group to the other.
+  let previousGroup = null;
 
   for (const category of results) {
     if (category.rows.length === 0) continue;
@@ -152,8 +191,12 @@ export const generateAnnouncerReport = async (year, tournamentName) => {
       category.desktopColumns.map(col => formatCellValue(col, row[col.field]))
     );
 
+    const thisGroup = getForcedGroup(category.title);
+    const forceGroupPageBreak = thisGroup !== previousGroup;
+    previousGroup = thisGroup;
+
     const estimatedHeight = 8 + tableRows.length * 6 + 4;
-    if (!isFirst && cursorY + estimatedHeight > pageHeight - 12) {
+    if (!isFirst && (forceGroupPageBreak || cursorY + estimatedHeight > pageHeight - 12)) {
       doc.addPage();
       cursorY = drawPageHeader(false);
       lastHeaderPage = doc.internal.getCurrentPageInfo().pageNumber;
