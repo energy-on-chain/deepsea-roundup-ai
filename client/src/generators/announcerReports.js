@@ -112,19 +112,16 @@ export const generateAnnouncerReport = async (year, tournamentName) => {
   // --- Page header helper ---
   const drawPageHeader = (isFirstPage = false) => {
     if (isFirstPage) {
-      doc.setFontSize(16);
-      doc.setFont('helvetica', 'bold');
-      doc.setTextColor(2, 19, 62);
-      doc.text(tournamentName || `${year} Deepsea Roundup`, PAGE_MARGIN, 10);
       doc.setFontSize(10);
       doc.setFont('helvetica', 'normal');
-      doc.text('End-of-Tournament Final Results — Announcer Report', PAGE_MARGIN, 17);
+      doc.setTextColor(2, 19, 62);
+      doc.text('End-of-Tournament Final Results — Announcer Report', PAGE_MARGIN, 10);
       doc.setFontSize(8);
       doc.setTextColor(80);
-      doc.text(`Generated: ${generatedAt}`, PAGE_MARGIN, 23);
+      doc.text(`Generated: ${generatedAt}`, PAGE_MARGIN, 16);
       doc.setTextColor(0);
-      doc.line(PAGE_MARGIN, 25, PAGE_WIDTH - PAGE_MARGIN, 25);
-      return 28;
+      doc.line(PAGE_MARGIN, 18, PAGE_WIDTH - PAGE_MARGIN, 18);
+      return 21;
     } else {
       doc.setFontSize(9);
       doc.setFont('helvetica', 'bold');

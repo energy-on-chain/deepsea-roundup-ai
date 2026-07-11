@@ -15,6 +15,7 @@ import AdminPage from "./pages/AdminPage";
 import DashboardPage from "./pages/DashboardPage";
 import NewsfeedPage from "./pages/NewsfeedPage";
 import LeaderboardPage from "./pages/LeaderboardPage";
+import LeaderboardSlideshowPage from "./pages/LeaderboardSlideshowPage";
 import PotsPage from "./pages/PotsPage";
 import HistoricalRecordsPage from "./pages/HistoricalRecordsPage";
 // import AuctionPage from "./pages/AuctionPage";
@@ -56,7 +57,8 @@ function App() {
         { path: 'registration_error', element: <RegisterErrorPage /> },   
         { path: 'admin', element: <AdminPage /> },    
         { path: 'newsfeed', element: <NewsfeedPage /> },    
-        { path: 'leaderboard', element: <LeaderboardPage /> },    
+        { path: 'leaderboard', element: <LeaderboardPage /> },
+        { path: 'leaderboard-slideshow', element: <LeaderboardSlideshowPage /> },
         { path: 'pots', element: <PotsPage /> },
         { path: 'records', element: <HistoricalRecordsPage /> },
         // { path: 'auction', element: <AuctionPage /> },
