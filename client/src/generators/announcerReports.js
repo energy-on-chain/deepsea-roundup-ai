@@ -138,6 +138,10 @@ export const generateAnnouncerReport = async (year, tournamentName) => {
 
   let cursorY = drawPageHeader(true);
   let isFirst = true;
+  // Tracks the page a header was last actually drawn on, so autoTable's didDrawPage
+  // (which fires once per page a table touches, INCLUDING the page it starts on) never
+  // redraws a header on top of one already drawn manually for that same page.
+  let lastHeaderPage = doc.internal.getCurrentPageInfo().pageNumber;
 
   for (const category of results) {
     if (category.rows.length === 0) continue;
@@ -152,6 +156,7 @@ export const generateAnnouncerReport = async (year, tournamentName) => {
     if (!isFirst && cursorY + estimatedHeight > pageHeight - 12) {
       doc.addPage();
       cursorY = drawPageHeader(false);
+      lastHeaderPage = doc.internal.getCurrentPageInfo().pageNumber;
     }
     isFirst = false;
 
@@ -199,7 +204,11 @@ export const generateAnnouncerReport = async (year, tournamentName) => {
       margin: { left: PAGE_MARGIN, right: PAGE_MARGIN },
       tableWidth: 'auto',
       didDrawPage: () => {
-        drawPageHeader(false);
+        const currentPage = doc.internal.getCurrentPageInfo().pageNumber;
+        if (currentPage !== lastHeaderPage) {
+          drawPageHeader(false);
+          lastHeaderPage = currentPage;
+        }
       },
     });
 

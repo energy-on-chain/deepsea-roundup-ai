@@ -28,6 +28,7 @@ export default {
     Register: "/2026/register",
     Newsfeed: "/2026/newsfeed",
     Leaderboard: "/2026/leaderboard",
+    Slideshow: "/2026/leaderboard-slideshow",
     Pots: "/2026/pots",
     Records: "/2026/records",
     // "Auction": "/2026/auction",

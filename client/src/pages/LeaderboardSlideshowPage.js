@@ -201,7 +201,7 @@ function LeaderboardSlideshowPage() {
                 ) : (
                   <div>
                     <br/>
-                    <Carousel results={resultArray} />
+                    <Carousel results={resultArray} largeFont />
                   </div>
                 )
               )}
