@@ -273,7 +273,11 @@ exports.getDeepseaRoundupBillfishReleaseChampion = async (req, res) => {
       boatName: entry.boatName,
       totalPoints: entry.totalPoints,
       speciesPoints: entry.speciesPoints,
-      latestRelease: entry.latestRelease ? dayjs(entry.latestRelease).format("YYYY-MM-DD HH:mm:ss") : "N/A",
+      // Pass the raw timestamp through unformatted (matches lastCatch elsewhere) -- pre-formatting
+      // here with server-local dayjs (Heroku runs UTC) strips the timezone marker, so the client's
+      // own dayjs formatting then treats the already-UTC wall-clock digits as local time and applies
+      // no conversion, silently shifting the displayed time by the UTC/local offset.
+      latestRelease: entry.latestRelease || null,
     }));
 
     // Return result
@@ -371,7 +375,11 @@ exports.getDeepseaRoundupTarponReleaseChampion = async (req, res) => {
       boatName: entry.boatName,
       totalPoints: entry.totalPoints,
       speciesPoints: entry.speciesPoints,
-      latestRelease: entry.latestRelease ? dayjs(entry.latestRelease).format("YYYY-MM-DD HH:mm:ss") : "N/A",
+      // Pass the raw timestamp through unformatted (matches lastCatch elsewhere) -- pre-formatting
+      // here with server-local dayjs (Heroku runs UTC) strips the timezone marker, so the client's
+      // own dayjs formatting then treats the already-UTC wall-clock digits as local time and applies
+      // no conversion, silently shifting the displayed time by the UTC/local offset.
+      latestRelease: entry.latestRelease || null,
     }));
 
     // Return result
