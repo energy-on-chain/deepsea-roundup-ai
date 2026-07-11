@@ -505,7 +505,6 @@ exports.getDeepseaRoundupOffshoreGrandChampion = async (req, res) => {
     // same purpose as the Bay/Surf report's per-species weight columns.
     // Per rules: for release species (billfish), use fixed % (70% for 1st, 55% for 2nd).
     // For weight species: individual weight/record %, then average across all species.
-    const allSpecies = [...billfishSpeciesList, ...meatfishSpeciesList];
     const anglerStats = Object.entries(anglerScores).map(([anglerId, stats]) => {
       const speciesContributions = {};
       const sumOfPcts = stats.weights.reduce((sum, item) => {
@@ -539,13 +538,13 @@ exports.getDeepseaRoundupOffshoreGrandChampion = async (req, res) => {
     // Map results
     const result = sortedAnglers.slice(0, numPlaces).map((entry, index) => {
       const angler = anglers[entry.anglerId] || {};
-      // Spread each species' % contribution to the tiebreaker as its own top-level field --
-      // 0 where the angler didn't place 1st/2nd in that species.
-      const speciesFields = {};
-      for (const species of allSpecies) {
-        const pct = entry.speciesContributions[species];
-        speciesFields[species] = pct ? `${pct.toFixed(2)}%` : "—";
-      }
+      // Readable species-contribution summary instead of one column per species -- mirrors
+      // Top Woman Angler's "Trophies Won" column so ties stay explainable without needing
+      // 17+ mostly-empty columns.
+      const speciesContributionSummary = Object.entries(entry.speciesContributions)
+        .sort((a, b) => b[1] - a[1])
+        .map(([species, pct]) => `${species}: ${pct.toFixed(2)}%`)
+        .join(' | ');
       return {
         place: index + 1,
         angler: angler.anglerName || "Unknown",
@@ -554,7 +553,7 @@ exports.getDeepseaRoundupOffshoreGrandChampion = async (req, res) => {
         ageBracket: angler.ageBracket,
         hometown: angler.hometown,
         points: entry.points,
-        ...speciesFields,
+        speciesContributionSummary,
         tiebreaker: `${entry.avgWeightPercentage.toFixed(2)}%`,
       };
     });
