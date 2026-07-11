@@ -375,6 +375,7 @@ export default {
       numPlaces: 5,
       numTrophies: 2,
       display: false,
+      neverPublic: true, // never shown on the public site -- still appears in the full leaderboard/announcer reports
       url: "get_deepsea_roundup_billfish_release_champion",
       inputs: [
       ],
@@ -397,6 +398,7 @@ export default {
       numPlaces: 5,
       numTrophies: 2,
       display: false,
+      neverPublic: true, // never shown on the public site -- still appears in the full leaderboard/announcer reports
       url: "get_deepsea_roundup_tarpon_release_champion",
       inputs: [
       ],
@@ -416,11 +418,12 @@ export default {
 
     // Offshore division
     { 
-      title: "Offshore - Blue Marlin", 
+      title: "Offshore - Blue Marlin",
       subtitle: "",
-      numPlaces: 5, 
+      numPlaces: 5,
       numTrophies: 2,
       display: true,
+      neverPublic: true, // never shown on the public site -- still appears in the full leaderboard/announcer reports
       url: "get_deepsea_roundup_billfish_species_winner",     
       inputs: [
         {species: "Blue Marlin"}
@@ -445,11 +448,12 @@ export default {
       ]
     },
     { 
-      title: "Offshore - White Marlin", 
+      title: "Offshore - White Marlin",
       subtitle: "",
-      numPlaces: 5, 
-      numTrophies: 2, 
+      numPlaces: 5,
+      numTrophies: 2,
       display: true,
+      neverPublic: true, // never shown on the public site -- still appears in the full leaderboard/announcer reports
       url: "get_deepsea_roundup_billfish_species_winner",     
       inputs: [
         {species: "White Marlin"}
@@ -474,11 +478,12 @@ export default {
       ]
     },
     { 
-      title: "Offshore - Sailfish", 
+      title: "Offshore - Sailfish",
       subtitle: "",
-      numPlaces: 5, 
-      numTrophies: 2, 
+      numPlaces: 5,
+      numTrophies: 2,
       display: true,
+      neverPublic: true, // never shown on the public site -- still appears in the full leaderboard/announcer reports
       url: "get_deepsea_roundup_billfish_species_winner",     
       inputs: [
         {species: "Sailfish"}
@@ -508,6 +513,7 @@ export default {
       numPlaces: 5,
       numTrophies: 2,
       display: true,
+      neverPublic: true, // never shown on the public site -- still appears in the full leaderboard/announcer reports
       url: "get_deepsea_roundup_billfish_species_winner",
       inputs: [
         {species: "Tarpon"}
