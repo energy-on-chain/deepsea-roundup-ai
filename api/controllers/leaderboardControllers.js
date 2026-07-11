@@ -114,19 +114,27 @@ exports.getDeepseaRoundupTopWomanAngler = async (req, res) => {
         trophyPlace: winner.points === 2 ? 1 : 2,
         weight: winner.weight,
         recordWeight: winner.recordWeight,
+        // billfishSpeciesList is currently always [] for TWA (billfish have no weigh-in, so
+        // they don't count per the rules), but this branch matches the Offshore Grand
+        // Champion's tiebreaker exactly in case that ever changes -- release species use a
+        // fixed 70%/55% contribution, never a weight/record ratio (they're never weighed).
+        isBillfish: billfishSpeciesList.includes(winner.species),
       });
 
       return acc;
     }, {});
 
     // Calculate average weight percentage for tiebreakers
-    // Formula per rules: sum of (catch weight / DSR record) for each trophy fish, divided by count
+    // Formula per rules: sum of each trophy's weight/record % (fixed 70%/55% for release
+    // species per the Offshore Division's rule), divided by trophy count.
     const anglerStats = Object.entries(anglerScores).map(([anglerId, stats]) => {
-      const sumOfPcts = stats.trophies.reduce(
-        (sum, t) => sum + (t.recordWeight > 0 ? t.weight / t.recordWeight : 0),
-        0
-      );
-      const avgWeightPercentage = stats.trophies.length > 0 ? (sumOfPcts / stats.trophies.length) * 100 : 0;
+      const sumOfPcts = stats.trophies.reduce((sum, t) => {
+        const contribution = t.isBillfish
+          ? (t.trophyPlace === 1 ? 70 : 55)
+          : (t.recordWeight > 0 ? (t.weight / t.recordWeight) * 100 : 0);
+        return sum + contribution;
+      }, 0);
+      const avgWeightPercentage = stats.trophies.length > 0 ? sumOfPcts / stats.trophies.length : 0;
 
       // Build a readable trophy summary for display
       const trophySummary = stats.trophies
@@ -134,6 +142,10 @@ exports.getDeepseaRoundupTopWomanAngler = async (req, res) => {
         .sort((a, b) => b.weight - a.weight)
         .map(t => {
           const placeStr = t.trophyPlace === 1 ? '1st' : '2nd';
+          if (t.isBillfish) {
+            const pct = t.trophyPlace === 1 ? '70.0' : '55.0';
+            return `${placeStr} ${t.species} (release, ${pct}% rec)`;
+          }
           const pct = t.recordWeight > 0 ? ((t.weight / t.recordWeight) * 100).toFixed(1) : '0.0';
           return `${placeStr} ${t.species} (${t.weight} lbs, ${pct}% rec)`;
         })

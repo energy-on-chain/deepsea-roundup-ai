@@ -502,9 +502,38 @@ export default {
         { field: 'lastCatch', headerName: 'Last Catch', width: 300, headerClassName: 'super-app-theme--header', headerAlign: 'center', align: 'center', isDateTime: true},
       ]
     },
+    {
+      title: "Offshore - Tarpon",
+      subtitle: "",
+      numPlaces: 5,
+      numTrophies: 2,
+      display: true,
+      url: "get_deepsea_roundup_billfish_species_winner",
+      inputs: [
+        {species: "Tarpon"}
+      ],
+      desktopColumns: [
+        { field: 'place', headerName: 'Place', flex: 1, headerClassName: 'super-app-theme--header', headerAlign: 'center', align: 'center', isDateTime: false},
+        { field: 'species', headerName: 'Species', flex: 1, headerClassName: 'super-app-theme--header', headerAlign: 'center', align: 'center', isDateTime: false},
+        { field: 'angler', headerName: 'Name', flex: 1, headerClassName: 'super-app-theme--header', headerAlign: 'center', align: 'center', isDateTime: false},
+        { field: 'hometown', headerName: 'Hometown', flex: 1, headerClassName: 'super-app-theme--header', headerAlign: 'center', align: 'center', isDateTime: false},
+        { field: 'boat', headerName: 'Boat', flex: 1, headerClassName: 'super-app-theme--header', headerAlign: 'center', align: 'center', isDateTime: false},
+        { field: 'points', headerName: 'Points', flex: 1, headerClassName: 'super-app-theme--header', headerAlign: 'center', align: 'center', isDateTime: false},
+        { field: 'lastCatch', headerName: 'Last Catch', flex: 2, headerClassName: 'super-app-theme--header', headerAlign: 'center', align: 'center', isDateTime: true},
+      ],
+      mobileColumns: [
+        { field: 'place', headerName: 'Place', width: 150, headerClassName: 'super-app-theme--header', headerAlign: 'center', align: 'center', isDateTime: false},
+        { field: 'species', headerName: 'Species', width: 150, headerClassName: 'super-app-theme--header', headerAlign: 'center', align: 'center', isDateTime: false},
+        { field: 'angler', headerName: 'Name', width: 150, headerClassName: 'super-app-theme--header', headerAlign: 'center', align: 'center', isDateTime: false},
+        { field: 'hometown', headerName: 'Hometown', width: 150, headerClassName: 'super-app-theme--header', headerAlign: 'center', align: 'center', isDateTime: false},
+        { field: 'boat', headerName: 'Boat', width: 150, headerClassName: 'super-app-theme--header', headerAlign: 'center', align: 'center', isDateTime: false},
+        { field: 'points', headerName: 'Points', width: 150, headerClassName: 'super-app-theme--header', headerAlign: 'center', align: 'center', isDateTime: false},
+        { field: 'lastCatch', headerName: 'Last Catch', width: 300, headerClassName: 'super-app-theme--header', headerAlign: 'center', align: 'center', isDateTime: true},
+      ]
+    },
 
-    { 
-      title: "Offshore - Barracuda (Adult)", 
+    {
+      title: "Offshore - Barracuda (Adult)",
       subtitle: "",
       numPlaces: 5, 
       numTrophies: 2, 
