@@ -291,7 +291,9 @@ export default {
       display: false,
       url: "get_deepsea_roundup_top_woman_angler",
       inputs: [
-        {billfishSpeciesList: ["Blue Marlin", "White Marlin", "Sailfish", "Tarpon"]},
+        // Per rules: TWA is scored on Offshore/Bay-Surf weigh-ins only -- billfish (release,
+        // no weigh-in) does not count, so this stays an empty array rather than a species list.
+        {billfishSpeciesList: []},
         {meatfishSpeciesList: [
           "Barracuda",
           "Blackfin Tuna",
