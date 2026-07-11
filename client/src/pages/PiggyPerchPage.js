@@ -30,7 +30,7 @@ const PIGGY_PERCH_RESULTS_2026 = [
   {
     title: 'Girls Under 6',
     rows: [
-      { id: 1, category: 'Most Fish', winner: 'Chaning Pearson', result: '20 fish' },
+      { id: 1, category: 'Most Fish', winner: 'Cambria Self', result: '24 fish' },
       { id: 2, category: 'Largest Fish', winner: 'Carson Blanchard', result: '7 1/8' },
       { id: 3, category: 'Smallest Fish', winner: 'Emberleigh Mathisen', result: '3 7/8' },
     ],
