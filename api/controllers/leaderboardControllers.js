@@ -114,19 +114,27 @@ exports.getDeepseaRoundupTopWomanAngler = async (req, res) => {
         trophyPlace: winner.points === 2 ? 1 : 2,
         weight: winner.weight,
         recordWeight: winner.recordWeight,
+        // billfishSpeciesList is currently always [] for TWA (billfish have no weigh-in, so
+        // they don't count per the rules), but this branch matches the Offshore Grand
+        // Champion's tiebreaker exactly in case that ever changes -- release species use a
+        // fixed 70%/55% contribution, never a weight/record ratio (they're never weighed).
+        isBillfish: billfishSpeciesList.includes(winner.species),
       });
 
       return acc;
     }, {});
 
     // Calculate average weight percentage for tiebreakers
-    // Formula per rules: sum of (catch weight / DSR record) for each trophy fish, divided by count
+    // Formula per rules: sum of each trophy's weight/record % (fixed 70%/55% for release
+    // species per the Offshore Division's rule), divided by trophy count.
     const anglerStats = Object.entries(anglerScores).map(([anglerId, stats]) => {
-      const sumOfPcts = stats.trophies.reduce(
-        (sum, t) => sum + (t.recordWeight > 0 ? t.weight / t.recordWeight : 0),
-        0
-      );
-      const avgWeightPercentage = stats.trophies.length > 0 ? (sumOfPcts / stats.trophies.length) * 100 : 0;
+      const sumOfPcts = stats.trophies.reduce((sum, t) => {
+        const contribution = t.isBillfish
+          ? (t.trophyPlace === 1 ? 70 : 55)
+          : (t.recordWeight > 0 ? (t.weight / t.recordWeight) * 100 : 0);
+        return sum + contribution;
+      }, 0);
+      const avgWeightPercentage = stats.trophies.length > 0 ? sumOfPcts / stats.trophies.length : 0;
 
       // Build a readable trophy summary for display
       const trophySummary = stats.trophies
@@ -134,6 +142,10 @@ exports.getDeepseaRoundupTopWomanAngler = async (req, res) => {
         .sort((a, b) => b.weight - a.weight)
         .map(t => {
           const placeStr = t.trophyPlace === 1 ? '1st' : '2nd';
+          if (t.isBillfish) {
+            const pct = t.trophyPlace === 1 ? '70.0' : '55.0';
+            return `${placeStr} ${t.species} (release, ${pct}% rec)`;
+          }
           const pct = t.recordWeight > 0 ? ((t.weight / t.recordWeight) * 100).toFixed(1) : '0.0';
           return `${placeStr} ${t.species} (${t.weight} lbs, ${pct}% rec)`;
         })
@@ -505,7 +517,6 @@ exports.getDeepseaRoundupOffshoreGrandChampion = async (req, res) => {
     // same purpose as the Bay/Surf report's per-species weight columns.
     // Per rules: for release species (billfish), use fixed % (70% for 1st, 55% for 2nd).
     // For weight species: individual weight/record %, then average across all species.
-    const allSpecies = [...billfishSpeciesList, ...meatfishSpeciesList];
     const anglerStats = Object.entries(anglerScores).map(([anglerId, stats]) => {
       const speciesContributions = {};
       const sumOfPcts = stats.weights.reduce((sum, item) => {
@@ -539,13 +550,13 @@ exports.getDeepseaRoundupOffshoreGrandChampion = async (req, res) => {
     // Map results
     const result = sortedAnglers.slice(0, numPlaces).map((entry, index) => {
       const angler = anglers[entry.anglerId] || {};
-      // Spread each species' % contribution to the tiebreaker as its own top-level field --
-      // 0 where the angler didn't place 1st/2nd in that species.
-      const speciesFields = {};
-      for (const species of allSpecies) {
-        const pct = entry.speciesContributions[species];
-        speciesFields[species] = pct ? `${pct.toFixed(2)}%` : "—";
-      }
+      // Readable species-contribution summary instead of one column per species -- mirrors
+      // Top Woman Angler's "Trophies Won" column so ties stay explainable without needing
+      // 17+ mostly-empty columns.
+      const speciesContributionSummary = Object.entries(entry.speciesContributions)
+        .sort((a, b) => b[1] - a[1])
+        .map(([species, pct]) => `${species}: ${pct.toFixed(2)}%`)
+        .join(' | ');
       return {
         place: index + 1,
         angler: angler.anglerName || "Unknown",
@@ -554,7 +565,7 @@ exports.getDeepseaRoundupOffshoreGrandChampion = async (req, res) => {
         ageBracket: angler.ageBracket,
         hometown: angler.hometown,
         points: entry.points,
-        ...speciesFields,
+        speciesContributionSummary,
         tiebreaker: `${entry.avgWeightPercentage.toFixed(2)}%`,
       };
     });
@@ -631,11 +642,16 @@ exports.getDeepseaRoundupBaySurfGrandChampion = async (req, res) => {
     }
 
     // Build flat result array sorted by total weight
+    // Per rules, Champion and Runner-Up must each have the highest total weight of AT LEAST
+    // FOUR of the eligible species -- anglers with fewer than 4 species can still show up
+    // elsewhere on the leaderboard, but are not in contention for Grand Champion/Runner-Up.
+    const MIN_ELIGIBLE_SPECIES_FOR_CHAMPION = 4;
     const byWeight = Object.entries(anglerData)
       .map(([anglerId, data]) => {
         const totalWeight = Object.values(data.speciesWeights).reduce((s, w) => s + w, 0);
         return { anglerId, totalWeight, hasFirstPlaceFish: data.hasFirstPlaceFish, speciesWeights: data.speciesWeights };
       })
+      .filter((a) => Object.keys(a.speciesWeights).length >= MIN_ELIGIBLE_SPECIES_FOR_CHAMPION)
       .sort((a, b) => b.totalWeight - a.totalWeight);
 
     // Champion (1st place) MUST have a first place fish — pull the highest-weight such angler to the top.

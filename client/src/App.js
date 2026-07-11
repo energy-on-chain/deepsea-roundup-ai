@@ -18,6 +18,7 @@ import LeaderboardPage from "./pages/LeaderboardPage";
 import LeaderboardSlideshowPage from "./pages/LeaderboardSlideshowPage";
 import PotsPage from "./pages/PotsPage";
 import HistoricalRecordsPage from "./pages/HistoricalRecordsPage";
+import PiggyPerchPage from "./pages/PiggyPerchPage";
 // import AuctionPage from "./pages/AuctionPage";
 
 import './App.css';
@@ -61,6 +62,7 @@ function App() {
         { path: 'leaderboard-slideshow', element: <LeaderboardSlideshowPage /> },
         { path: 'pots', element: <PotsPage /> },
         { path: 'records', element: <HistoricalRecordsPage /> },
+        { path: 'piggy-perch', element: <PiggyPerchPage /> },
         // { path: 'auction', element: <AuctionPage /> },
       ],
     },

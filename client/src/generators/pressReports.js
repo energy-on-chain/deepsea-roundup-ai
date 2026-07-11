@@ -6,7 +6,10 @@
  * Shows all category leaders (all divisions and species) at the current moment.
  * Deliberately EXCLUDES overall tournament champions (Grand Champion Adult/Junior,
  * Top Woman Angler, Bay/Surf Grand Champion) because those standings are not
- * finalized until Sunday morning.
+ * finalized until Sunday morning. Also excludes the Billfish/Tarpon Release
+ * Divisions and the individual Blue Marlin/White Marlin/Sailfish/Tarpon angler
+ * trophies -- these still appear in the full leaderboard/announcer reports, just
+ * not this in-progress one.
  *
  * Compact format: multiple categories per page, minimal whitespace.
  */
@@ -16,28 +19,24 @@ import 'jspdf-autotable';
 import dayjs from 'dayjs';
 import { loadConfigForYear } from '../config/masterConfig';
 
-// Categories to exclude from the press report (not finalized until tournament end)
+// Categories to exclude from the press report (not finalized until tournament end,
+// or release-division results not meant for this report at all)
 const EXCLUDE_FROM_PRESS = [
   'grand champion',
   'top woman angler',
+  'billfish release division',
+  'tarpon release division',
+  'offshore - blue marlin',
+  'offshore - white marlin',
+  'offshore - sailfish',
+  'offshore - tarpon',
 ];
 
 const isExcluded = (title) =>
   EXCLUDE_FROM_PRESS.some(keyword => title.toLowerCase().includes(keyword));
 
-// Billfish/release categories aren't split by age bracket -- they get their own
-// section rather than being silently folded into Offshore Adult.
-const BILLFISH_TITLES = new Set([
-  'Billfish Release Division',
-  'Tarpon Release Division',
-  'Offshore - Blue Marlin',
-  'Offshore - White Marlin',
-  'Offshore - Sailfish',
-]);
-
 // Report sections, in print order. Each always starts on a fresh page.
 const SECTIONS = [
-  'Billfish / Release Division',
   'Offshore — Adult',
   'Offshore — Junior',
   'Bay/Surf — Adult',
@@ -46,11 +45,8 @@ const SECTIONS = [
   'Flyfishing',
 ];
 
-// Classifies a leaderboard category into one of SECTIONS, using its title (for the
-// age-agnostic billfish categories) or its division/ageBracket inputs (everything else).
+// Classifies a leaderboard category into one of SECTIONS, using its division/ageBracket inputs.
 const classifySection = (item) => {
-  if (BILLFISH_TITLES.has(item.title)) return 'Billfish / Release Division';
-
   const inputs = (item.inputs || []).reduce((acc, inp) => ({ ...acc, ...inp }), {});
   const { division, ageBracket } = inputs;
 

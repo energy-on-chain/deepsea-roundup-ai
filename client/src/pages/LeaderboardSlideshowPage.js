@@ -61,9 +61,12 @@ function LeaderboardSlideshowPage() {
         setIsPreliminaryResults(false);
       }
 
-      // Champions (display: false) are hidden from the public leaderboard until CONFIG_LEADERBOARD_SHOW_CHAMPIONS_PUBLICLY is set to true.
+      // Champions (display: false) are hidden from the public leaderboard until CONFIG_LEADERBOARD_SHOW_CHAMPIONS_PUBLICLY
+      // is set to true. neverPublic categories (Billfish/Tarpon Release Division + individual
+      // billfish angler trophies) stay hidden regardless of that flag -- they're not meant to
+      // ever appear on the public site, only in the full leaderboard/announcer reports.
       const publicCategories = CONFIG_LEADERBOARD_CATEGORIES.filter(
-        item => item.display !== false || CONFIG_LEADERBOARD_SHOW_CHAMPIONS_PUBLICLY
+        item => !item.neverPublic && (item.display !== false || CONFIG_LEADERBOARD_SHOW_CHAMPIONS_PUBLICLY)
       );
 
       const queries = publicCategories.map((item) => {

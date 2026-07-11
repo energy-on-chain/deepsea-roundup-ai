@@ -31,6 +31,7 @@ export default {
     Slideshow: "/2026/leaderboard-slideshow",
     Pots: "/2026/pots",
     Records: "/2026/records",
+    "Piggy Perch": "/2026/piggy-perch",
     // "Auction": "/2026/auction",
   },
   CONFIG_GENERAL_ADMIN_LINK_OBJECT: {
