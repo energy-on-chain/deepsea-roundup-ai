@@ -29,6 +29,7 @@ const isExcluded = (title) =>
 // section rather than being silently folded into Offshore Adult.
 const BILLFISH_TITLES = new Set([
   'Billfish Release Division',
+  'Tarpon Release Division',
   'Offshore - Blue Marlin',
   'Offshore - White Marlin',
   'Offshore - Sailfish',

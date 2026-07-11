@@ -272,6 +272,104 @@ exports.getDeepseaRoundupBillfishReleaseChampion = async (req, res) => {
   }
 };
 
+/**
+ * Tarpon Release Division -- a boat competition, entirely separate from the
+ * Billfish Release Division and its scoring (per tournament rules). 1 point per
+ * fish released; Junior-caught Tarpon count toward the boat's total.
+ */
+exports.getDeepseaRoundupTarponReleaseChampion = async (req, res) => {
+  console.log("Fetching Tarpon Release Champion...");
+  try {
+    const year = req.params.year;
+    const db = getFirestore();
+
+    const catchYear = req.body.catchYear;
+    const anglerYear = req.body.anglerYear;
+    const speciesList = ["Tarpon"];
+    const pointSystem = { "Tarpon": 1 };
+    const numPlaces = req.body.numPlaces || 2;
+
+    // Fetch all anglers to associate `boatName` with `anglerId`
+    const anglersSnapshot = await db.collection(anglerYear).get();
+    const anglers = anglersSnapshot.docs.reduce((acc, doc) => {
+      acc[doc.id] = doc.data();
+      return acc;
+    }, {});
+
+    // Helper function: Fetch catches and calculate points by boat (only for eligible tarpon)
+    const getBoatPoints = async () => {
+      const catchesSnapshot = await db.collection(catchYear).get();
+      const catches = catchesSnapshot.docs
+        .map((doc) => doc.data())
+        .filter((catchItem) => speciesList.includes(catchItem.species)); // Filter for Tarpon only
+
+      // Group catches by `boatName`
+      const boatPoints = catches.reduce((acc, catchItem) => {
+        const angler = anglers[catchItem.anglerId] || {};
+        const boatName = angler.boatName || "Unknown";
+        const species = catchItem.species;
+        const points = pointSystem[species] || 0;
+
+        if (!acc[boatName]) {
+          acc[boatName] = {
+            totalPoints: 0,
+            speciesPoints: {},
+            latestRelease: null,
+          };
+        }
+
+        // Add points for this catch
+        acc[boatName].totalPoints += points;
+        acc[boatName].speciesPoints[species] =
+          (acc[boatName].speciesPoints[species] || 0) + points;
+
+        // Track the latest release time for tiebreakers
+        const releaseTime = catchItem.dateTime;
+        if (!acc[boatName].latestRelease || dayjs(releaseTime).isAfter(dayjs(acc[boatName].latestRelease))) {
+          acc[boatName].latestRelease = releaseTime;
+        }
+
+        return acc;
+      }, {});
+
+      return boatPoints;
+    };
+
+    // Calculate boat points and sort results
+    const boatPoints = await getBoatPoints();
+
+    // Sort boats by total points and latest release time (earliest wins in case of tie)
+    const sortedBoats = Object.entries(boatPoints)
+      .map(([boatName, stats]) => ({
+        boatName,
+        totalPoints: stats.totalPoints,
+        speciesPoints: stats.speciesPoints,
+        latestRelease: stats.latestRelease,
+      }))
+      .sort((a, b) => {
+        if (b.totalPoints === a.totalPoints) {
+          return dayjs(a.latestRelease).diff(dayjs(b.latestRelease)); // Earliest latest release wins
+        }
+        return b.totalPoints - a.totalPoints;
+      });
+
+    // Map results for output
+    const result = sortedBoats.slice(0, numPlaces).map((entry, index) => ({
+      place: index + 1,
+      boatName: entry.boatName,
+      totalPoints: entry.totalPoints,
+      speciesPoints: entry.speciesPoints,
+      latestRelease: entry.latestRelease ? dayjs(entry.latestRelease).format("YYYY-MM-DD HH:mm:ss") : "N/A",
+    }));
+
+    // Return result
+    res.status(200).json(result);
+  } catch (error) {
+    console.error("Error fetching Tarpon Release Champion:", error);
+    res.status(500).json({ error: error.message });
+  }
+};
+
 exports.getDeepseaRoundupOffshoreGrandChampion = async (req, res) => {
   console.log("Fetching deepsea roundup offshore grand champion...");
   try {
