@@ -47,6 +47,18 @@ export default {
       photoIsRequired: false,
     },
     {
+      species: "Tarpon",
+      division: "Offshore",
+      type: "Billfish",
+      points: 1,
+      pointsCalculationMethod: "flat",
+      weightIsRequired: false,
+      lengthIsRequired: false,
+      girthIsRequired: false,
+      dateTimeIsRequired: true,
+      photoIsRequired: false,
+    },
+    {
       species: "Barracuda",
       division: "Offshore",
       type: "Meatfish",

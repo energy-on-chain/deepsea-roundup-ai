@@ -384,7 +384,29 @@ export default {
         { field: 'totalPoints', headerName: 'Total Points', width: 150, headerClassName: 'super-app-theme--header', headerAlign: 'center', align: 'center', isDateTime: false },
         { field: 'latestRelease', headerName: 'Last Catch', width: 150, headerClassName: 'super-app-theme--header', headerAlign: 'center', align: 'center', isDateTime: true },
       ],
-    },    
+    },
+    {
+      title: "Tarpon Release Division",
+      subtitle: "Boat competition -- entirely separate from Billfish Release Division scoring",
+      numPlaces: 5,
+      numTrophies: 2,
+      display: false,
+      url: "get_deepsea_roundup_tarpon_release_champion",
+      inputs: [
+      ],
+      desktopColumns: [
+        { field: 'place', headerName: 'Place', flex: 1, headerClassName: 'super-app-theme--header', headerAlign: 'center', align: 'center', isDateTime: false },
+        { field: 'boatName', headerName: 'Boat Name', flex: 1, headerClassName: 'super-app-theme--header', headerAlign: 'center', align: 'center', isDateTime: false },
+        { field: 'totalPoints', headerName: 'Total Points', flex: 1, headerClassName: 'super-app-theme--header', headerAlign: 'center', align: 'center', isDateTime: false },
+        { field: 'latestRelease', headerName: 'Last Catch', flex: 1, headerClassName: 'super-app-theme--header', headerAlign: 'center', align: 'center', isDateTime: true },
+      ],
+      mobileColumns: [
+        { field: 'place', headerName: 'Place', width: 150, headerClassName: 'super-app-theme--header', headerAlign: 'center', align: 'center', isDateTime: false },
+        { field: 'boatName', headerName: 'Boat Name', width: 150, headerClassName: 'super-app-theme--header', headerAlign: 'center', align: 'center', isDateTime: false },
+        { field: 'totalPoints', headerName: 'Total Points', width: 150, headerClassName: 'super-app-theme--header', headerAlign: 'center', align: 'center', isDateTime: false },
+        { field: 'latestRelease', headerName: 'Last Catch', width: 150, headerClassName: 'super-app-theme--header', headerAlign: 'center', align: 'center', isDateTime: true },
+      ],
+    },
 
     // Offshore division
     { 
