@@ -461,6 +461,7 @@ exports.getDeepseaRoundupOffshoreGrandChampion = async (req, res) => {
         points: entry.points,
         species,
         place: sortedAnglers.indexOf(entry) + 1,
+        releaseTime: entry.lastCatch,
       }));
     };
 
@@ -515,6 +516,7 @@ exports.getDeepseaRoundupOffshoreGrandChampion = async (req, res) => {
         recordWeight: historicalRecordCatchData[winner.species] || 1,
         isBillfish: billfishSpeciesList.includes(winner.species),
         place: winner.place,
+        releaseTime: winner.releaseTime,
       });
 
       return acc;
@@ -539,20 +541,33 @@ exports.getDeepseaRoundupOffshoreGrandChampion = async (req, res) => {
       }, 0);
       const avgWeightPercentage = stats.weights.length > 0 ? sumOfPcts / stats.weights.length : 0;
 
+      // Tertiary tiebreaker (points AND avgWeightPercentage both tied): earliest release
+      // time among this angler's billfish/Tarpon trophies, extending the same "earliest
+      // release time" principle the rules already use to break per-species billfish/Tarpon
+      // ties -- not itself written into the rules for the overall Grand Champion tie, but
+      // there's no other criterion specified once the percentage also matches exactly.
+      const releaseTimes = stats.weights.filter((w) => w.isBillfish && w.releaseTime).map((w) => w.releaseTime);
+      const earliestReleaseTime = releaseTimes.length > 0
+        ? releaseTimes.reduce((earliest, t) => (dayjs(t).isBefore(dayjs(earliest)) ? t : earliest))
+        : null;
+
       return {
         anglerId,
         points: stats.points,
         avgWeightPercentage,
         speciesContributions,
+        earliestReleaseTime,
       };
     });
 
-    // Sort anglers by points, then by average weight percentage for ties
+    // Sort anglers by points, then average weight percentage, then earliest release time
     const sortedAnglers = anglerStats.sort((a, b) => {
-      if (b.points === a.points) {
-        return b.avgWeightPercentage - a.avgWeightPercentage;
+      if (b.points !== a.points) return b.points - a.points;
+      if (b.avgWeightPercentage !== a.avgWeightPercentage) return b.avgWeightPercentage - a.avgWeightPercentage;
+      if (a.earliestReleaseTime && b.earliestReleaseTime) {
+        return dayjs(a.earliestReleaseTime).diff(dayjs(b.earliestReleaseTime));
       }
-      return b.points - a.points;
+      return 0;
     });
 
     // Map results
