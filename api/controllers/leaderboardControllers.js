@@ -725,21 +725,37 @@ exports.getDeepseaRoundupBillfishSpeciesWinner = async (req, res, externalYear =
     // Use externalYear if provided, otherwise fallback to req.params.year
     const year = externalYear || req.params.year;
     const db = getFirestore();
-    const { catchYear, anglerYear, species, numPlaces, isReport } = req.body;
+    const { catchYear, anglerYear, species, ageBracket, division, numPlaces, isReport } = req.body;
+
+    // Fetch angler data up front so catches can be filtered by age bracket (and division,
+    // matching the meatfish species winner's pattern) before scoring -- these are individual
+    // angler trophies, and Junior anglers are not eligible for Open (Adult) Division awards.
+    // ageBracket/division are optional here (older years' configs don't pass them) -- when
+    // omitted, no filtering is applied on that dimension, preserving prior behavior.
+    const anglersSnapshot = await db.collection(anglerYear).get();
+    const anglers = anglersSnapshot.docs.reduce((acc, doc) => {
+      acc[doc.id] = doc.data();
+      return acc;
+    }, {});
+    const validAnglerIds = Object.entries(anglers)
+      .filter(([, angler]) => (!ageBracket || angler.ageBracket === ageBracket) && (!division || angler.division === division))
+      .map(([id]) => id);
 
     // Fetch all catches with the specified species
     const catchesSnapshot = await db.collection(catchYear)
       .where("species", "==", species)
       .get();
 
-    const catches = catchesSnapshot.docs.map(doc => {
-      const data = doc.data();
-      return {
-        ...data,
-        id: doc.id,
-        points: parseFloat(data.points), // Convert points from string to float
-      };
-    });
+    const catches = catchesSnapshot.docs
+      .map(doc => {
+        const data = doc.data();
+        return {
+          ...data,
+          id: doc.id,
+          points: parseFloat(data.points), // Convert points from string to float
+        };
+      })
+      .filter(catchItem => validAnglerIds.includes(catchItem.anglerId));
 
     // Sum points for each angler and track their most recent catch time
     const anglerStats = catches.reduce((acc, catchItem) => {
@@ -765,13 +781,6 @@ exports.getDeepseaRoundupBillfishSpeciesWinner = async (req, res, externalYear =
         }
         return b.points - a.points;
       });
-
-    // Fetch angler details
-    const anglersSnapshot = await db.collection(anglerYear).get();
-    const anglers = anglersSnapshot.docs.reduce((acc, doc) => {
-      acc[doc.id] = doc.data();
-      return acc;
-    }, {});
 
     const result = sortedAnglers.slice(0, numPlaces).map((entry, index) => {
       const angler = anglers[entry.anglerId] || {};

@@ -28,8 +28,13 @@ const isChampion = (title) =>
 // Billfish/Tarpon results each get their own page(s), separate from offshore meatfish.
 // Billfish group = boat division + the three individual angler trophies it covers.
 // Tarpon group = boat division + its one individual angler trophy.
-const BILLFISH_GROUP_TITLES = ['Billfish Release Division', 'Offshore - Blue Marlin', 'Offshore - White Marlin', 'Offshore - Sailfish'];
-const TARPON_GROUP_TITLES = ['Tarpon Release Division', 'Offshore - Tarpon'];
+const BILLFISH_GROUP_TITLES = [
+  'Billfish Release Division',
+  'Offshore - Blue Marlin (Adult)', 'Offshore - Blue Marlin (Junior)',
+  'Offshore - White Marlin (Adult)', 'Offshore - White Marlin (Junior)',
+  'Offshore - Sailfish (Adult)', 'Offshore - Sailfish (Junior)',
+];
+const TARPON_GROUP_TITLES = ['Tarpon Release Division', 'Offshore - Tarpon (Adult)', 'Offshore - Tarpon (Junior)'];
 const GROUPED_TITLES = new Set([...BILLFISH_GROUP_TITLES, ...TARPON_GROUP_TITLES]);
 
 const getForcedGroup = (title) => {
