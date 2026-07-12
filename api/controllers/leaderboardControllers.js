@@ -41,7 +41,15 @@ exports.getDeepseaRoundupTopWomanAngler = async (req, res) => {
       return res.status(200).json({ result: [], message: "No valid anglers found." });
     }
 
-    // Helper function: Fetch winners for a given species in a division
+    // All Adult anglers (any gender) -- used to determine the REAL 1st/2nd place trophy for
+    // each species, same pool the actual species trophy and Offshore Grand Champion use.
+    // TWA points only accrue to a woman if she actually holds one of those two real places;
+    // being the best-ranked woman isn't enough on its own if she doesn't hold the trophy.
+    const adultAnglerIds = Object.keys(anglers).filter((id) => anglers[id].ageBracket === "Adult");
+
+    // Helper function: Fetch the real 1st/2nd place winners for a given species in a
+    // division -- any gender, and the same angler CAN hold both places (matches how
+    // Offshore Grand Champion and the individual species-trophy functions already work).
     const getDivisionSpeciesWinners = async (species, division) => {
       const catchesSnapshot = await db
         .collection(catchYear)
@@ -56,16 +64,10 @@ exports.getDeepseaRoundupTopWomanAngler = async (req, res) => {
           points: parseFloat(doc.data().points || 0),
           weight: parseFloat(doc.data().weight || 0),
         }))
-        .filter((catchItem) => validAnglerIds.includes(catchItem.anglerId) && catchItem.weight > 0)
+        .filter((catchItem) => adultAnglerIds.includes(catchItem.anglerId) && catchItem.weight > 0)
         .sort((a, b) => b.weight - a.weight);
 
-      // One angler cannot hold both 1st and 2nd place in the same species — keep best catch per angler
-      const seen = new Set();
-      return catches.filter((c) => {
-        if (seen.has(c.anglerId)) return false;
-        seen.add(c.anglerId);
-        return true;
-      });
+      return catches.slice(0, 2);
     };
 
     // Meatfish species that are Bay/Surf only — all others in meatfishSpeciesList use Offshore
@@ -83,14 +85,20 @@ exports.getDeepseaRoundupTopWomanAngler = async (req, res) => {
           : (BAY_SURF_ONLY_SPECIES.has(species) ? "Bay/Surf" : "Offshore");
         const speciesCatches = await getDivisionSpeciesWinners(species, effectiveDivision);
 
+        // Real place (index) is captured before filtering to women, so a woman who holds
+        // the real 2nd place still correctly gets 1 point, not 2, even though she may be
+        // the only woman among the two real winners.
         winners.push(
-          ...speciesCatches.slice(0, 2).map((catchItem, index) => ({
-            anglerId: catchItem.anglerId,
-            points: index === 0 ? 2 : 1, // 2 points for 1st place, 1 point for 2nd
-            weight: catchItem.weight,
-            species,
-            recordWeight: historicalRecordCatchData[species] || 1,
-          }))
+          ...speciesCatches
+            .map((catchItem, index) => ({ catchItem, index }))
+            .filter(({ catchItem }) => validAnglerIds.includes(catchItem.anglerId))
+            .map(({ catchItem, index }) => ({
+              anglerId: catchItem.anglerId,
+              points: index === 0 ? 2 : 1, // 2 points for 1st place, 1 point for 2nd
+              weight: catchItem.weight,
+              species,
+              recordWeight: historicalRecordCatchData[species] || 1,
+            }))
         );
       }
 
