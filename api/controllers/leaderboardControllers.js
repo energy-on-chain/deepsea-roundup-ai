@@ -850,6 +850,7 @@ exports.getDeepseaRoundupMeatfishSpeciesWinner = async (req, res, externalYear =
         species: species,
         angler: angler.anglerName,
         hometown: angler.hometown,
+        boat: angler.boatName || 'Unknown',
         weight: catchItem.weight,
         length: catchItem.length,
         girth: catchItem.girth,
