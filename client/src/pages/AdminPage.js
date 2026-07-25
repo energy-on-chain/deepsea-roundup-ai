@@ -449,11 +449,32 @@ function AdminPage() {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ tableName: tableName })
         });
+
+        // Catch documents don't carry the angler's ageBracket themselves (only anglerName is
+        // denormalized onto them at catch time) -- fetch anglers alongside and join on anglerId
+        // so the Catches tab can show Adult/Junior.
+        let ageBracketByAnglerId = {};
+        if (tab === "Catches") {
+          const anglersRes = await fetch(`${apiUrl}/api/${year}/admin_get_database_list`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ tableName: loadedConfig.generalConfig.CONFIG_GENERAL_FIREBASE_TEAMS_TABLE_NAME })
+          });
+          const anglersResult = await anglersRes.json();
+          ageBracketByAnglerId = Object.entries(anglersResult).reduce((acc, [anglerId, angler]) => {
+            acc[anglerId] = angler.ageBracket;
+            return acc;
+          }, {});
+        }
+
         await res.json().then(result => {
           Object.keys(result).forEach((elementKey, i) => {
             let tempObject = { ...result[elementKey] };
             tempObject["id"] = i;
             tempObject[idName] = elementKey;
+            if (tab === "Catches") {
+              tempObject["ageBracket"] = ageBracketByAnglerId[tempObject.anglerId] || "";
+            }
             tempRows.push(tempObject);
             console.log('List of fetched data for tab:');
             console.log(tempObject);
@@ -675,7 +696,13 @@ function AdminPage() {
               <TabContext value={tabName}>
 
                 <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
-                  <TabList variant="scrollable" onChange={handleTabChange} aria-label="lab API tabs example">
+                  <TabList
+                    variant="scrollable"
+                    scrollButtons
+                    allowScrollButtonsMobile
+                    onChange={handleTabChange}
+                    aria-label="lab API tabs example"
+                  >
                     {config?.adminConfig?.CONFIG_ADMIN_DEFAULT_TAB_NAME_LIST.map((tab) => (
                       <Tab key={tab} label={tab} value={tab} />
                     ))}
@@ -1416,9 +1443,12 @@ function PotWinnersTab({ year, apiUrl, config, matches }) {
 }
 
 /**
- * ChampionsTab — admin-only view of champion category standings (categories with display: false).
- * These are hidden from the public leaderboard until CONFIG_LEADERBOARD_SHOW_CHAMPIONS_PUBLICLY
- * is set to true in the year's leaderboardConfig.js (then redeploy).
+ * ChampionsTab — admin-only view of every leaderboard category that isn't already visible on
+ * the public site: champion categories (display: false, hidden until
+ * CONFIG_LEADERBOARD_SHOW_CHAMPIONS_PUBLICLY is set to true and redeployed) AND neverPublic
+ * categories (Billfish/Tarpon Release Division, individual billfish/Tarpon angler trophies --
+ * these never go public regardless of that toggle). Species categories aren't included here
+ * since those are already visible on the public leaderboard.
  */
 function ChampionsTab({ year, apiUrl, config, matches }) {
   const [results, setResults] = useState([]);
@@ -1432,8 +1462,11 @@ function ChampionsTab({ year, apiUrl, config, matches }) {
       leaderboardConfig: { CONFIG_LEADERBOARD_CATEGORIES },
     } = config;
 
-    // Champion categories are those explicitly marked display: false
-    const championCategories = CONFIG_LEADERBOARD_CATEGORIES.filter(item => item.display === false);
+    // Anything not already visible on the public site: explicit champions (display: false)
+    // plus neverPublic categories (billfish/release results).
+    const championCategories = CONFIG_LEADERBOARD_CATEGORIES.filter(
+      item => item.display === false || item.neverPublic === true
+    );
 
     const queries = championCategories.map(item => {
       const bodyData = {
@@ -1476,8 +1509,11 @@ function ChampionsTab({ year, apiUrl, config, matches }) {
   return (
     <TabPanel key="Champions" value="Champions">
       <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-        Champion standings are visible here only. To publish them on the public leaderboard after the tournament,
-        set <code>CONFIG_LEADERBOARD_SHOW_CHAMPIONS_PUBLICLY: true</code> in the year's leaderboardConfig.js and redeploy.
+        Everything below is admin-only -- champion standings, Billfish/Tarpon Release Division, and individual
+        billfish/Tarpon angler trophies. Species leaderboards aren't shown here since they're already public.
+        To publish champion standings on the public leaderboard after the tournament,
+        set <code>CONFIG_LEADERBOARD_SHOW_CHAMPIONS_PUBLICLY: true</code> in the year's leaderboardConfig.js and redeploy
+        (Billfish/Tarpon Release and individual billfish trophies stay admin-only regardless, via <code>neverPublic</code>).
       </Typography>
       {!loaded && <CircularProgress />}
       {loaded && results.map(result => (
