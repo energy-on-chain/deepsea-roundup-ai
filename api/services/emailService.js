@@ -1,46 +1,41 @@
 /**
- * Email notification service (SMTP via nodemailer).
+ * Email notification service (Resend).
  *
- * Configured entirely via env vars -- SMTP_HOST / SMTP_PORT / SMTP_USER / SMTP_PASS /
- * SMTP_FROM. If those aren't set, sendMail logs a warning and no-ops instead of throwing,
- * so a registration flow never breaks just because email isn't configured yet.
+ * Configured entirely via env vars -- RESEND_API_KEY / EMAIL_FROM. If RESEND_API_KEY isn't
+ * set, sendMail logs a warning and no-ops instead of throwing, so a registration flow never
+ * breaks just because email isn't configured yet.
  */
 
-const nodemailer = require('nodemailer');
+const { Resend } = require('resend');
 
-let _transporter = null;
+let _resend = null;
 
-function getTransporter() {
-  if (_transporter) return _transporter;
-
-  const { SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASS } = process.env;
-  if (!SMTP_HOST || !SMTP_USER || !SMTP_PASS) return null;
-
-  const port = parseInt(SMTP_PORT || '587', 10);
-  _transporter = nodemailer.createTransport({
-    host: SMTP_HOST,
-    port,
-    secure: port === 465, // true for 465 (implicit TLS), false for 587/others (STARTTLS)
-    auth: { user: SMTP_USER, pass: SMTP_PASS },
-  });
-  return _transporter;
+function getClient() {
+  if (_resend) return _resend;
+  if (!process.env.RESEND_API_KEY) return null;
+  _resend = new Resend(process.env.RESEND_API_KEY);
+  return _resend;
 }
 
 async function sendMail({ to, subject, text, html }) {
-  const transporter = getTransporter();
-  if (!transporter) {
-    console.warn(`Email not sent (SMTP not configured): "${subject}" to ${to}`);
+  const resend = getClient();
+  if (!resend) {
+    console.warn(`Email not sent (RESEND_API_KEY not configured): "${subject}" to ${to}`);
     return;
   }
 
   try {
-    await transporter.sendMail({
-      from: process.env.SMTP_FROM || process.env.SMTP_USER,
+    const { error } = await resend.emails.send({
+      from: process.env.EMAIL_FROM,
       to,
       subject,
       text,
       html,
     });
+    if (error) {
+      console.error(`Error sending email ("${subject}" to ${to}):`, error);
+      return;
+    }
     console.log(`Email sent: "${subject}" to ${to}`);
   } catch (error) {
     console.error(`Error sending email ("${subject}" to ${to}):`, error);
@@ -74,7 +69,7 @@ async function notifySponsorRegistered(sponsorData) {
   ].join('\n');
 
   await sendMail({
-    to: SPONSOR_NOTIFICATION_RECIPIENTS.join(', '),
+    to: SPONSOR_NOTIFICATION_RECIPIENTS,
     subject,
     text,
   });
