@@ -32,7 +32,9 @@ function Footer() {
             <h4 style={{ color: stylingConfig.CONFIG_STYLING_FOOTER_TEXT_COLOR, borderColor: stylingConfig.CONFIG_STYLING_FOOTER_SECTION_DIVIDER_COLOR }} className="bottomLine">CONTACT US</h4>
             <div style={{ color: stylingConfig.CONFIG_STYLING_FOOTER_TEXT_COLOR, borderColor: stylingConfig.CONFIG_STYLING_FOOTER_SECTION_DIVIDER_COLOR }} className="contactInfo">
               <p>{footerConfig.CONFIG_GENERAL_CONTACT_FOOTER_LOCATION_STRING}</p>
-              <p>{footerConfig.CONFIG_GENERAL_CONTACT_FOOTER_PHONE_STRING}</p>
+              {footerConfig.CONFIG_GENERAL_CONTACT_FOOTER_PHONE_STRING && (
+                <p>{footerConfig.CONFIG_GENERAL_CONTACT_FOOTER_PHONE_STRING}</p>
+              )}
               <p>{footerConfig.CONFIG_GENERAL_CONTACT_FOOTER_EMAIL_STRING}</p>
             </div>
             <div style={{ color: stylingConfig.CONFIG_STYLING_FOOTER_TEXT_COLOR }} className="copyrightInfoContainer">
