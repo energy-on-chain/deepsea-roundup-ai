@@ -72,38 +72,49 @@ exports.getDeepseaRoundupTopWomanAngler = async (req, res) => {
 
     // Meatfish species that are Bay/Surf only — all others in meatfishSpeciesList use Offshore.
     // Sheepshead has no Offshore category at all, so it belongs here unambiguously. Bonito
-    // (Little Tunny) and Spanish Mackerel are intentionally left out -- they're dual-division
-    // species (valid in both Bay/Surf and Offshore) and picking just one here would silently
-    // miss real trophies caught in the other division; see the tournament rules before changing.
+    // (Little Tunny) is Offshore-only per the tournament rules (not part of the Bay-Surf
+    // eligible list), so it correctly falls through to Offshore below without being listed here.
     const BAY_SURF_ONLY_SPECIES = new Set([
       'Black Drum', 'Flounder', 'Gafftop', 'Pompano', 'Redfish', 'Speckled Trout', 'Sheepshead',
     ]);
+
+    // Species genuinely eligible in BOTH divisions per the rules, scored as two separate trophy
+    // opportunities ("Spanish Mackerel entered in the Offshore Category are considered
+    // separately... from those entered in the Bay Surf Category"). Each such species is checked
+    // in both divisions below rather than picked into a single bucket.
+    const DUAL_DIVISION_SPECIES = new Set(['Spanish Mackerel']);
 
     // Helper function: Calculate angler stats for a list of species
     // Pass division=null to auto-select per species (meatfish); pass a string to fix division (billfish)
     const calculateDivisionStats = async (speciesList, division) => {
       const winners = [];
       for (const species of speciesList) {
-        const effectiveDivision = division !== null
-          ? division
-          : (BAY_SURF_ONLY_SPECIES.has(species) ? "Bay/Surf" : "Offshore");
-        const speciesCatches = await getDivisionSpeciesWinners(species, effectiveDivision);
+        const divisionsToCheck = division !== null
+          ? [division]
+          : DUAL_DIVISION_SPECIES.has(species)
+            ? ['Bay/Surf', 'Offshore']
+            : [BAY_SURF_ONLY_SPECIES.has(species) ? 'Bay/Surf' : 'Offshore'];
 
-        // Real place (index) is captured before filtering to women, so a woman who holds
-        // the real 2nd place still correctly gets 1 point, not 2, even though she may be
-        // the only woman among the two real winners.
-        winners.push(
-          ...speciesCatches
-            .map((catchItem, index) => ({ catchItem, index }))
-            .filter(({ catchItem }) => validAnglerIds.includes(catchItem.anglerId))
-            .map(({ catchItem, index }) => ({
-              anglerId: catchItem.anglerId,
-              points: index === 0 ? 2 : 1, // 2 points for 1st place, 1 point for 2nd
-              weight: catchItem.weight,
-              species,
-              recordWeight: historicalRecordCatchData[species] || 1,
-            }))
-        );
+        for (const effectiveDivision of divisionsToCheck) {
+          const speciesCatches = await getDivisionSpeciesWinners(species, effectiveDivision);
+
+          // Real place (index) is captured before filtering to women, so a woman who holds
+          // the real 2nd place still correctly gets 1 point, not 2, even though she may be
+          // the only woman among the two real winners.
+          winners.push(
+            ...speciesCatches
+              .map((catchItem, index) => ({ catchItem, index }))
+              .filter(({ catchItem }) => validAnglerIds.includes(catchItem.anglerId))
+              .map(({ catchItem, index }) => ({
+                anglerId: catchItem.anglerId,
+                points: index === 0 ? 2 : 1, // 2 points for 1st place, 1 point for 2nd
+                weight: catchItem.weight,
+                species,
+                division: effectiveDivision,
+                recordWeight: historicalRecordCatchData[species] || 1,
+              }))
+          );
+        }
       }
 
       return winners;
@@ -123,6 +134,7 @@ exports.getDeepseaRoundupTopWomanAngler = async (req, res) => {
       acc[winner.anglerId].points += winner.points;
       acc[winner.anglerId].trophies.push({
         species: winner.species,
+        division: winner.division,
         trophyPlace: winner.points === 2 ? 1 : 2,
         weight: winner.weight,
         recordWeight: winner.recordWeight,
@@ -154,12 +166,15 @@ exports.getDeepseaRoundupTopWomanAngler = async (req, res) => {
         .sort((a, b) => b.weight - a.weight)
         .map(t => {
           const placeStr = t.trophyPlace === 1 ? '1st' : '2nd';
+          // Dual-division species (currently just Spanish Mackerel) get their division called
+          // out, since an angler could otherwise hold two same-species trophies at once.
+          const speciesLabel = DUAL_DIVISION_SPECIES.has(t.species) ? `${t.species} (${t.division})` : t.species;
           if (t.isBillfish) {
             const pct = t.trophyPlace === 1 ? '70.0' : '55.0';
-            return `${placeStr} ${t.species} (release, ${pct}% rec)`;
+            return `${placeStr} ${speciesLabel} (release, ${pct}% rec)`;
           }
           const pct = t.recordWeight > 0 ? ((t.weight / t.recordWeight) * 100).toFixed(1) : '0.0';
-          return `${placeStr} ${t.species} (${t.weight} lbs, ${pct}% rec)`;
+          return `${placeStr} ${speciesLabel} (${t.weight} lbs, ${pct}% rec)`;
         })
         .join(' | ');
 
