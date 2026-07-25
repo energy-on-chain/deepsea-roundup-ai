@@ -2,6 +2,7 @@ const multer = require('multer');
 const { v4: uuidv4 } = require('uuid');
 const { getFirestore } = require("firebase-admin/firestore");
 const { getStorage } = require("firebase-admin/storage");
+const emailService = require('../services/emailService');
 
 // Helpers
 const upload = multer({
@@ -92,6 +93,7 @@ const handleSponsorCase = async (metadata, paymentEventData) => {
     const docRef = await db.collection(`sponsors${year}`).add(sponsorData);
     await docRef.update({ sponsorId: docRef.id });
     console.log(`Sponsor ${sponsorName} added with ID: ${docRef.id}`);
+    await emailService.notifySponsorRegistered(sponsorData);
   } catch (error) {
     console.error(`Error adding sponsor ${sponsorName}:`, error);
   }
