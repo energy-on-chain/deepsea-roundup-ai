@@ -393,6 +393,7 @@ exports.getDeepseaRoundupBaySurfPotWinner = async (req, res) => {
       return {
         place: index + 1,
         angler: angler.anglerName || entrantAnglerNamesRaw[normalizeName(angler.anglerName)] || 'Unknown',
+        team: angler.boatName || '',
         weight: catchItem.weight,
         length: catchItem.length,
         payout: calculatePayout(index + 1, payoutStructure, netPotAmount),
