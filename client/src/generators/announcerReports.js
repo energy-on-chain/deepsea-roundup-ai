@@ -13,7 +13,7 @@
 
 import jsPDF from 'jspdf';
 import 'jspdf-autotable';
-import dayjs from 'dayjs';
+import { formatCentral, centralTime } from '../utils/dateTime';
 import { loadConfigForYear } from '../config/masterConfig';
 
 // Keywords that identify overall tournament champion categories — printed first
@@ -71,7 +71,7 @@ const PAGE_WIDTH = 297;
 
 const formatCellValue = (col, value) => {
   if (!value && value !== 0) return '—';
-  if (col.isDateTime) return dayjs(value).format('M/D/YY h:mm A');
+  if (col.isDateTime) return formatCentral(value, 'M/D/YY h:mm A');
   if (col.isCurrency) {
     return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', minimumFractionDigits: 0 }).format(value);
   }
@@ -97,7 +97,7 @@ export const generateAnnouncerReport = async (year, tournamentName) => {
     ? import.meta.env.VITE_SERVER_URL_PRODUCTION
     : import.meta.env.VITE_SERVER_URL_STAGING;
 
-  const generatedAt = dayjs().format('MMMM D, YYYY h:mm A');
+  const generatedAt = formatCentral(undefined, 'MMMM D, YYYY h:mm A [CST]');
   const doc = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
   const pageHeight = doc.internal.pageSize.getHeight();
 
@@ -264,5 +264,5 @@ export const generateAnnouncerReport = async (year, tournamentName) => {
   }
 
   addPageNumbers(doc);
-  doc.save(`${year}_DSR_Final_Announcer_Report_${dayjs().format('YYYY-MM-DD_HHmm')}.pdf`);
+  doc.save(`${year}_DSR_Final_Announcer_Report_${centralTime().format('YYYY-MM-DD_HHmm')}.pdf`);
 };

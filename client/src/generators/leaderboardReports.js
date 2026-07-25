@@ -1,6 +1,6 @@
 import jsPDF from 'jspdf';
 import 'jspdf-autotable';
-import dayjs from 'dayjs';
+import { formatCentral } from '../utils/dateTime';
 import { loadConfigForYear } from '../config/masterConfig';
 
 const addPageNumbers = (doc) => {
@@ -23,7 +23,7 @@ const formatCurrency = (value) => {
 
 export const generateLeaderboardReport = async (year, tournamentName) => {
   const doc = new jsPDF('landscape');
-  const currentDate = dayjs().format('MMMM D, YYYY h:mm A [CST]');
+  const currentDate = formatCentral(undefined, 'MMMM D, YYYY h:mm A [CST]');
   const REPORT_NUM_PLACES = 20; // Set fixed number of places for report
 
   // Load dynamic config for the specific year
@@ -97,7 +97,7 @@ export const generateLeaderboardReport = async (year, tournamentName) => {
         .map(row => category.desktopColumns.map(col => {
           // Handle special formatting for certain field types
           if (col.field === 'dateTime' || col.isDateTime) {
-            return dayjs(row[col.field]).format('MM/DD/YYYY HH:mm:ss');
+            return formatCentral(row[col.field], 'MM/DD/YYYY HH:mm:ss');
           }
           return row[col.field]?.toString() || 'N/A';
         }));

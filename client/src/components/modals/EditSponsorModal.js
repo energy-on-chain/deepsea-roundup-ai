@@ -17,7 +17,7 @@ import UploadIcon from '@mui/icons-material/CloudUpload';
 import 'react-toastify/dist/ReactToastify.css';
 import { toast } from 'react-toastify';
 import { loadConfigForYear } from '../../config/masterConfig';
-import dayjs from 'dayjs';
+import { formatCentral } from '../../utils/dateTime';
 
 const EditSponsorModal = (props) => {
   console.log('editInfo:', props.editInfo)
@@ -53,7 +53,7 @@ const EditSponsorModal = (props) => {
     tableProperties?.forEach((property) => {
       if (property.isDateTime) {
         initialData[property.field] = editInfo[property.field]
-          ? dayjs(editInfo[property.field]).format('h:mm A, MMMM D, YYYY')
+          ? formatCentral(editInfo[property.field], 'h:mm A, MMMM D, YYYY')
           : '';
       } else {
         initialData[property.field] = editInfo[property.field] || '';

@@ -1,14 +1,9 @@
 const { getFirestore } = require("firebase-admin/firestore");
-const dayjs = require('dayjs');
-const advancedFormat = require('dayjs/plugin/advancedFormat');
-const utc = require('dayjs/plugin/utc');  // To handle UTC timezones, if necessary
-
-dayjs.extend(advancedFormat); // Extend dayjs with advancedFormat for ordinal dates
-dayjs.extend(utc);
+const { centralTime, formatCentral } = require('../utils/dateTime');
 
 // Centralized timestamp formatting function
 const formatTimestamp = (timestamp) => {
-  return dayjs(timestamp).format('hh:mm A, MMM Do YYYY');
+  return formatCentral(timestamp, 'hh:mm A, MMM Do YYYY');
 };
 
 exports.getTypeCountDataForNewsfeedTable = async (req, res) => {
@@ -178,8 +173,8 @@ exports.getDateCountDataForNewsfeedTable = async (req, res) => {
 
     snapshot.forEach(doc => {
       const data = doc.data();
-      const formattedDate = dayjs(data.dateTime).format('MMMM Do, YYYY'); // Format date as "September 9th, 2024"
-      const dateKey = dayjs(data.dateTime); // Keep track of original date for sorting
+      const formattedDate = formatCentral(data.dateTime, 'MMMM Do, YYYY'); // Format date as "September 9th, 2024"
+      const dateKey = centralTime(data.dateTime); // Keep track of original date for sorting
       if (dateCount[formattedDate]) {
         dateCount[formattedDate].count += 1;
       } else {

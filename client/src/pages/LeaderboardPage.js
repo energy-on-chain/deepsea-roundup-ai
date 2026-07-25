@@ -8,7 +8,7 @@ import CircularProgress from '@mui/material/CircularProgress';
 import { useTheme } from "@mui/material/styles";
 import useMediaQuery from "@mui/material/useMediaQuery";
 import dayjs from 'dayjs';
-import advancedFormat from 'dayjs/plugin/advancedFormat';
+import { centralTime } from '../utils/dateTime';
 
 import ToggleSliderButton from '../components/buttons/ToggleSliderButton';
 import Carousel from '../components/Carousel';
@@ -16,8 +16,6 @@ import LeaderboardResultTable from '../components/tables/LeaderboardResultTable'
 import './BasePage.css';
 
 import { loadConfigForYear } from '../config/masterConfig';
-
-dayjs.extend(advancedFormat);
 
 function LeaderboardPage() {
   // General state
@@ -186,8 +184,8 @@ function LeaderboardPage() {
   };
 
   const generateTimestamp = () => {
-    const now = dayjs();
-    const timeString = now.format('hh:mm A');
+    const now = centralTime();
+    const timeString = now.format('hh:mm A [CST]');
     const dateString = now.format('DD MMMM YYYY');
     return `Preliminary leaderboard as of: ${timeString} on ${dateString}.`;
   };
