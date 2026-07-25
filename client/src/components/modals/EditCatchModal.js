@@ -23,6 +23,8 @@ const EditCatchModal = (props) => {
   const [catchPhoto, setCatchPhoto] = useState();
   const [catchPhotoUrl, setCatchPhotoUrl] = useState();
   const [speciesConfig, setSpeciesConfig] = useState(null);
+  const [speciesRecords, setSpeciesRecords] = useState({});
+  const [isRecordBreaking, setIsRecordBreaking] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);  // New state to track submission
   const [isSubmitted, setIsSubmitted] = useState(false);    // New state to track successful submission
 
@@ -46,6 +48,19 @@ const EditCatchModal = (props) => {
           (species) => species.species === props.editInfo.species
         );
         setSpeciesConfig(speciesMatch || {});
+
+        const apiUrl = import.meta.env.VITE_NODE_ENV === "staging"
+          ? import.meta.env.VITE_SERVER_URL_STAGING
+          : import.meta.env.VITE_SERVER_URL_PRODUCTION;
+        fetch(`${apiUrl}/api/${year}/get_species_records`)
+          .then(res => res.json())
+          .then(data => {
+            setSpeciesRecords(data || {});
+            const record = (data || {})[props.editInfo.species];
+            const weightValue = parseFloat(props.editInfo.weight);
+            setIsRecordBreaking(record !== undefined && !isNaN(weightValue) && weightValue > record);
+          })
+          .catch(e => console.error(e));
       }
     };
 
@@ -166,6 +181,13 @@ const EditCatchModal = (props) => {
     const weightValue = parseFloat(event.target.value);
     setWeight(weightValue);
     setPoints(handlePointsCalculation(weightValue));
+
+    const record = speciesRecords[props.editInfo.species];
+    const isNowRecordBreaking = record !== undefined && !isNaN(weightValue) && weightValue > record;
+    if (isNowRecordBreaking && !isRecordBreaking) {
+      toast.success(`🏆 New potential tournament record! ${props.editInfo.species} at ${weightValue} lbs beats the current record of ${record} lbs.`);
+    }
+    setIsRecordBreaking(isNowRecordBreaking);
   };
 
   return (
@@ -201,6 +223,13 @@ const EditCatchModal = (props) => {
                 onChange={handleWeightSelection}
                 InputProps={{ inputProps: { step: 0.1, min: 0.1 } }}
               />
+            }
+
+            {/* Record-breaking notice */}
+            {isRecordBreaking &&
+              <InputLabel style={{ color: '#b8860b', fontWeight: 'bold' }}>
+                🏆 New potential tournament record! Current record for {props.editInfo.species}: {speciesRecords[props.editInfo.species]} lbs.
+              </InputLabel>
             }
 
             {/* Length */}

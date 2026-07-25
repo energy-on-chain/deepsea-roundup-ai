@@ -32,6 +32,7 @@ const AddCatchModal = (props) => {
   const [registeredAnglerNameList, setRegisteredAnglerNameList] = useState([]);
   const [catchData, setCatchData] = useState([]);
   const [speciesList, setSpeciesList] = useState([]);
+  const [speciesRecords, setSpeciesRecords] = useState({});
   const [isSubmitting, setIsSubmitting] = useState(false);  // New state to track submission
   const [isSubmitted, setIsSubmitted] = useState(false);    // New state to track successful submission
 
@@ -89,6 +90,11 @@ const AddCatchModal = (props) => {
       .catch(e => {
         console.error(e.error);
       })
+
+      fetch(`${apiUrl}/api/${year}/get_species_records`)
+        .then(res => res.json())
+        .then(data => setSpeciesRecords(data || {}))
+        .catch(e => console.error(e));
 
     } catch (error) {
       console.log('There was an error loading the data for the addCatchModal: ' + error);
@@ -187,6 +193,7 @@ const AddCatchModal = (props) => {
               weight: 0,
               points: 0,
               catchPhoto: null,
+              isRecordBreaking: false,
             });
           }
           return [...prev, ...newSlots];
@@ -260,6 +267,22 @@ const AddCatchModal = (props) => {
     }
   };  
 
+  // Checks the entry's current species/weight against the stored tournament record, updates the
+  // entry's isRecordBreaking flag for the inline banner, and pops a toast the moment it first
+  // crosses the record (not on every keystroke while typing a multi-digit weight).
+  const checkRecordBreaking = (entry) => {
+    const record = speciesRecords[entry.species];
+    const weight = parseFloat(entry.weight);
+    const wasRecordBreaking = entry.isRecordBreaking;
+    const isNowRecordBreaking = record !== undefined && !isNaN(weight) && weight > record;
+
+    if (isNowRecordBreaking && !wasRecordBreaking) {
+      toast.success(`🏆 New potential tournament record! ${entry.species} at ${weight} lbs beats the current record of ${record} lbs.`);
+    }
+
+    return isNowRecordBreaking;
+  };
+
   const handleSpeciesSelection = (event, value, index) => {
     if (!value) return;
 
@@ -284,10 +307,11 @@ const AddCatchModal = (props) => {
         dateTimeIsRequired: speciesInfo.dateTimeIsRequired,
         photoIsRequired: speciesInfo.photoIsRequired,
       };
+      newCatchData[index].isRecordBreaking = checkRecordBreaking(newCatchData[index]);
     }
-  
+
     setCatchData(newCatchData);
-  };  
+  };
   
   const handleDateTimeSelection = (index, event) => {
     let newCatchData = [...catchData];
@@ -299,12 +323,14 @@ const AddCatchModal = (props) => {
   const handleWeightSelection = (index, event) => {
     let newCatchData = [...catchData];
     newCatchData[index].weight = event.target.value;
-  
+
     // Recalculate points if the method involves weight
     if (newCatchData[index].pointsCalculationMethod.includes("weight")) {
       newCatchData[index].points = handlePointsCalculation(newCatchData[index]);
     }
-  
+
+    newCatchData[index].isRecordBreaking = checkRecordBreaking(newCatchData[index]);
+
     setCatchData(newCatchData);
   };
   
@@ -458,6 +484,18 @@ const AddCatchModal = (props) => {
                   </Grid>
                 }
 
+          </Grid>
+        }
+        <br/>
+
+        {/* Record-breaking notice */}
+        { catchData[index].isRecordBreaking &&
+          <Grid container spacing={2}>
+            <Grid item xs={12}>
+              <InputLabel style={{ color: '#b8860b', fontWeight: 'bold' }}>
+                🏆 New potential tournament record! Current record for {catchData[index].species}: {speciesRecords[catchData[index].species]} lbs.
+              </InputLabel>
+            </Grid>
           </Grid>
         }
         <br/>
