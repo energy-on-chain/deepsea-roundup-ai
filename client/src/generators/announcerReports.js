@@ -1,95 +1,65 @@
 /**
  * announcerReports.js
  *
- * End-of-tournament announcer report.
+ * End-of-tournament announcer script.
  *
- * Shows ALL category results including overall tournament champions (Grand Champion
- * Adult/Junior, Top Woman Angler, Bay/Surf Grand Champion). Intended for use after
- * final standings are confirmed Sunday morning.
+ * A read-aloud script, not a data table: Part 1 runs species-by-species through every
+ * division's individual trophies (runner-up announced before the winner, and every
+ * "official" species gets a card even with no qualifying catch); Part 2 runs through the
+ * overall tournament champions (Grand Champions, Top Woman Angler, Billfish/Tarpon Release).
  *
- * Compact format: multiple categories per page, minimal whitespace.
- * Overall champions are printed first (prominent), then all category-by-category results.
+ * Intended for use after final standings are confirmed Sunday morning.
  */
 
 import jsPDF from 'jspdf';
-import 'jspdf-autotable';
 import { formatCentral, centralTime } from '../utils/dateTime';
 import { loadConfigForYear } from '../config/masterConfig';
 
-// Keywords that identify overall tournament champion categories — printed first
-const CHAMPION_KEYWORDS = [
-  'grand champion',
-  'top woman angler',
+const REPORT_NUM_PLACES = 2; // Runner-up + winner only
+
+// Bay/Surf's 7 "official" species -- always get a card, even if empty.
+const BAY_SURF_SPECIES = ['Black Drum', 'Spanish Mackerel', 'Flounder', 'Redfish', 'Gafftop', 'Speckled Trout', 'Sheepshead'];
+// Bay/Surf also tracks Bonito and Pompano, but they're not part of the traditional 7 --
+// only get a card if someone actually weighed one in.
+const BAY_SURF_BONUS_SPECIES = ['Bonito (Little Tunny)', 'Pompano'];
+
+// Offshore's 17 official species, in announcer read order.
+const OFFSHORE_SPECIES = [
+  'Barracuda', 'Swordfish', 'Blackfin Tuna', 'Red Snapper', 'Blue Marlin', 'Sailfish',
+  'Bonito (Little Tunny)', 'Blacktip/Spinner Shark', 'Dolphin (Dorado Mahi)', 'Tarpon',
+  'Jack Crevalle (Jackfish)', 'Wahoo', 'King Mackerel (Kingfish)', 'White Marlin',
+  'Ling (Cobia)', 'Yellowfin Tuna', 'Spanish Mackerel',
+];
+// These four are scored on release points, not weight -- no weigh-in, so no weight/length/girth
+// and no tournament-record comparison.
+const RELEASE_SPECIES = new Set(['Blue Marlin', 'White Marlin', 'Sailfish', 'Tarpon']);
+
+const FLY_KAYAK_SPECIES = ['Redfish', 'Speckled Trout'];
+
+// Part 1 division order. Fly Fishing and Kayak have no Junior split -- adults and juniors
+// compete together in those two divisions.
+const DIVISION_SECTIONS = [
+  { label: 'Junior Bay/Surf Division', division: 'Bay/Surf', ageBracket: 'Junior', species: BAY_SURF_SPECIES, bonusSpecies: BAY_SURF_BONUS_SPECIES },
+  { label: 'Adult Bay/Surf Division', division: 'Bay/Surf', ageBracket: 'Adult', species: BAY_SURF_SPECIES, bonusSpecies: BAY_SURF_BONUS_SPECIES },
+  { label: 'Fly Fishing Division', division: 'Flyfishing', ageBracket: 'Adult', species: FLY_KAYAK_SPECIES },
+  { label: 'Kayak Division', division: 'Kayak', ageBracket: 'Adult', species: FLY_KAYAK_SPECIES },
+  { label: 'Junior Offshore Division', division: 'Offshore', ageBracket: 'Junior', species: OFFSHORE_SPECIES },
+  { label: 'Adult Offshore Division', division: 'Offshore', ageBracket: 'Adult', species: OFFSHORE_SPECIES },
 ];
 
-const isChampion = (title) =>
-  CHAMPION_KEYWORDS.some(keyword => title.toLowerCase().includes(keyword));
+const titleFor = (division, species, ageBracket) => `${division} - ${species} (${ageBracket})`;
 
-// Billfish/Tarpon results each get their own page(s), separate from offshore meatfish.
-// Billfish group = boat division + the three individual angler trophies it covers.
-// Tarpon group = boat division + its one individual angler trophy.
-const BILLFISH_GROUP_TITLES = [
+// Part 2 champion order -- each produces a Runner-Up + Champion numbered pair, except
+// Top Woman Angler which is announced as a single combined card.
+const CHAMPION_TITLES = [
+  'Bay/Surf Division Grand Champion (Junior)',
+  'Bay/Surf Division Grand Champion (Adult)',
+  'Top Woman Angler',
+  'Tarpon Release Division',
   'Billfish Release Division',
-  'Offshore - Blue Marlin (Adult)', 'Offshore - Blue Marlin (Junior)',
-  'Offshore - White Marlin (Adult)', 'Offshore - White Marlin (Junior)',
-  'Offshore - Sailfish (Adult)', 'Offshore - Sailfish (Junior)',
+  'Offshore Division Grand Champion (Junior)',
+  'Offshore Division Grand Champion (Adult)',
 ];
-const TARPON_GROUP_TITLES = ['Tarpon Release Division', 'Offshore - Tarpon (Adult)', 'Offshore - Tarpon (Junior)'];
-const GROUPED_TITLES = new Set([...BILLFISH_GROUP_TITLES, ...TARPON_GROUP_TITLES]);
-
-const getForcedGroup = (title) => {
-  if (BILLFISH_GROUP_TITLES.includes(title)) return 'billfish';
-  if (TARPON_GROUP_TITLES.includes(title)) return 'tarpon';
-  return null;
-};
-
-// The billfish/tarpon categories aren't contiguous in CONFIG_LEADERBOARD_CATEGORIES order
-// (Tarpon Release Division sits between Billfish Release Division and the individual Blue
-// Marlin/White Marlin/Sailfish trophies), so group membership alone isn't enough to force
-// clean page breaks -- pull each group's categories together first, in the position the
-// first one of either group originally occupied.
-const reorderGroups = (list) => {
-  const firstGroupedIdx = list.findIndex(c => GROUPED_TITLES.has(c.title));
-  if (firstGroupedIdx === -1) return list;
-
-  const ungrouped = list.filter(c => !GROUPED_TITLES.has(c.title));
-  const billfishItems = BILLFISH_GROUP_TITLES.map(t => list.find(c => c.title === t)).filter(Boolean);
-  const tarponItems = TARPON_GROUP_TITLES.map(t => list.find(c => c.title === t)).filter(Boolean);
-  const insertAt = list.slice(0, firstGroupedIdx).filter(c => !GROUPED_TITLES.has(c.title)).length;
-
-  return [
-    ...ungrouped.slice(0, insertAt),
-    ...billfishItems,
-    ...tarponItems,
-    ...ungrouped.slice(insertAt),
-  ];
-};
-
-const REPORT_NUM_PLACES = 2; // Announcer report: top 2 only (1st and 2nd place)
-const PAGE_MARGIN = 10;
-const PAGE_WIDTH = 297;
-
-const formatCellValue = (col, value) => {
-  if (!value && value !== 0) return '—';
-  if (col.isDateTime) return formatCentral(value, 'M/D/YY h:mm A');
-  if (col.isCurrency) {
-    return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', minimumFractionDigits: 0 }).format(value);
-  }
-  return value.toString();
-};
-
-const addPageNumbers = (doc) => {
-  const pageCount = doc.internal.getNumberOfPages();
-  for (let i = 1; i <= pageCount; i++) {
-    doc.setPage(i);
-    doc.setFontSize(8);
-    doc.setTextColor(120);
-    const w = doc.internal.pageSize.getWidth();
-    const h = doc.internal.pageSize.getHeight();
-    doc.text(`Page ${i} of ${pageCount}`, w - PAGE_MARGIN, h - 5, { align: 'right' });
-    doc.setTextColor(0);
-  }
-};
 
 export const generateAnnouncerReport = async (year, tournamentName) => {
   const config = await loadConfigForYear(year);
@@ -98,171 +68,268 @@ export const generateAnnouncerReport = async (year, tournamentName) => {
     : import.meta.env.VITE_SERVER_URL_STAGING;
 
   const generatedAt = formatCentral(undefined, 'MMMM D, YYYY h:mm A [CST]');
-  const doc = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
-  const pageHeight = doc.internal.pageSize.getHeight();
-
-  // Build queries for ALL categories — intentionally ignores display flag so grand champions always appear.
   const allCategories = config.leaderboardConfig.CONFIG_LEADERBOARD_CATEGORIES;
+  const categoryByTitle = Object.fromEntries(allCategories.map(c => [c.title, c]));
 
-  const queries = allCategories.map(item => ({
-    title: item.title,
-    subtitle: item.subtitle || '',
-    url: item.url,
-    desktopColumns: item.desktopColumns,
-    isChampion: isChampion(item.title),
-    body: JSON.stringify({
+  // Every species card needed for Part 1, in read order.
+  const speciesCardSpecs = [];
+  DIVISION_SECTIONS.forEach(section => {
+    section.species.forEach(species => speciesCardSpecs.push({ section, species, isBonus: false }));
+    (section.bonusSpecies || []).forEach(species => speciesCardSpecs.push({ section, species, isBonus: true }));
+  });
+
+  const allTitles = [
+    ...speciesCardSpecs.map(spec => titleFor(spec.section.division, spec.species, spec.section.ageBracket)),
+    ...CHAMPION_TITLES,
+  ];
+
+  const fetchResultsForTitle = async (title) => {
+    const item = categoryByTitle[title];
+    if (!item) return { title, rows: [] };
+    const body = JSON.stringify({
       catchYear: config.generalConfig.CONFIG_GENERAL_FIREBASE_CATCHES_TABLE_NAME,
       anglerYear: config.generalConfig.CONFIG_GENERAL_FIREBASE_TEAMS_TABLE_NAME,
       numPlaces: REPORT_NUM_PLACES,
       isReport: true,
       ...(item.inputs ? item.inputs.reduce((acc, inp) => ({ ...acc, ...inp }), {}) : {}),
-    }),
-  }));
-
-  const rawResults = await Promise.all(
-    queries.map(q =>
-      fetch(`${apiUrl}/api/${year}/${q.url}`, {
+    });
+    try {
+      const res = await fetch(`${apiUrl}/api/${year}/${item.url}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: q.body,
-      })
-        .then(r => r.json())
-        .then(data => ({
-          title: q.title,
-          subtitle: q.subtitle,
-          desktopColumns: q.desktopColumns,
-          isChampion: q.isChampion,
-          rows: Array.isArray(data) ? data : Object.values(data),
-        }))
-        .catch(() => ({
-          title: q.title,
-          subtitle: q.subtitle,
-          desktopColumns: q.desktopColumns,
-          isChampion: q.isChampion,
-          rows: [],
-        }))
-    )
-  );
-
-  // Champions first, then other categories (billfish/tarpon regrouped so each gets its own page)
-  const champions = rawResults.filter(r => r.isChampion);
-  const others = reorderGroups(rawResults.filter(r => !r.isChampion));
-  const results = [...champions, ...others];
-
-  // --- Page header helper ---
-  const drawPageHeader = (isFirstPage = false) => {
-    if (isFirstPage) {
-      doc.setFontSize(10);
-      doc.setFont('helvetica', 'normal');
-      doc.setTextColor(2, 19, 62);
-      doc.text('End-of-Tournament Final Results — Announcer Report', PAGE_MARGIN, 10);
-      doc.setFontSize(8);
-      doc.setTextColor(80);
-      doc.text(`Generated: ${generatedAt}`, PAGE_MARGIN, 16);
-      doc.setTextColor(0);
-      doc.line(PAGE_MARGIN, 18, PAGE_WIDTH - PAGE_MARGIN, 18);
-      return 21;
-    } else {
-      doc.setFontSize(9);
-      doc.setFont('helvetica', 'bold');
-      doc.setTextColor(2, 19, 62);
-      doc.text(
-        `${tournamentName || year + ' Deepsea Roundup'} — Final Results (cont.)`,
-        PAGE_MARGIN, 8
-      );
-      doc.setTextColor(0);
-      doc.line(PAGE_MARGIN, 10, PAGE_WIDTH - PAGE_MARGIN, 10);
-      return 13;
+        body,
+      });
+      const data = await res.json();
+      return { title, rows: Array.isArray(data) ? data : Object.values(data) };
+    } catch {
+      return { title, rows: [] };
     }
   };
 
-  let cursorY = drawPageHeader(true);
-  let isFirst = true;
-  // Tracks the page a header was last actually drawn on, so autoTable's didDrawPage
-  // (which fires once per page a table touches, INCLUDING the page it starts on) never
-  // redraws a header on top of one already drawn manually for that same page.
-  let lastHeaderPage = doc.internal.getCurrentPageInfo().pageNumber;
-  // Tracks the billfish/tarpon group (if any) the previous category belonged to, so a
-  // fresh page is forced whenever that group changes -- entering a group, leaving one, or
-  // switching from one group to the other.
-  let previousGroup = null;
+  const [resultsList, speciesRecords] = await Promise.all([
+    Promise.all(allTitles.map(fetchResultsForTitle)),
+    fetch(`${apiUrl}/api/${year}/get_species_records`).then(r => r.json()).catch(() => ({})),
+  ]);
+  const resultsByTitle = Object.fromEntries(resultsList.map(r => [r.title, r.rows]));
 
-  for (const category of results) {
-    if (category.rows.length === 0) continue;
+  // --- PDF layout ---
+  const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'letter' });
+  const PAGE_W = doc.internal.pageSize.getWidth();
+  const PAGE_H = doc.internal.pageSize.getHeight();
+  const MARGIN = 15;
+  const CONTENT_W = PAGE_W - MARGIN * 2;
+  let cursorY = MARGIN;
+  const recordBreakingNotes = [];
 
-    const label = category.title + (category.subtitle ? ` — ${category.subtitle}` : '');
-    const tableColumns = category.desktopColumns.map(c => c.headerName);
-    const tableRows = category.rows.slice(0, REPORT_NUM_PLACES).map(row =>
-      category.desktopColumns.map(col => formatCellValue(col, row[col.field]))
-    );
-
-    const thisGroup = getForcedGroup(category.title);
-    const forceGroupPageBreak = thisGroup !== previousGroup;
-    previousGroup = thisGroup;
-
-    const estimatedHeight = 8 + tableRows.length * 6 + 4;
-    if (!isFirst && (forceGroupPageBreak || cursorY + estimatedHeight > pageHeight - 12)) {
+  const ensureSpace = (needed) => {
+    if (cursorY + needed > PAGE_H - MARGIN) {
       doc.addPage();
-      cursorY = drawPageHeader(false);
-      lastHeaderPage = doc.internal.getCurrentPageInfo().pageNumber;
+      cursorY = MARGIN;
     }
-    isFirst = false;
+  };
 
-    // Champion categories get a highlighted label
-    if (category.isChampion) {
-      doc.setFillColor(2, 19, 62);
-      doc.rect(PAGE_MARGIN, cursorY - 0.5, PAGE_WIDTH - PAGE_MARGIN * 2, 5.5, 'F');
-      doc.setFontSize(9);
-      doc.setFont('helvetica', 'bold');
-      doc.setTextColor(255, 255, 255);
-      doc.text(`★  ${label}`, PAGE_MARGIN + 2, cursorY + 3.5);
-      doc.setTextColor(0);
-    } else {
-      doc.setFontSize(9);
-      doc.setFont('helvetica', 'bold');
-      doc.setTextColor(2, 19, 62);
-      doc.text(label, PAGE_MARGIN, cursorY + 3);
-      doc.setTextColor(0);
-    }
-
-    cursorY += 6;
-
-    doc.autoTable({
-      startY: cursorY,
-      head: [tableColumns],
-      body: tableRows,
-      theme: 'striped',
-      styles: {
-        fontSize: 8,
-        cellPadding: 1.5,
-        overflow: 'linebreak',
-        halign: 'center',
-        valign: 'middle',
-        lineColor: [200, 200, 200],
-        lineWidth: 0.1,
-      },
-      headStyles: {
-        fillColor: category.isChampion ? [180, 140, 0] : [2, 19, 62],
-        textColor: [255, 255, 255],
-        fontSize: 8,
-        fontStyle: 'bold',
-        halign: 'center',
-        cellPadding: 1.5,
-      },
-      margin: { left: PAGE_MARGIN, right: PAGE_MARGIN },
-      tableWidth: 'auto',
-      didDrawPage: () => {
-        const currentPage = doc.internal.getCurrentPageInfo().pageNumber;
-        if (currentPage !== lastHeaderPage) {
-          drawPageHeader(false);
-          lastHeaderPage = currentPage;
-        }
-      },
+  const drawWrappedText = (text, opts = {}) => {
+    const { fontSize = 9.5, fontStyle = 'normal', color = [0, 0, 0], lineHeight = 4.5, indent = 0 } = opts;
+    doc.setFont('helvetica', fontStyle);
+    doc.setFontSize(fontSize);
+    doc.setTextColor(...color);
+    const lines = doc.splitTextToSize(text, CONTENT_W - indent);
+    ensureSpace(lines.length * lineHeight + 1);
+    lines.forEach(line => {
+      doc.text(line, MARGIN + indent, cursorY);
+      cursorY += lineHeight;
     });
+    doc.setTextColor(0);
+  };
 
-    cursorY = doc.lastAutoTable.finalY + 4;
+  const drawSectionHeader = (label) => {
+    ensureSpace(10);
+    doc.setFillColor(2, 19, 62);
+    doc.rect(MARGIN, cursorY - 4, CONTENT_W, 7, 'F');
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(11);
+    doc.setTextColor(255, 255, 255);
+    doc.text(label, MARGIN + 2, cursorY);
+    doc.setTextColor(0);
+    cursorY += 8;
+  };
+
+  // Formats one place's result line, appending a record-breaking note (and logging it for the
+  // end-of-report summary) when the species/weight combination beats the tournament record on
+  // file. Release species (Blue Marlin/White Marlin/Sailfish/Tarpon) have no weigh-in, so they
+  // never get a record check.
+  const formatEntryLine = (row, species, isRelease, includeBoat) => {
+    const boatPart = includeBoat && row.boat ? `, Boat: ${row.boat}` : '';
+    if (isRelease) {
+      return `${row.angler} (${row.hometown}${boatPart}) — ${row.points} release points`;
+    }
+    const weight = parseFloat(row.weight);
+    const record = speciesRecords[species];
+    let recordNote = '';
+    if (record !== undefined && !isNaN(weight) && weight > record) {
+      recordNote = `  ⭐ NEW RECORD (previous record: ${record} lbs)`;
+      recordBreakingNotes.push(`${species} — ${row.angler} (${row.hometown}): ${row.weight} lbs beats the previous record of ${record} lbs`);
+    }
+    return `${row.angler} (${row.hometown}${boatPart}) — ${row.weight} lbs, ${row.length} in / ${row.girth} in girth${recordNote}`;
+  };
+
+  const renderSpeciesCard = (section, species) => {
+    const title = titleFor(section.division, species, section.ageBracket);
+    const rows = resultsByTitle[title] || [];
+    const isRelease = section.division === 'Offshore' && RELEASE_SPECIES.has(species);
+    const includeBoat = section.division === 'Offshore';
+
+    ensureSpace(14);
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(10);
+    doc.setTextColor(2, 19, 62);
+    doc.text(species, MARGIN, cursorY);
+    doc.setTextColor(0);
+    cursorY += 5;
+
+    if (rows.length === 0) {
+      drawWrappedText('— No qualifying catch in this division —', { fontStyle: 'italic', color: [130, 130, 130], indent: 4 });
+    } else {
+      const winner = rows[0];
+      const runnerUp = rows[1];
+      if (runnerUp) {
+        drawWrappedText(`Runner-Up: ${formatEntryLine(runnerUp, species, isRelease, includeBoat)}`, { indent: 4 });
+      } else {
+        drawWrappedText('Runner-Up: — No second qualifying catch —', { fontStyle: 'italic', color: [130, 130, 130], indent: 4 });
+      }
+      drawWrappedText(`WINNER: ${formatEntryLine(winner, species, isRelease, includeBoat)}`, { fontStyle: 'bold', indent: 4 });
+    }
+    cursorY += 2;
+  };
+
+  // --- Header ---
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(16);
+  doc.setTextColor(2, 19, 62);
+  doc.text(tournamentName || `${year} Deepsea Roundup`, MARGIN, cursorY);
+  cursorY += 7;
+  doc.setFontSize(12);
+  doc.text('Announcer Script — Final Results', MARGIN, cursorY);
+  cursorY += 6;
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(9);
+  doc.setTextColor(80);
+  doc.text(`Generated: ${generatedAt}`, MARGIN, cursorY);
+  cursorY += 5;
+  doc.setTextColor(0);
+  doc.line(MARGIN, cursorY, PAGE_W - MARGIN, cursorY);
+  cursorY += 6;
+
+  drawWrappedText(
+    'Catches marked ⭐ NEW RECORD exceeded the tournament record on file when this report was generated. Per tournament rules, records are only updated after the event concludes, so all scoring above uses the pre-event record value regardless of any record-breaking catch flagged below.',
+    { fontSize: 8, fontStyle: 'italic', color: [140, 100, 0], lineHeight: 4 }
+  );
+  cursorY += 3;
+
+  drawWrappedText('PART 1 — DIVISION AWARDS', { fontSize: 13, fontStyle: 'bold', color: [2, 19, 62], lineHeight: 6 });
+  cursorY += 2;
+
+  // --- Part 1 ---
+  DIVISION_SECTIONS.forEach(section => {
+    drawSectionHeader(section.label);
+    section.species.forEach(species => renderSpeciesCard(section, species));
+    (section.bonusSpecies || []).forEach(species => {
+      const title = titleFor(section.division, species, section.ageBracket);
+      if ((resultsByTitle[title] || []).length > 0) renderSpeciesCard(section, species);
+    });
+    cursorY += 2;
+  });
+
+  ensureSpace(12);
+  drawWrappedText(
+    'Note: Sailfish and Tarpon each appear twice in this tournament — once above as an individual Offshore species trophy (scored on release points) and again in the separate Billfish/Tarpon Release Division below (a boat competition, scored independently).',
+    { fontSize: 8, fontStyle: 'italic', color: [100, 100, 100], lineHeight: 4 }
+  );
+
+  // --- Part 2 ---
+  doc.addPage();
+  cursorY = MARGIN;
+  drawWrappedText('PART 2 — OVERALL TOURNAMENT CHAMPIONS', { fontSize: 13, fontStyle: 'bold', color: [2, 19, 62], lineHeight: 6 });
+  cursorY += 2;
+
+  const formatBaySurfGC = (row) => `${row.angler} (${row.hometown}) — Total Weight: ${row.totalWeight} lbs`;
+  const formatOffshoreGC = (row) => `${row.angler} (${row.hometown}${row.boatName ? `, Boat: ${row.boatName}` : ''}) — ${row.points} pts — ${row.speciesContributionSummary || ''}`;
+  const formatTWA = (row) => `${row.angler} (${row.hometown}) — ${row.trophySummary || ''} — ${row.points} pts`;
+  const formatRelease = (row) => `${row.boatName} — ${row.totalPoints} pts — Last Catch: ${row.latestRelease ? formatCentral(row.latestRelease, 'M/D/YY h:mm A') : 'N/A'}`;
+
+  const formatterForTitle = (title) => {
+    if (title.includes('Bay/Surf Division Grand Champion')) return formatBaySurfGC;
+    if (title.includes('Offshore Division Grand Champion')) return formatOffshoreGC;
+    if (title === 'Top Woman Angler') return formatTWA;
+    return formatRelease; // Billfish/Tarpon Release Division
+  };
+
+  const drawNumberedLine = (number, label, text, opts = {}) => {
+    ensureSpace(8);
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(10);
+    doc.setTextColor(2, 19, 62);
+    doc.text(`${number}. ${label}`, MARGIN, cursorY);
+    doc.setTextColor(0);
+    cursorY += 5;
+    drawWrappedText(text, { indent: 5, ...opts });
+    cursorY += 2;
+  };
+
+  let announcementNumber = 1;
+
+  CHAMPION_TITLES.forEach(title => {
+    const rows = resultsByTitle[title] || [];
+    const winner = rows[0];
+    const runnerUp = rows[1];
+    const formatter = formatterForTitle(title);
+
+    if (title === 'Top Woman Angler') {
+      const winnerText = winner ? formatter(winner) : '— No qualifying angler —';
+      const runnerUpText = runnerUp ? formatter(runnerUp) : '— No qualifying angler —';
+      ensureSpace(10);
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(10);
+      doc.setTextColor(2, 19, 62);
+      doc.text(`${announcementNumber}. ${title}`, MARGIN, cursorY);
+      doc.setTextColor(0);
+      cursorY += 5;
+      drawWrappedText(`Champion: ${winnerText}`, { indent: 5, fontStyle: 'bold' });
+      drawWrappedText(`Runner-Up: ${runnerUpText}`, { indent: 5 });
+      cursorY += 2;
+      announcementNumber += 1;
+    } else {
+      const runnerUpText = runnerUp ? formatter(runnerUp) : '— No qualifying entry —';
+      const winnerText = winner ? formatter(winner) : '— No qualifying entry —';
+      drawNumberedLine(announcementNumber, `${title} — Runner-Up`, runnerUpText);
+      announcementNumber += 1;
+      drawNumberedLine(announcementNumber, `${title} — Champion`, winnerText, { fontStyle: 'bold' });
+      announcementNumber += 1;
+    }
+  });
+
+  // --- Record-breaking summary ---
+  if (recordBreakingNotes.length > 0) {
+    doc.addPage();
+    cursorY = MARGIN;
+    drawWrappedText('RECORD-BREAKING CATCHES THIS TOURNAMENT', { fontSize: 12, fontStyle: 'bold', color: [180, 140, 0], lineHeight: 6 });
+    drawWrappedText(
+      'These catches exceeded the tournament record on file. Records are updated manually after the event -- none of the scoring in this report reflects these new values.',
+      { fontSize: 8, fontStyle: 'italic', color: [100, 100, 100], lineHeight: 4 }
+    );
+    cursorY += 2;
+    recordBreakingNotes.forEach(note => drawWrappedText(`⭐ ${note}`, { indent: 2 }));
   }
 
-  addPageNumbers(doc);
+  // --- Page numbers ---
+  const pageCount = doc.internal.getNumberOfPages();
+  for (let i = 1; i <= pageCount; i++) {
+    doc.setPage(i);
+    doc.setFontSize(8);
+    doc.setTextColor(120);
+    doc.text(`Page ${i} of ${pageCount}`, PAGE_W - MARGIN, PAGE_H - 8, { align: 'right' });
+    doc.setTextColor(0);
+  }
+
   doc.save(`${year}_DSR_Final_Announcer_Report_${centralTime().format('YYYY-MM-DD_HHmm')}.pdf`);
 };
