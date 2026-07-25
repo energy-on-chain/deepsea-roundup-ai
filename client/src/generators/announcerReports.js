@@ -69,9 +69,9 @@ const NAVY = [2, 19, 62];
 const GOLD = [153, 110, 0];
 const GOLD_BG = [255, 245, 210];
 const GRAY = [110, 110, 110];
-const CARD_BG = [243, 245, 250];
 const DARK = [25, 25, 25];
 const WHITE = [255, 255, 255];
+const HAIRLINE = [205, 208, 216];
 
 export const generateAnnouncerReport = async (year, tournamentName) => {
   const config = await loadConfigForYear(year);
@@ -128,7 +128,7 @@ export const generateAnnouncerReport = async (year, tournamentName) => {
   const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'letter' });
   const PAGE_W = doc.internal.pageSize.getWidth();
   const PAGE_H = doc.internal.pageSize.getHeight();
-  const MARGIN = 14;
+  const MARGIN = 13;
   const CONTENT_W = PAGE_W - MARGIN * 2;
   let cursorY = MARGIN;
   const recordBreakingNotes = []; // { species, angler, hometown, weight, record }
@@ -159,89 +159,87 @@ export const generateAnnouncerReport = async (year, tournamentName) => {
     doc.setTextColor(...DARK);
   };
 
-  // Measures + immediately draws a simple paragraph (used for one-off notices, not cards).
+  // Measures + immediately draws a simple paragraph (used for one-off notices, not entries).
   const drawParagraph = (text, opts = {}) => {
-    const { fontSize = 10, fontStyle = 'normal', color = DARK, indent = 0, lineHeight = 5 } = opts;
+    const { fontSize = 9.5, fontStyle = 'normal', color = DARK, indent = 0, lineHeight = 4.4 } = opts;
     const lines = measureLines(text, fontSize, fontStyle, CONTENT_W - indent);
     ensureSpace(lines.length * lineHeight + 1);
     drawLines(lines, { fontSize, fontStyle, color, indent, lineHeight });
   };
 
   const drawPartLabel = (text, color = NAVY) => {
-    ensureSpace(14);
+    ensureSpace(11);
     doc.setFont('helvetica', 'bold');
-    doc.setFontSize(15);
+    doc.setFontSize(14.5);
     doc.setTextColor(...color);
-    doc.text(text, MARGIN, cursorY + 4);
+    doc.text(text, MARGIN, cursorY + 3.8);
     doc.setTextColor(...DARK);
-    cursorY += 8;
+    cursorY += 6.5;
     doc.setDrawColor(...color);
-    doc.setLineWidth(0.6);
+    doc.setLineWidth(0.7);
     doc.line(MARGIN, cursorY, PAGE_W - MARGIN, cursorY);
     doc.setLineWidth(0.2);
     doc.setDrawColor(0, 0, 0);
-    cursorY += 4;
+    cursorY += 3.5;
   };
 
   const drawSectionHeader = (label) => {
-    ensureSpace(12);
+    ensureSpace(11);
     doc.setFillColor(...NAVY);
-    doc.rect(MARGIN, cursorY, CONTENT_W, 9, 'F');
+    doc.rect(MARGIN, cursorY, CONTENT_W, 8, 'F');
     doc.setFont('helvetica', 'bold');
-    doc.setFontSize(13);
+    doc.setFontSize(12.5);
     doc.setTextColor(...WHITE);
-    doc.text(label, MARGIN + CONTENT_W / 2, cursorY + 6.3, { align: 'center' });
+    doc.text(label, MARGIN + CONTENT_W / 2, cursorY + 5.6, { align: 'center' });
     doc.setTextColor(...DARK);
-    cursorY += 9 + 3;
+    cursorY += 8 + 2.5;
   };
 
-  // Measures a "card" (a bold header line + a list of body lines) without drawing it, so the
-  // exact height can be reserved with ensureSpace() before any of it is drawn -- this is what
-  // keeps a card's own lines from being split across a page break.
-  const measureCard = (headerText, headerOpts, body) => {
-    const headerFontSize = headerOpts.fontSize || 12;
+  // Measures one entry (a bold header line + a list of body lines, closed out with a thin
+  // separator rule) without drawing it, so the exact height can be reserved with a single
+  // ensureSpace() call before any of it is drawn -- this is what keeps an entry's own lines
+  // from being split across a page break. Plain typography + hairline rules rather than a
+  // filled background box per entry, so it reads as a print program rather than a stack of UI
+  // cards, and there's no box padding to get wrong.
+  const measureEntry = (headerText, headerOpts, body) => {
+    const headerFontSize = headerOpts.fontSize || 11.5;
     const headerFontStyle = headerOpts.fontStyle || 'bold';
-    const headerLineHeight = headerOpts.lineHeight || 5.5;
-    const headerLines = measureLines(headerText, headerFontSize, headerFontStyle, CONTENT_W - 7);
+    const headerLineHeight = headerOpts.lineHeight || 5;
+    const headerLines = measureLines(headerText, headerFontSize, headerFontStyle, CONTENT_W);
     const headerHeight = headerLines.length * headerLineHeight;
 
     const bodyMeasured = body.map((item) => {
-      const fontSize = item.fontSize || 10;
-      const indent = item.indent != null ? item.indent : 7;
-      const lineHeight = item.lineHeight || 4.8;
+      const fontSize = item.fontSize || 9.7;
+      const indent = item.indent != null ? item.indent : 3;
+      const lineHeight = item.lineHeight || 4.15;
       const lines = measureLines(item.text, fontSize, item.fontStyle || 'normal', CONTENT_W - indent);
       return { ...item, lines, lineHeight, indent, fontSize };
     });
     const bodyHeight = bodyMeasured.reduce((sum, b) => sum + b.lines.length * b.lineHeight, 0);
 
-    const paddingTop = 3.5, paddingBottom = 3, headerGap = 1.5;
-    const totalHeight = paddingTop + headerHeight + headerGap + bodyHeight + paddingBottom;
-    return { headerLines, headerHeight, headerFontSize, headerFontStyle, headerLineHeight, bodyMeasured, paddingTop, paddingBottom, headerGap, totalHeight };
+    const headerGap = 1, ruleGapTop = 1.6, ruleGapBottom = 2;
+    const totalHeight = headerHeight + headerGap + bodyHeight + ruleGapTop + ruleGapBottom;
+    return { headerLines, headerHeight, headerFontSize, headerFontStyle, headerLineHeight, bodyMeasured, headerGap, ruleGapTop, ruleGapBottom, totalHeight };
   };
 
-  // Draws a card measured by measureCard(), reserving its exact height first so it never splits.
-  const drawMeasuredCard = (measured, headerOpts) => {
-    const cardGap = 3;
-    ensureSpace(measured.totalHeight + cardGap);
-    const cardTop = cursorY;
-
-    doc.setFillColor(...CARD_BG);
-    doc.rect(MARGIN, cardTop, CONTENT_W, measured.totalHeight, 'F');
-    doc.setFillColor(...(headerOpts.accentColor || NAVY));
-    doc.rect(MARGIN, cardTop, 1.8, measured.totalHeight, 'F');
-
-    cursorY = cardTop + measured.paddingTop;
+  // Draws an entry measured by measureEntry(), reserving its exact height first so it never splits.
+  const drawMeasuredEntry = (measured, headerOpts) => {
+    ensureSpace(measured.totalHeight);
     drawLines(measured.headerLines, {
       fontSize: measured.headerFontSize, fontStyle: measured.headerFontStyle,
-      color: headerOpts.color || NAVY, indent: 7, lineHeight: measured.headerLineHeight,
+      color: headerOpts.color || NAVY, indent: 0, lineHeight: measured.headerLineHeight,
     });
-
-    cursorY = cardTop + measured.paddingTop + measured.headerHeight + measured.headerGap;
+    cursorY += measured.headerGap;
     measured.bodyMeasured.forEach((b) => {
       drawLines(b.lines, { fontSize: b.fontSize, fontStyle: b.fontStyle || 'normal', color: b.color || DARK, indent: b.indent, lineHeight: b.lineHeight });
     });
-
-    cursorY = cardTop + measured.totalHeight + cardGap;
+    cursorY += measured.ruleGapTop;
+    doc.setDrawColor(...(headerOpts.ruleColor || HAIRLINE));
+    doc.setLineWidth(0.25);
+    doc.line(MARGIN, cursorY, PAGE_W - MARGIN, cursorY);
+    doc.setDrawColor(0, 0, 0);
+    doc.setLineWidth(0.2);
+    cursorY += measured.ruleGapBottom;
   };
 
   // Formats one place's result line, plus a separate record-breaking note line when the
@@ -266,7 +264,7 @@ export const generateAnnouncerReport = async (year, tournamentName) => {
     };
   };
 
-  const buildSpeciesCardData = (section, species) => {
+  const buildSpeciesEntryData = (section, species) => {
     const title = titleFor(section.division, species, section.ageBracket);
     const rows = resultsByTitle[title] || [];
     const isRelease = section.division === 'Offshore' && RELEASE_SPECIES.has(species);
@@ -281,85 +279,89 @@ export const generateAnnouncerReport = async (year, tournamentName) => {
       if (runnerUp) {
         const { line, recordNote } = formatEntry('RUNNER-UP', runnerUp, species, isRelease, includeBoat);
         body.push({ text: line, color: DARK });
-        if (recordNote) body.push({ text: recordNote, fontStyle: 'bold', color: GOLD, indent: 11 });
+        if (recordNote) body.push({ text: recordNote, fontStyle: 'bold', color: GOLD, indent: 8 });
       } else {
         body.push({ text: 'RUNNER-UP: No second qualifying catch', fontStyle: 'italic', color: GRAY });
       }
       const { line, recordNote } = formatEntry('WINNER', winner, species, isRelease, includeBoat);
       body.push({ text: line, fontStyle: 'bold', color: DARK });
-      if (recordNote) body.push({ text: recordNote, fontStyle: 'bold', color: GOLD, indent: 11 });
+      if (recordNote) body.push({ text: recordNote, fontStyle: 'bold', color: GOLD, indent: 8 });
     }
-    return { headerText: species, headerOpts: { fontSize: 12, color: NAVY, accentColor: NAVY }, body };
+    return { headerText: species, headerOpts: { fontSize: 11.5, color: NAVY }, body };
   };
 
   // --- Title card ---
   doc.setFillColor(...NAVY);
-  doc.rect(MARGIN, cursorY, CONTENT_W, 32, 'F');
+  doc.rect(MARGIN, cursorY, CONTENT_W, 26, 'F');
   doc.setFont('helvetica', 'bold');
-  doc.setFontSize(19);
+  doc.setFontSize(18);
   doc.setTextColor(...WHITE);
-  doc.text(tournamentName || `${year} Deepsea Roundup`, MARGIN + CONTENT_W / 2, cursorY + 12, { align: 'center' });
+  doc.text(tournamentName || `${year} Deepsea Roundup`, MARGIN + CONTENT_W / 2, cursorY + 10.5, { align: 'center' });
   doc.setFont('helvetica', 'normal');
-  doc.setFontSize(12);
-  doc.text('Announcer Script -- Final Results', MARGIN + CONTENT_W / 2, cursorY + 20, { align: 'center' });
+  doc.setFontSize(11.5);
+  doc.text('Announcer Script -- Final Results', MARGIN + CONTENT_W / 2, cursorY + 17.5, { align: 'center' });
   doc.setFontSize(8.5);
   doc.setTextColor(200, 205, 225);
-  doc.text(`Generated: ${generatedAt}`, MARGIN + CONTENT_W / 2, cursorY + 27, { align: 'center' });
+  doc.text(`Generated: ${generatedAt}`, MARGIN + CONTENT_W / 2, cursorY + 22.8, { align: 'center' });
   doc.setTextColor(...DARK);
-  cursorY += 32 + 4;
+  cursorY += 26 + 3;
 
   // --- Read-in-order reminder ---
   doc.setFillColor(...GOLD_BG);
-  doc.rect(MARGIN, cursorY, CONTENT_W, 9, 'F');
+  doc.rect(MARGIN, cursorY, CONTENT_W, 8, 'F');
   doc.setFont('helvetica', 'bold');
-  doc.setFontSize(10.5);
+  doc.setFontSize(10);
   doc.setTextColor(...GOLD);
-  doc.text('READ THIS SCRIPT FROM TOP TO BOTTOM, IN ORDER.', MARGIN + CONTENT_W / 2, cursorY + 6, { align: 'center' });
+  doc.text('READ THIS SCRIPT FROM TOP TO BOTTOM, IN ORDER.', MARGIN + CONTENT_W / 2, cursorY + 5.4, { align: 'center' });
   doc.setTextColor(...DARK);
-  cursorY += 9 + 4;
+  cursorY += 8 + 3;
 
   // --- Record-breaking disclaimer ---
   drawParagraph(
     'NEW TOURNAMENT RECORD tags mark catches that beat the on-file record. Records are only updated after the event, so all scoring above still uses the pre-event value.',
-    { fontSize: 8.5, fontStyle: 'italic', color: GRAY, lineHeight: 4.2 }
+    { fontSize: 8.3, fontStyle: 'italic', color: GRAY, lineHeight: 3.9 }
   );
-  cursorY += 2;
+  cursorY += 1.5;
 
   // --- Part 1: Division Awards ---
   drawPartLabel('PART 1 -- DIVISION AWARDS', NAVY);
 
   DIVISION_SECTIONS.forEach((section) => {
-    const cardsData = section.species.map((species) => buildSpeciesCardData(section, species));
+    const entriesData = section.species.map((species) => buildSpeciesEntryData(section, species));
     (section.bonusSpecies || []).forEach((species) => {
       const title = titleFor(section.division, species, section.ageBracket);
       if ((resultsByTitle[title] || []).length > 0) {
-        cardsData.push(buildSpeciesCardData(section, species));
+        entriesData.push(buildSpeciesEntryData(section, species));
       }
     });
 
-    const measuredCards = cardsData.map((c) => measureCard(c.headerText, c.headerOpts, c.body));
-    const sectionHeaderHeight = 12;
-    const totalSectionHeight = sectionHeaderHeight + measuredCards.reduce((sum, m) => sum + m.totalHeight + 3, 0);
-    const fitsOnFreshPage = totalSectionHeight <= PAGE_H - MARGIN * 2;
-    const isNearTopOfPage = cursorY <= MARGIN + 1;
+    const measuredEntries = entriesData.map((e) => measureEntry(e.headerText, e.headerOpts, e.body));
+    const sectionHeaderHeight = 10.5;
     const remainingSpace = PAGE_H - MARGIN - cursorY;
+    const isNearTopOfPage = cursorY <= MARGIN + 1;
 
-    // Start short divisions on a fresh page rather than letting them split after just a card
-    // or two -- long divisions (Offshore) won't fit on any single page anyway, so they're left
-    // to paginate naturally (each individual card still can't split, just the division as a
-    // whole spans pages, which isn't the confusing case being avoided here).
-    if (!isNearTopOfPage && fitsOnFreshPage && totalSectionHeight > remainingSpace) {
+    // Only force a fresh page if there isn't even room for the header plus the first few
+    // entries -- starting a division that then breaks after just one entry is the confusing
+    // case being avoided; a division that shows most of its entries before a natural page
+    // turn (like Offshore always will, since 17 species never fit on one page regardless) is
+    // fine and matches how the rest of the report already paginates.
+    const PREVIEW_ENTRY_COUNT = 3;
+    const previewHeight = sectionHeaderHeight + measuredEntries
+      .slice(0, PREVIEW_ENTRY_COUNT)
+      .reduce((sum, m) => sum + m.totalHeight, 0);
+
+    if (!isNearTopOfPage && remainingSpace < previewHeight) {
       doc.addPage();
       cursorY = MARGIN;
     }
 
     drawSectionHeader(section.label);
-    cardsData.forEach((c, i) => drawMeasuredCard(measuredCards[i], c.headerOpts));
+    entriesData.forEach((e, i) => drawMeasuredEntry(measuredEntries[i], e.headerOpts));
   });
 
   drawParagraph(
     'Note: Sailfish and Tarpon each appear twice -- once above as an individual Offshore species trophy (release points), and again below in the Billfish/Tarpon Release Division (a boat competition, scored independently).',
-    { fontSize: 8.5, fontStyle: 'italic', color: GRAY, lineHeight: 4.2 }
+    { fontSize: 8.3, fontStyle: 'italic', color: GRAY, lineHeight: 3.9 }
   );
 
   // --- Part 2: Overall Tournament Champions ---
@@ -394,27 +396,27 @@ export const generateAnnouncerReport = async (year, tournamentName) => {
         { text: `Champion: ${winnerText}`, fontStyle: 'bold', color: DARK },
         { text: `Runner-Up: ${runnerUpText}`, color: DARK },
       ];
-      const measured = measureCard(`${announcementNumber}. ${title}`, { fontSize: 12.5, color: NAVY }, body);
-      drawMeasuredCard(measured, { accentColor: GOLD });
+      const measured = measureEntry(`${announcementNumber}. ${title}`, { fontSize: 12, color: NAVY }, body);
+      drawMeasuredEntry(measured, { ruleColor: GOLD });
       announcementNumber += 1;
     } else {
       const runnerUpText = runnerUp ? formatter(runnerUp) : 'No qualifying entry';
       const winnerText = winner ? formatter(winner) : 'No qualifying entry';
 
-      const ruMeasured = measureCard(
+      const ruMeasured = measureEntry(
         `${announcementNumber}. ${title} -- Runner-Up`,
-        { fontSize: 12, color: NAVY },
+        { fontSize: 11.5, color: NAVY },
         [{ text: runnerUpText, color: DARK }]
       );
-      drawMeasuredCard(ruMeasured, { accentColor: NAVY });
+      drawMeasuredEntry(ruMeasured, {});
       announcementNumber += 1;
 
-      const chMeasured = measureCard(
+      const chMeasured = measureEntry(
         `${announcementNumber}. ${title} -- Champion`,
-        { fontSize: 12, color: NAVY },
+        { fontSize: 11.5, color: NAVY },
         [{ text: winnerText, fontStyle: 'bold', color: DARK }]
       );
-      drawMeasuredCard(chMeasured, { accentColor: GOLD });
+      drawMeasuredEntry(chMeasured, { ruleColor: GOLD });
       announcementNumber += 1;
     }
   });
@@ -426,17 +428,17 @@ export const generateAnnouncerReport = async (year, tournamentName) => {
     drawPartLabel('PART 3 -- TOURNAMENT RECORDS', GOLD);
     drawParagraph(
       'These catches beat the on-file tournament record. Records are updated manually after the event -- none of the scoring in this report reflects these new values.',
-      { fontSize: 8.5, fontStyle: 'italic', color: GRAY, lineHeight: 4.2 }
+      { fontSize: 8.3, fontStyle: 'italic', color: GRAY, lineHeight: 3.9 }
     );
-    cursorY += 2;
+    cursorY += 1.5;
 
     recordBreakingNotes.forEach((note) => {
-      const measured = measureCard(
+      const measured = measureEntry(
         `${note.species} -- ${note.angler} (${note.hometown})`,
-        { fontSize: 11.5, color: NAVY },
+        { fontSize: 11, color: NAVY },
         [{ text: `${note.weight} lbs (previous record: ${note.record} lbs)`, fontStyle: 'bold', color: GOLD }]
       );
-      drawMeasuredCard(measured, { accentColor: GOLD });
+      drawMeasuredEntry(measured, { ruleColor: GOLD });
     });
   }
 
