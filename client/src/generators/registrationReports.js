@@ -1,6 +1,6 @@
 import jsPDF from 'jspdf';
 import 'jspdf-autotable';
-import dayjs from 'dayjs';
+import { formatCentral } from '../utils/dateTime';
 import { loadConfigForYear } from '../config/masterConfig';
 
 const addPageNumbers = (doc) => {
@@ -23,7 +23,7 @@ const formatCurrency = (value) => {
 
 export const generateRegistrationReport = (teams, year, tableProperties, tournamentName) => {
   const doc = new jsPDF('landscape');
-  const currentDate = dayjs().format('MMMM D, YYYY h:mm A [CST]');
+  const currentDate = formatCentral(undefined, 'MMMM D, YYYY h:mm A [CST]');
   
   // Define consistent margins
   const margins = {

@@ -4,7 +4,7 @@ import { InputLabel, Button, Dialog, DialogContent, DialogTitle, IconButton, Sta
 import CloseIcon from "@mui/icons-material/Close";
 import 'react-toastify/dist/ReactToastify.css';
 import { toast } from 'react-toastify';
-import dayjs from 'dayjs';
+import { centralTime } from '../../utils/dateTime';
 
 const DeleteCatchModal = (props) => {
   const { year } = useParams();
@@ -69,7 +69,7 @@ const DeleteCatchModal = (props) => {
       return { localDate: "N/A", localTime: "N/A" };
     }
   
-    const parsedDate = dayjs(utcDateTime);
+    const parsedDate = centralTime(utcDateTime);
     if (!parsedDate.isValid()) {
       return { localDate: "N/A", localTime: "N/A" };
     }

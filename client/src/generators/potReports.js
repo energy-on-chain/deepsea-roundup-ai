@@ -12,7 +12,7 @@
 
 import jsPDF from 'jspdf';
 import 'jspdf-autotable';
-import dayjs from 'dayjs';
+import { formatCentral, centralTime } from '../utils/dateTime';
 import { loadConfigForYear } from '../config/masterConfig';
 
 const PAGE_MARGIN = 10;
@@ -24,7 +24,7 @@ const fmt = (value) =>
 
 const formatCellValue = (col, value) => {
   if (!value && value !== 0) return '—';
-  if (col.isDateTime) return dayjs(value).format('M/D/YY h:mm A');
+  if (col.isDateTime) return formatCentral(value, 'M/D/YY h:mm A');
   if (col.isCurrency) return fmt(value);
   return value.toString();
 };
@@ -48,7 +48,7 @@ export const generatePotsReport = async (year, tournamentName) => {
     ? import.meta.env.VITE_SERVER_URL_PRODUCTION
     : import.meta.env.VITE_SERVER_URL_STAGING;
 
-  const generatedAt = dayjs().format('MMMM D, YYYY h:mm A');
+  const generatedAt = formatCentral(undefined, 'MMMM D, YYYY h:mm A [CST]');
   const doc = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
   const pageHeight = doc.internal.pageSize.getHeight();
 
@@ -358,5 +358,5 @@ export const generatePotsReport = async (year, tournamentName) => {
   }
 
   addPageNumbers(doc);
-  doc.save(`${year}_DSR_Pot_Winners_${dayjs().format('YYYY-MM-DD_HHmm')}.pdf`);
+  doc.save(`${year}_DSR_Pot_Winners_${centralTime().format('YYYY-MM-DD_HHmm')}.pdf`);
 };

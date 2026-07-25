@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import { DataGrid } from '@mui/x-data-grid';
 import { useMediaQuery, useTheme, Card, CardContent, Typography, Box, Paper } from '@mui/material';
-import dayjs from 'dayjs';
+import { formatCentral } from '../../utils/dateTime';
 import './LeaderboardResultTable.css';
 import { loadConfigForYear } from '../../config/masterConfig';
 
@@ -35,7 +35,7 @@ function PotsResultTable(props) {
 
   const formatCellValue = (col, value) => {
     if (col.isDateTime && value) {
-      return dayjs(value).format('MMMM Do, YYYY @ hh:mm A');
+      return formatCentral(value, 'MMMM Do, YYYY @ hh:mm A');
     }
     if (col.isCurrency) {
       return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(value ?? 0);
@@ -47,7 +47,7 @@ function PotsResultTable(props) {
     if (col.isDateTime) {
       return {
         ...col,
-        valueFormatter: (params) => dayjs(params).format('MMMM Do, YYYY @ hh:mm A'),
+        valueFormatter: (params) => formatCentral(params, 'MMMM Do, YYYY @ hh:mm A'),
       };
     } else if (col.isCurrency) {
       return {

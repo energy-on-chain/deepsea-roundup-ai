@@ -4,14 +4,12 @@ import AnimatedPage from './AnimatedPage';
 import Box from '@mui/material/Box';
 import CircularProgress from '@mui/material/CircularProgress';
 import dayjs from 'dayjs';
-import advancedFormat from 'dayjs/plugin/advancedFormat';
+import { centralTime } from '../utils/dateTime';
 
 import Carousel from '../components/Carousel';
 import './BasePage.css';
 
 import { loadConfigForYear } from '../config/masterConfig';
-
-dayjs.extend(advancedFormat);
 
 // Standalone, chrome-light slideshow view of the leaderboard -- meant to be pointed a
 // monitor with the browser's own auto-page-refresh set up on it. Always shows the
@@ -158,8 +156,8 @@ function LeaderboardSlideshowPage() {
   };
 
   const generateTimestamp = () => {
-    const now = dayjs();
-    const timeString = now.format('hh:mm A');
+    const now = centralTime();
+    const timeString = now.format('hh:mm A [CST]');
     const dateString = now.format('DD MMMM YYYY');
     return `Preliminary leaderboard as of: ${timeString} on ${dateString}.`;
   };

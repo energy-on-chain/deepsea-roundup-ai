@@ -4,7 +4,7 @@ import { DataGrid, GridActionsCellItem } from '@mui/x-data-grid';
 import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/DeleteOutlined';
 import Checkbox from '@mui/material/Checkbox';
-import dayjs from 'dayjs';
+import { formatCentral } from '../../utils/dateTime';
 
 import AddAnglerModal from '../modals/AddAnglerModal';
 import EditAnglerModal from '../modals/EditAnglerModal';
@@ -152,7 +152,7 @@ function CrudTable(props) {
             if ( !value || typeof value !== 'string' ) {
               return "N/A";
             }
-            return dayjs(value).format('hh:mm A, MMM Do YYYY'); 
+            return formatCentral(value, 'hh:mm A, MMM Do YYYY');
           }
         } 
 

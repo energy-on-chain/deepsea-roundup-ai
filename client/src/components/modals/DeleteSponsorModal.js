@@ -5,7 +5,7 @@ import CircularProgress from '@mui/material/CircularProgress';
 import CloseIcon from "@mui/icons-material/Close";
 import 'react-toastify/dist/ReactToastify.css';
 import { toast } from 'react-toastify';
-import dayjs from 'dayjs';  // Import dayjs for date-time formatting
+import { formatCentral } from '../../utils/dateTime';
 
 const DeleteSponsorModal = (props) => {
   const { year } = useParams();
@@ -34,7 +34,7 @@ const DeleteSponsorModal = (props) => {
   };
 
   const formatDateTime = (value) => {
-    return dayjs(value).format('MM/DD/YYYY hh:mm A');
+    return formatCentral(value, 'MM/DD/YYYY hh:mm A');
   };
 
   const handleClose = () => {

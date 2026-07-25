@@ -16,7 +16,7 @@
 
 import jsPDF from 'jspdf';
 import 'jspdf-autotable';
-import dayjs from 'dayjs';
+import { formatCentral, centralTime } from '../utils/dateTime';
 import { loadConfigForYear } from '../config/masterConfig';
 
 // Categories to exclude from the press report (not finalized until tournament end,
@@ -67,7 +67,7 @@ const MIN_ROWS_HEIGHT_MM = 18; // Minimum space needed to start a new table on c
 
 const formatCellValue = (col, value) => {
   if (!value && value !== 0) return '—';
-  if (col.isDateTime) return dayjs(value).format('M/D/YY h:mm A');
+  if (col.isDateTime) return formatCentral(value, 'M/D/YY h:mm A');
   if (col.isCurrency) {
     return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', minimumFractionDigits: 0 }).format(value);
   }
@@ -93,7 +93,7 @@ export const generatePressReport = async (year, tournamentName) => {
     ? import.meta.env.VITE_SERVER_URL_PRODUCTION
     : import.meta.env.VITE_SERVER_URL_STAGING;
 
-  const generatedAt = dayjs().format('MMMM D, YYYY h:mm A');
+  const generatedAt = formatCentral(undefined, 'MMMM D, YYYY h:mm A [CST]');
   const doc = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
   const pageHeight = doc.internal.pageSize.getHeight();
 
@@ -236,5 +236,5 @@ export const generatePressReport = async (year, tournamentName) => {
   }
 
   addPageNumbers(doc);
-  doc.save(`${year}_DSR_Category_Leaders_${dayjs().format('YYYY-MM-DD_HHmm')}.pdf`);
+  doc.save(`${year}_DSR_Category_Leaders_${centralTime().format('YYYY-MM-DD_HHmm')}.pdf`);
 };

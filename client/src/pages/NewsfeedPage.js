@@ -8,15 +8,12 @@ import CircularProgress from '@mui/material/CircularProgress';
 
 import { useTheme } from "@mui/material/styles";
 import useMediaQuery from "@mui/material/useMediaQuery";
-import dayjs from 'dayjs';
-import advancedFormat from 'dayjs/plugin/advancedFormat';
+import { formatCentral } from '../utils/dateTime';
 
 import CountTable from '../components/tables/CountTable';
 import { loadConfigForYear } from '../config/masterConfig';
 
 import './BasePage.css';
-
-dayjs.extend(advancedFormat);
 
 function NewsfeedPage() {
   const { year } = useParams();
@@ -226,7 +223,7 @@ function NewsfeedPage() {
       headerClassName: "super-app-theme--header",
       headerAlign: "center",
       valueFormatter: (params) => {
-        return dayjs(params).format('hh:mm A, MMM Do YYYY');
+        return formatCentral(params, 'hh:mm A, MMM Do YYYY');
       }
     }
   ];
@@ -263,7 +260,7 @@ function NewsfeedPage() {
       headerClassName: "super-app-theme--header",
       headerAlign: "center",
       valueFormatter: (params) => {
-        return dayjs(params).format('hh:mm A, MMM Do YYYY');
+        return formatCentral(params, 'hh:mm A, MMM Do YYYY');
       }
     }
   ];
