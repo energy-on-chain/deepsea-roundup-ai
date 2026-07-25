@@ -148,13 +148,13 @@ const AddAnglerModal = (props) => {
   const validateAnglerDetails = () => {
     let isValid = true;
 
-    if (props.isAdmin && !validateEmail(email)) {
-      toast.warning("A valid email address is required.");
+    if (props.isAdmin && email && !validateEmail(email)) {
+      toast.warning("The email address entered is not valid.");
       isValid = false;
     }
 
-    if (props.isAdmin && !validatePhone(phone)) {
-      toast.warning("A valid phone number is required.");
+    if (props.isAdmin && phone && !validatePhone(phone)) {
+      toast.warning("The phone number entered is not valid.");
       isValid = false;
     }
 
@@ -300,23 +300,21 @@ const AddAnglerModal = (props) => {
         <br />
         <Stack spacing={3}>
 
-          {props.isAdmin && 
+          {props.isAdmin &&
             <>
               <TextField
-              label="Email"
+              label="Email (optional)"
               variant="outlined"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               fullWidth
-              required
             />
             <TextField
-              label="Phone"
+              label="Phone (optional)"
               variant="outlined"
               value={phone}
               onChange={(e) => setPhone(e.target.value)}
               fullWidth
-              required
             />
             </>
           }
