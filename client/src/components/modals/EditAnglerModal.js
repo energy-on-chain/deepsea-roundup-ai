@@ -26,6 +26,7 @@ const EditAnglerModal = (props) => {
   const [formData, setFormData] = useState({});
   const [duplicateNameList, setDuplicateNameList] = useState([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [speciesConfigList, setSpeciesConfigList] = useState([]);
 
   // Load configuration on mount
   useEffect(() => {
@@ -34,6 +35,7 @@ const EditAnglerModal = (props) => {
       try {
         const loadedConfig = await loadConfigForYear(year);
         setConfig(loadedConfig?.adminConfig?.CONFIG_ADMIN_TABLE_PROPERTIES_FOR_ANGLERS || []);
+        setSpeciesConfigList(loadedConfig?.catchConfig?.CONFIG_CATCHES_SPECIES_LIST || []);
         initializeFormData(props.editInfo, loadedConfig?.adminConfig?.CONFIG_ADMIN_TABLE_PROPERTIES_FOR_ANGLERS);
       } catch (error) {
         console.error('Error loading configuration:', error);
@@ -119,13 +121,22 @@ const EditAnglerModal = (props) => {
         ...formData,
         over21: formData.over21 === 'true',
         hasCheckedIn: formData.hasCheckedIn === 'true',
+        // Sent only so the backend can validate a division change against this angler's
+        // existing catches -- never saved onto the angler record itself.
+        speciesConfigList,
       };
 
-      await fetch(`${apiUrl}/api/${year}/admin_edit_angler`, {
+      const response = await fetch(`${apiUrl}/api/${year}/admin_edit_angler`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(submitData),
       });
+
+      if (!response.ok) {
+        const errorBody = await response.json().catch(() => ({}));
+        toast.error(errorBody.error || 'Error updating angler.');
+        return;
+      }
 
       toast.success('Angler successfully updated.');
       props.close();

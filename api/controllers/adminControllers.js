@@ -90,17 +90,23 @@ module.exports = ({redisClient}) => {
   
       const formData = { ...req.body };
       formData.hasCheckedIn = formData.hasCheckedIn === true || formData.hasCheckedIn === 'true';
-  
+
       const { anglerId } = formData;
       delete formData.anglerId;
-  
+
+      // speciesConfigList (species/division pairs from CONFIG_CATCHES_SPECIES_LIST) is sent
+      // along by the frontend purely to validate a division change against this angler's
+      // existing catches below -- it's never persisted onto the angler document itself.
+      const speciesConfigList = Array.isArray(formData.speciesConfigList) ? formData.speciesConfigList : [];
+      delete formData.speciesConfigList;
+
       const anglerDocRef = db.collection(`anglers${year}`).doc(anglerId);
       const anglerDoc = await anglerDocRef.get();
-  
+
       if (!anglerDoc.exists) {
         return res.status(404).json({ error: 'Angler not found' });
       }
-  
+
       const existingAnglerData = anglerDoc.data();
       const updatedFields = Object.keys(formData).reduce((acc, key) => {
         if (existingAnglerData[key] !== formData[key]) {
@@ -108,17 +114,42 @@ module.exports = ({redisClient}) => {
         }
         return acc;
       }, {});
-  
+
+      // Fetch this angler's existing catches once -- used both to validate a division change
+      // (immediately below) and to cascade any changed fields onto them (further below).
+      const catchesRef = db.collection(`catches${year}`);
+      const catchesSnapshot = await catchesRef.where('anglerId', '==', anglerId).get();
+
+      // Changing division would otherwise silently mislabel any existing catch whose species
+      // doesn't exist in the new division -- this is exactly how the Joey Jaggers cross-division
+      // display bug happened. Block the whole edit instead of writing bad data; the admin has to
+      // resolve those catches (edit species, reassign angler, or delete) before the division can change.
+      if (updatedFields.division) {
+        const validSpeciesForNewDivision = new Set(
+          speciesConfigList
+            .filter((s) => s.division === updatedFields.division)
+            .map((s) => s.species)
+        );
+        const incompatibleSpecies = [...new Set(
+          catchesSnapshot.docs
+            .map((doc) => doc.data().species)
+            .filter((species) => !validSpeciesForNewDivision.has(species))
+        )];
+
+        if (incompatibleSpecies.length > 0) {
+          return res.status(400).json({
+            error: `Cannot change division to "${updatedFields.division}" -- this angler has existing catches (${incompatibleSpecies.join(', ')}) that aren't valid in that division. Resolve those catches first (edit species, reassign angler, or delete), then change the division.`,
+          });
+        }
+      }
+
       // Update angler document
       await anglerDocRef.update(formData);
-  
+
       // Update catches if there are changes in relevant fields
       if (Object.keys(updatedFields).length > 0) {
-        const catchesRef = db.collection(`catches${year}`);
-        const snapshot = await catchesRef.where('anglerId', '==', anglerId).get();
-  
         const updatePromises = [];
-        snapshot.forEach(doc => {
+        catchesSnapshot.forEach(doc => {
           const catchData = doc.data();
           const catchUpdate = {};
           Object.keys(updatedFields).forEach(key => {
@@ -126,15 +157,15 @@ module.exports = ({redisClient}) => {
               catchUpdate[key] = updatedFields[key];
             }
           });
-  
+
           if (Object.keys(catchUpdate).length > 0) {
             updatePromises.push(doc.ref.update(catchUpdate));
           }
         });
-  
+
         await Promise.all(updatePromises);
       }
-  
+
       // Handle pot records updates
       const potsRef = db.collection(`pots${year}`);
       
