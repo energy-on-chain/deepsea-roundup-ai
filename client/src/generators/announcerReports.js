@@ -11,6 +11,10 @@
  *            Release, in the tournament's traditional announcement order.
  *   Part 3 — Tournament Records: any catch that beat the on-file species record.
  *
+ * Visual style follows the reference announcer script example: a navy title card, rounded
+ * navy division headers with a gold accent stripe, and a light "card" treatment (colored left
+ * accent bar + numbered badge) for each Part 2 champion entry.
+ *
  * Intended for use after final standings are confirmed Sunday morning.
  */
 
@@ -39,15 +43,15 @@ const RELEASE_SPECIES = new Set(['Blue Marlin', 'White Marlin', 'Sailfish', 'Tar
 
 const FLY_KAYAK_SPECIES = ['Redfish', 'Speckled Trout'];
 
-// Part 1 division order. Fly Fishing and Kayak have no Junior split -- adults and juniors
-// compete together in those two divisions.
+// Part 1 division order + a short subtitle line shown under each division's header card.
+// Fly Fishing and Kayak have no Junior split -- adults and juniors compete together there.
 const DIVISION_SECTIONS = [
-  { label: 'Junior Bay/Surf Division', division: 'Bay/Surf', ageBracket: 'Junior', species: BAY_SURF_SPECIES, bonusSpecies: BAY_SURF_BONUS_SPECIES },
-  { label: 'Adult Bay/Surf Division', division: 'Bay/Surf', ageBracket: 'Adult', species: BAY_SURF_SPECIES, bonusSpecies: BAY_SURF_BONUS_SPECIES },
-  { label: 'Fly Fishing Division', division: 'Flyfishing', ageBracket: 'Adult', species: FLY_KAYAK_SPECIES },
-  { label: 'Kayak Division', division: 'Kayak', ageBracket: 'Adult', species: FLY_KAYAK_SPECIES },
-  { label: 'Junior Offshore Division', division: 'Offshore', ageBracket: 'Junior', species: OFFSHORE_SPECIES },
-  { label: 'Adult Offshore Division', division: 'Offshore', ageBracket: 'Adult', species: OFFSHORE_SPECIES },
+  { label: 'Junior Bay/Surf Division', subtitle: '7 species in order -- runner-up announced before winner', division: 'Bay/Surf', ageBracket: 'Junior', species: BAY_SURF_SPECIES, bonusSpecies: BAY_SURF_BONUS_SPECIES },
+  { label: 'Adult Bay/Surf Division', subtitle: '7 species in order -- runner-up announced before winner', division: 'Bay/Surf', ageBracket: 'Adult', species: BAY_SURF_SPECIES, bonusSpecies: BAY_SURF_BONUS_SPECIES },
+  { label: 'Fly Fishing Division', subtitle: 'No Junior fly-fishing division', division: 'Flyfishing', ageBracket: 'Adult', species: FLY_KAYAK_SPECIES },
+  { label: 'Kayak Division', subtitle: 'Runner-up announced before winner', division: 'Kayak', ageBracket: 'Adult', species: FLY_KAYAK_SPECIES },
+  { label: 'Junior Offshore Division', subtitle: '17 species in order -- runner-up announced before winner', division: 'Offshore', ageBracket: 'Junior', species: OFFSHORE_SPECIES },
+  { label: 'Adult Offshore Division', subtitle: '17 species in order -- runner-up announced before winner', division: 'Offshore', ageBracket: 'Adult', species: OFFSHORE_SPECIES },
 ];
 
 const titleFor = (division, species, ageBracket) => `${division} - ${species} (${ageBracket})`;
@@ -66,12 +70,14 @@ const CHAMPION_TITLES = [
 
 // --- Palette ---
 const NAVY = [2, 19, 62];
-const GOLD = [153, 110, 0];
-const GOLD_BG = [255, 245, 210];
-const GRAY = [110, 110, 110];
+const TEAL = [13, 92, 100];
+const GOLD = [163, 116, 8];
+const GRAY_DARK = [95, 101, 113];
+const GRAY_TEXT = [122, 126, 136];
+const CARD_BG = [239, 243, 248];
+const LEGEND_BG = [235, 240, 245];
 const DARK = [25, 25, 25];
 const WHITE = [255, 255, 255];
-const HAIRLINE = [205, 208, 216];
 
 export const generateAnnouncerReport = async (year, tournamentName) => {
   const config = await loadConfigForYear(year);
@@ -130,6 +136,7 @@ export const generateAnnouncerReport = async (year, tournamentName) => {
   const PAGE_H = doc.internal.pageSize.getHeight();
   const MARGIN = 13;
   const CONTENT_W = PAGE_W - MARGIN * 2;
+  const GAP = 4; // standard breathing room between any two elements
   let cursorY = MARGIN;
   const recordBreakingNotes = []; // { species, angler, hometown, weight, record }
 
@@ -140,14 +147,12 @@ export const generateAnnouncerReport = async (year, tournamentName) => {
     }
   };
 
-  // Measures how many lines `text` wraps to at the given font, WITHOUT drawing anything.
   const measureLines = (text, fontSize, fontStyle, width) => {
     doc.setFont('helvetica', fontStyle);
     doc.setFontSize(fontSize);
     return doc.splitTextToSize(text, width);
   };
 
-  // Draws pre-measured lines starting at the current cursorY, advancing it as it goes.
   const drawLines = (lines, { fontSize, fontStyle = 'normal', color = DARK, indent = 0, lineHeight = 5 }) => {
     doc.setFont('helvetica', fontStyle);
     doc.setFontSize(fontSize);
@@ -159,7 +164,6 @@ export const generateAnnouncerReport = async (year, tournamentName) => {
     doc.setTextColor(...DARK);
   };
 
-  // Measures + immediately draws a simple paragraph (used for one-off notices, not entries).
   const drawParagraph = (text, opts = {}) => {
     const { fontSize = 9.5, fontStyle = 'normal', color = DARK, indent = 0, lineHeight = 4.4 } = opts;
     const lines = measureLines(text, fontSize, fontStyle, CONTENT_W - indent);
@@ -167,45 +171,59 @@ export const generateAnnouncerReport = async (year, tournamentName) => {
     drawLines(lines, { fontSize, fontStyle, color, indent, lineHeight });
   };
 
-  const drawPartLabel = (text, color = NAVY) => {
-    ensureSpace(11);
-    doc.setFont('helvetica', 'bold');
-    doc.setFontSize(14.5);
-    doc.setTextColor(...color);
-    doc.text(text, MARGIN, cursorY + 3.8);
+  // Draws `prefix` in `prefixColor` immediately followed by `rest` in `restColor` on the same
+  // line, at the current cursorY (does not wrap -- only used for short label+value lines).
+  const drawTwoTone = (prefix, prefixColor, rest, restColor, { fontSize = 10, fontStyle = 'bold', restStyle = 'normal', indent = 0 } = {}) => {
+    doc.setFont('helvetica', fontStyle);
+    doc.setFontSize(fontSize);
+    doc.setTextColor(...prefixColor);
+    doc.text(prefix, MARGIN + indent, cursorY);
+    const prefixWidth = doc.getTextWidth(prefix);
+    doc.setFont('helvetica', restStyle);
+    doc.setTextColor(...restColor);
+    doc.text(rest, MARGIN + indent + prefixWidth, cursorY);
     doc.setTextColor(...DARK);
-    cursorY += 6.5;
-    doc.setDrawColor(...color);
-    doc.setLineWidth(0.7);
-    doc.line(MARGIN, cursorY, PAGE_W - MARGIN, cursorY);
-    doc.setLineWidth(0.2);
-    doc.setDrawColor(0, 0, 0);
-    cursorY += 3.5;
   };
 
-  const drawSectionHeader = (label) => {
-    ensureSpace(11);
-    doc.setFillColor(...NAVY);
-    doc.rect(MARGIN, cursorY, CONTENT_W, 8, 'F');
+  const drawPartLabel = (text) => {
+    ensureSpace(13);
+    doc.setFillColor(...TEAL);
+    doc.rect(MARGIN, cursorY, CONTENT_W, 9, 'F');
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(12.5);
     doc.setTextColor(...WHITE);
-    doc.text(label, MARGIN + CONTENT_W / 2, cursorY + 5.6, { align: 'center' });
+    doc.text(text, MARGIN + 3, cursorY + 6.2);
     doc.setTextColor(...DARK);
-    cursorY += 8 + 2.5;
+    cursorY += 9 + GAP;
   };
 
-  // Measures one entry (a bold header line + a list of body lines, closed out with a thin
-  // separator rule) without drawing it, so the exact height can be reserved with a single
-  // ensureSpace() call before any of it is drawn -- this is what keeps an entry's own lines
-  // from being split across a page break. Plain typography + hairline rules rather than a
-  // filled background box per entry, so it reads as a print program rather than a stack of UI
-  // cards, and there's no box padding to get wrong.
-  const measureEntry = (headerText, headerOpts, body) => {
-    const headerFontSize = headerOpts.fontSize || 11.5;
-    const headerFontStyle = headerOpts.fontStyle || 'bold';
-    const headerLineHeight = headerOpts.lineHeight || 5;
-    const headerLines = measureLines(headerText, headerFontSize, headerFontStyle, CONTENT_W);
+  // Rounded navy card for a division header: number/name large + a lighter subtitle line,
+  // with a gold accent stripe down the left edge -- matches the reference script's division
+  // headers rather than the plain full-bleed bar used previously.
+  const drawDivisionHeader = (label, subtitle) => {
+    const boxHeight = 15;
+    ensureSpace(boxHeight + GAP);
+    doc.setFillColor(...NAVY);
+    doc.roundedRect(MARGIN, cursorY, CONTENT_W, boxHeight, 2, 2, 'F');
+    doc.setFillColor(...GOLD);
+    doc.roundedRect(MARGIN, cursorY, 2.2, boxHeight, 1, 1, 'F');
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(13);
+    doc.setTextColor(...WHITE);
+    doc.text(label, MARGIN + 6, cursorY + 7);
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(8.7);
+    doc.setTextColor(190, 200, 220);
+    doc.text(subtitle, MARGIN + 6, cursorY + 12);
+    doc.setTextColor(...DARK);
+    cursorY += boxHeight + GAP;
+  };
+
+  // Measures a plain (no background) Part 1 species entry so its exact height can be reserved
+  // before drawing, keeping it from splitting across a page break.
+  const measureSpeciesEntry = (headerText, body) => {
+    const headerLineHeight = 5;
+    const headerLines = measureLines(headerText, 11.5, 'bold', CONTENT_W);
     const headerHeight = headerLines.length * headerLineHeight;
 
     const bodyMeasured = body.map((item) => {
@@ -217,39 +235,28 @@ export const generateAnnouncerReport = async (year, tournamentName) => {
     });
     const bodyHeight = bodyMeasured.reduce((sum, b) => sum + b.lines.length * b.lineHeight, 0);
 
-    const headerGap = 1, ruleGapTop = 1.6, ruleGapBottom = 2;
-    const totalHeight = headerHeight + headerGap + bodyHeight + ruleGapTop + ruleGapBottom;
-    return { headerLines, headerHeight, headerFontSize, headerFontStyle, headerLineHeight, bodyMeasured, headerGap, ruleGapTop, ruleGapBottom, totalHeight };
+    const headerGap = 1;
+    const totalHeight = headerHeight + headerGap + bodyHeight + GAP;
+    return { headerLines, headerHeight, headerLineHeight, bodyMeasured, headerGap, totalHeight };
   };
 
-  // Draws an entry measured by measureEntry(), reserving its exact height first so it never splits.
-  const drawMeasuredEntry = (measured, headerOpts) => {
+  const drawSpeciesEntry = (measured) => {
     ensureSpace(measured.totalHeight);
-    drawLines(measured.headerLines, {
-      fontSize: measured.headerFontSize, fontStyle: measured.headerFontStyle,
-      color: headerOpts.color || NAVY, indent: 0, lineHeight: measured.headerLineHeight,
-    });
+    drawLines(measured.headerLines, { fontSize: 11.5, fontStyle: 'bold', color: TEAL, indent: 0, lineHeight: measured.headerLineHeight });
     cursorY += measured.headerGap;
     measured.bodyMeasured.forEach((b) => {
       drawLines(b.lines, { fontSize: b.fontSize, fontStyle: b.fontStyle || 'normal', color: b.color || DARK, indent: b.indent, lineHeight: b.lineHeight });
     });
-    cursorY += measured.ruleGapTop;
-    doc.setDrawColor(...(headerOpts.ruleColor || HAIRLINE));
-    doc.setLineWidth(0.25);
-    doc.line(MARGIN, cursorY, PAGE_W - MARGIN, cursorY);
-    doc.setDrawColor(0, 0, 0);
-    doc.setLineWidth(0.2);
-    cursorY += measured.ruleGapBottom;
+    cursorY += GAP;
   };
 
-  // Formats one place's result line, plus a separate record-breaking note line when the
-  // species/weight combination beats the tournament record on file (kept as its own line,
-  // rather than appended to the result line, so neither line gets unreasonably long). Release
-  // species (Blue Marlin/White Marlin/Sailfish/Tarpon) have no weigh-in, so no record check.
-  const formatEntry = (label, row, species, isRelease, includeBoat) => {
+  // Formats one place's result, plus a separate record-breaking note line when the
+  // species/weight combination beats the tournament record on file. Release species (Blue
+  // Marlin/White Marlin/Sailfish/Tarpon) have no weigh-in, so no record check applies.
+  const formatResultLine = (row, species, isRelease, includeBoat) => {
     const boatPart = includeBoat && row.boat ? `, Boat: ${row.boat}` : '';
     if (isRelease) {
-      return { line: `${label}: ${row.angler} (${row.hometown}${boatPart}) -- ${row.points} release points`, recordNote: null };
+      return { line: `${row.angler} (${row.hometown}${boatPart}) -- ${row.points} release points`, recordNote: null };
     }
     const weight = parseFloat(row.weight);
     const record = speciesRecords[species];
@@ -259,7 +266,7 @@ export const generateAnnouncerReport = async (year, tournamentName) => {
       recordBreakingNotes.push({ species, angler: row.angler, hometown: row.hometown, weight: row.weight, record });
     }
     return {
-      line: `${label}: ${row.angler} (${row.hometown}${boatPart}) -- ${row.weight} lbs, ${row.length} in / ${row.girth} in girth`,
+      line: `${row.angler} (${row.hometown}${boatPart}) -- ${row.weight} lbs, ${row.length} in / ${row.girth} in girth`,
       recordNote,
     };
   };
@@ -272,59 +279,59 @@ export const generateAnnouncerReport = async (year, tournamentName) => {
 
     const body = [];
     if (rows.length === 0) {
-      body.push({ text: 'No qualifying catch in this division', fontStyle: 'italic', color: GRAY });
+      body.push({ text: 'No qualifying catch in this division', fontStyle: 'italic', color: GRAY_TEXT });
     } else {
       const winner = rows[0];
       const runnerUp = rows[1];
       if (runnerUp) {
-        const { line, recordNote } = formatEntry('RUNNER-UP', runnerUp, species, isRelease, includeBoat);
-        body.push({ text: line, color: DARK });
+        const { line, recordNote } = formatResultLine(runnerUp, species, isRelease, includeBoat);
+        body.push({ text: `RUNNER-UP  ${line}`, color: GRAY_DARK });
         if (recordNote) body.push({ text: recordNote, fontStyle: 'bold', color: GOLD, indent: 8 });
-      } else {
-        body.push({ text: 'RUNNER-UP: No second qualifying catch', fontStyle: 'italic', color: GRAY });
       }
-      const { line, recordNote } = formatEntry('WINNER', winner, species, isRelease, includeBoat);
-      body.push({ text: line, fontStyle: 'bold', color: DARK });
+      const { line, recordNote } = formatResultLine(winner, species, isRelease, includeBoat);
+      body.push({ text: `WINNER  ${line}`, fontStyle: 'bold', color: GOLD });
       if (recordNote) body.push({ text: recordNote, fontStyle: 'bold', color: GOLD, indent: 8 });
+      if (!runnerUp) {
+        body.push({ text: 'No runner-up -- sole qualifying catch.', fontStyle: 'italic', color: GRAY_TEXT });
+      }
     }
-    return { headerText: species, headerOpts: { fontSize: 11.5, color: NAVY }, body };
+    return { headerText: species, body };
   };
 
-  // --- Title card ---
+  // --- Title card (rounded, "read top to bottom" folded into the subtitle) ---
+  const titleCardHeight = 27;
   doc.setFillColor(...NAVY);
-  doc.rect(MARGIN, cursorY, CONTENT_W, 26, 'F');
+  doc.roundedRect(MARGIN, cursorY, CONTENT_W, titleCardHeight, 3, 3, 'F');
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(18);
   doc.setTextColor(...WHITE);
   doc.text(tournamentName || `${year} Deepsea Roundup`, MARGIN + CONTENT_W / 2, cursorY + 10.5, { align: 'center' });
   doc.setFont('helvetica', 'normal');
-  doc.setFontSize(11.5);
-  doc.text('Announcer Script -- Final Results', MARGIN + CONTENT_W / 2, cursorY + 17.5, { align: 'center' });
-  doc.setFontSize(8.5);
-  doc.setTextColor(200, 205, 225);
-  doc.text(`Generated: ${generatedAt}`, MARGIN + CONTENT_W / 2, cursorY + 22.8, { align: 'center' });
+  doc.setFontSize(10.5);
+  doc.text('Final Results -- Announcer Script -- read top to bottom, in order', MARGIN + CONTENT_W / 2, cursorY + 17.5, { align: 'center' });
+  doc.setFontSize(8.3);
+  doc.setTextColor(195, 202, 222);
+  doc.text(`Generated: ${generatedAt}`, MARGIN + CONTENT_W / 2, cursorY + 23, { align: 'center' });
   doc.setTextColor(...DARK);
-  cursorY += 26 + 3;
+  cursorY += titleCardHeight + GAP;
 
-  // --- Read-in-order reminder ---
-  doc.setFillColor(...GOLD_BG);
-  doc.rect(MARGIN, cursorY, CONTENT_W, 8, 'F');
-  doc.setFont('helvetica', 'bold');
-  doc.setFontSize(10);
-  doc.setTextColor(...GOLD);
-  doc.text('READ THIS SCRIPT FROM TOP TO BOTTOM, IN ORDER.', MARGIN + CONTENT_W / 2, cursorY + 5.4, { align: 'center' });
-  doc.setTextColor(...DARK);
-  cursorY += 8 + 3;
-
-  // --- Record-breaking disclaimer ---
-  drawParagraph(
-    'NEW TOURNAMENT RECORD tags mark catches that beat the on-file record. Records are only updated after the event, so all scoring above still uses the pre-event value.',
-    { fontSize: 8.3, fontStyle: 'italic', color: GRAY, lineHeight: 3.9 }
-  );
-  cursorY += 1.5;
+  // --- Legend / notices box ---
+  const legendText1 = 'RUNNER-UP is announced first, WINNER second.';
+  const legendText2 = 'Species with no qualifying catch are marked accordingly. Fly Fishing has no Junior division. NEW TOURNAMENT RECORD tags mark catches beating the on-file record -- records are only updated after the event, so scoring above still uses the pre-event value.';
+  const legendLines2 = measureLines(legendText2, 8.3, 'italic', CONTENT_W - 6);
+  const legendHeight = 6 + 4.4 + legendLines2.length * 3.9 + 4;
+  ensureSpace(legendHeight + GAP);
+  doc.setFillColor(...LEGEND_BG);
+  doc.roundedRect(MARGIN, cursorY, CONTENT_W, legendHeight, 2, 2, 'F');
+  cursorY += 5.5;
+  drawLines(measureLines(legendText1, 9, 'bold', CONTENT_W - 6), { fontSize: 9, fontStyle: 'bold', color: DARK, indent: 3, lineHeight: 4.4 });
+  cursorY += 1;
+  drawLines(legendLines2, { fontSize: 8.3, fontStyle: 'italic', color: GRAY_TEXT, indent: 3, lineHeight: 3.9 });
+  cursorY += 4;
+  cursorY += GAP;
 
   // --- Part 1: Division Awards ---
-  drawPartLabel('PART 1 -- DIVISION AWARDS', NAVY);
+  drawPartLabel('PART 1 -- DIVISION AWARDS (announced first, by species)');
 
   DIVISION_SECTIONS.forEach((section) => {
     const entriesData = section.species.map((species) => buildSpeciesEntryData(section, species));
@@ -335,8 +342,8 @@ export const generateAnnouncerReport = async (year, tournamentName) => {
       }
     });
 
-    const measuredEntries = entriesData.map((e) => measureEntry(e.headerText, e.headerOpts, e.body));
-    const sectionHeaderHeight = 10.5;
+    const measuredEntries = entriesData.map((e) => measureSpeciesEntry(e.headerText, e.body));
+    const divisionHeaderHeight = 15 + GAP;
     const remainingSpace = PAGE_H - MARGIN - cursorY;
     const isNearTopOfPage = cursorY <= MARGIN + 1;
 
@@ -344,9 +351,9 @@ export const generateAnnouncerReport = async (year, tournamentName) => {
     // entries -- starting a division that then breaks after just one entry is the confusing
     // case being avoided; a division that shows most of its entries before a natural page
     // turn (like Offshore always will, since 17 species never fit on one page regardless) is
-    // fine and matches how the rest of the report already paginates.
+    // fine.
     const PREVIEW_ENTRY_COUNT = 3;
-    const previewHeight = sectionHeaderHeight + measuredEntries
+    const previewHeight = divisionHeaderHeight + measuredEntries
       .slice(0, PREVIEW_ENTRY_COUNT)
       .reduce((sum, m) => sum + m.totalHeight, 0);
 
@@ -355,30 +362,86 @@ export const generateAnnouncerReport = async (year, tournamentName) => {
       cursorY = MARGIN;
     }
 
-    drawSectionHeader(section.label);
-    entriesData.forEach((e, i) => drawMeasuredEntry(measuredEntries[i], e.headerOpts));
+    drawDivisionHeader(section.label, section.subtitle);
+    measuredEntries.forEach((m) => drawSpeciesEntry(m));
   });
 
   drawParagraph(
     'Note: Sailfish and Tarpon each appear twice -- once above as an individual Offshore species trophy (release points), and again below in the Billfish/Tarpon Release Division (a boat competition, scored independently).',
-    { fontSize: 8.3, fontStyle: 'italic', color: GRAY, lineHeight: 3.9 }
+    { fontSize: 8.3, fontStyle: 'italic', color: GRAY_TEXT, lineHeight: 3.9 }
   );
 
   // --- Part 2: Overall Tournament Champions ---
   doc.addPage();
   cursorY = MARGIN;
-  drawPartLabel('PART 2 -- OVERALL TOURNAMENT CHAMPIONS', NAVY);
+  drawPartLabel('PART 2 -- OVERALL CHAMPIONS (announced last, in this exact order)');
 
-  const formatBaySurfGC = (row) => `${row.angler} (${row.hometown}) -- Total Weight: ${row.totalWeight} lbs`;
-  const formatOffshoreGC = (row) => `${row.angler} (${row.hometown}${row.boatName ? `, Boat: ${row.boatName}` : ''}) -- ${row.points} pts -- ${row.speciesContributionSummary || ''}`;
-  const formatTWA = (row) => `${row.angler} (${row.hometown}) -- ${row.trophySummary || ''} -- ${row.points} pts`;
-  const formatRelease = (row) => `${row.boatName} -- ${row.totalPoints} pts -- Last Catch: ${row.latestRelease ? formatCentral(row.latestRelease, 'M/D/YY h:mm A') : 'N/A'}`;
+  const formatBaySurfGC = (row) => `Total Weight: ${row.totalWeight} lbs`;
+  const formatOffshoreGC = (row) => `Boat: ${row.boatName || 'N/A'} -- ${row.points} pts -- ${row.speciesContributionSummary || ''}`;
+  const formatTWADetail = (row) => `${row.trophySummary || ''} -- ${row.points} pts`;
+  const formatRelease = (row) => `Boat competition -- ${row.totalPoints} pts -- Last Catch: ${row.latestRelease ? formatCentral(row.latestRelease, 'M/D/YY h:mm A') : 'N/A'}`;
 
   const formatterForTitle = (title) => {
     if (title.includes('Bay/Surf Division Grand Champion')) return formatBaySurfGC;
     if (title.includes('Offshore Division Grand Champion')) return formatOffshoreGC;
-    if (title === 'Top Woman Angler') return formatTWA;
     return formatRelease; // Billfish/Tarpon Release Division
+  };
+
+  // Bay/Surf and Offshore Grand Champion rows are angler-based (angler/hometown). Billfish and
+  // Tarpon Release are BOAT competitions -- their rows have no angler/hometown at all, only a
+  // boatName, so they need their own "who" line rather than the angler-based one.
+  const primaryLineForTitle = (title, row) => {
+    if (title.includes('Release Division')) return row.boatName || 'Unknown';
+    return `${row.angler} -- ${row.hometown}`;
+  };
+
+  // Measures a Part 2 "card": light background, colored left accent bar, numbered badge, a
+  // title line, and one or more detail lines.
+  const measureChampionCard = (number, titleText, detailLines, accentColor) => {
+    const titleLines = measureLines(titleText, 11.5, 'bold', CONTENT_W - 18);
+    const titleHeight = titleLines.length * 5;
+    const detailMeasured = detailLines.map((d) => {
+      const lines = measureLines(d.text, d.fontSize || 9.3, d.fontStyle || 'normal', CONTENT_W - 18);
+      return { ...d, lines, lineHeight: d.lineHeight || 4.1 };
+    });
+    const detailHeight = detailMeasured.reduce((sum, d) => sum + d.lines.length * d.lineHeight, 0);
+
+    const padding = 3.2, titleGap = 1;
+    const innerHeight = titleHeight + titleGap + detailHeight;
+    const totalHeight = Math.max(innerHeight + padding * 2, 13);
+    return { number, titleText, titleLines, titleHeight, detailMeasured, padding, innerHeight, totalHeight, accentColor };
+  };
+
+  const drawChampionCard = (measured) => {
+    ensureSpace(measured.totalHeight + GAP);
+    const cardTop = cursorY;
+
+    doc.setFillColor(...CARD_BG);
+    doc.roundedRect(MARGIN, cardTop, CONTENT_W, measured.totalHeight, 1.5, 1.5, 'F');
+    doc.setFillColor(...measured.accentColor);
+    doc.roundedRect(MARGIN, cardTop, 1.8, measured.totalHeight, 1, 1, 'F');
+
+    // Numbered badge, vertically centered on the card.
+    const badgeSize = 7.2;
+    const badgeX = MARGIN + 4;
+    const badgeY = cardTop + (measured.totalHeight - badgeSize) / 2;
+    doc.setFillColor(...measured.accentColor);
+    doc.roundedRect(badgeX, badgeY, badgeSize, badgeSize, 1.4, 1.4, 'F');
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(9.5);
+    doc.setTextColor(...WHITE);
+    doc.text(String(measured.number), badgeX + badgeSize / 2, badgeY + badgeSize / 2 + 1.2, { align: 'center' });
+    doc.setTextColor(...DARK);
+
+    // Content, starting after the badge.
+    cursorY = cardTop + measured.padding;
+    drawLines(measured.titleLines, { fontSize: 11.5, fontStyle: 'bold', color: NAVY, indent: 15, lineHeight: 5 });
+    cursorY += measured.titleGap || 1;
+    measured.detailMeasured.forEach((d) => {
+      drawLines(d.lines, { fontSize: d.fontSize || 9.3, fontStyle: d.fontStyle || 'normal', color: d.color || GRAY_TEXT, indent: 15, lineHeight: d.lineHeight });
+    });
+
+    cursorY = cardTop + measured.totalHeight + GAP;
   };
 
   let announcementNumber = 1;
@@ -387,36 +450,37 @@ export const generateAnnouncerReport = async (year, tournamentName) => {
     const rows = resultsByTitle[title] || [];
     const winner = rows[0];
     const runnerUp = rows[1];
-    const formatter = formatterForTitle(title);
 
     if (title === 'Top Woman Angler') {
-      const winnerText = winner ? formatter(winner) : 'No qualifying angler';
-      const runnerUpText = runnerUp ? formatter(runnerUp) : 'No qualifying angler';
-      const body = [
-        { text: `Champion: ${winnerText}`, fontStyle: 'bold', color: DARK },
-        { text: `Runner-Up: ${runnerUpText}`, color: DARK },
-      ];
-      const measured = measureEntry(`${announcementNumber}. ${title}`, { fontSize: 12, color: NAVY }, body);
-      drawMeasuredEntry(measured, { ruleColor: GOLD });
+      const detailLines = [];
+      if (winner) {
+        detailLines.push({ text: `Winner: ${winner.angler} -- ${winner.hometown} -- ${formatTWADetail(winner)}`, color: DARK, fontStyle: 'bold' });
+      } else {
+        detailLines.push({ text: 'Winner: No qualifying angler', color: GRAY_TEXT, fontStyle: 'italic' });
+      }
+      if (runnerUp) {
+        detailLines.push({ text: `Runner-up: ${runnerUp.angler} -- ${runnerUp.hometown} -- ${formatTWADetail(runnerUp)}`, color: GRAY_TEXT });
+      } else {
+        detailLines.push({ text: 'Runner-up: No qualifying angler', color: GRAY_TEXT, fontStyle: 'italic' });
+      }
+      const measured = measureChampionCard(announcementNumber, 'Top Woman Angler', detailLines, GOLD);
+      drawChampionCard(measured);
       announcementNumber += 1;
     } else {
-      const runnerUpText = runnerUp ? formatter(runnerUp) : 'No qualifying entry';
-      const winnerText = winner ? formatter(winner) : 'No qualifying entry';
+      const formatter = formatterForTitle(title);
 
-      const ruMeasured = measureEntry(
-        `${announcementNumber}. ${title} -- Runner-Up`,
-        { fontSize: 11.5, color: NAVY },
-        [{ text: runnerUpText, color: DARK }]
-      );
-      drawMeasuredEntry(ruMeasured, {});
+      const ruDetail = runnerUp
+        ? [{ text: primaryLineForTitle(title, runnerUp), color: DARK, fontStyle: 'bold' }, { text: formatter(runnerUp), color: GRAY_TEXT }]
+        : [{ text: 'No qualifying entry', color: GRAY_TEXT, fontStyle: 'italic' }];
+      const ruMeasured = measureChampionCard(announcementNumber, `${title} -- Runner-Up`, ruDetail, GRAY_DARK);
+      drawChampionCard(ruMeasured);
       announcementNumber += 1;
 
-      const chMeasured = measureEntry(
-        `${announcementNumber}. ${title} -- Champion`,
-        { fontSize: 11.5, color: NAVY },
-        [{ text: winnerText, fontStyle: 'bold', color: DARK }]
-      );
-      drawMeasuredEntry(chMeasured, { ruleColor: GOLD });
+      const chDetail = winner
+        ? [{ text: primaryLineForTitle(title, winner), color: DARK, fontStyle: 'bold' }, { text: formatter(winner), color: GRAY_TEXT }]
+        : [{ text: 'No qualifying entry', color: GRAY_TEXT, fontStyle: 'italic' }];
+      const chMeasured = measureChampionCard(announcementNumber, `${title} -- Champion`, chDetail, GOLD);
+      drawChampionCard(chMeasured);
       announcementNumber += 1;
     }
   });
@@ -425,20 +489,24 @@ export const generateAnnouncerReport = async (year, tournamentName) => {
   if (recordBreakingNotes.length > 0) {
     doc.addPage();
     cursorY = MARGIN;
-    drawPartLabel('PART 3 -- TOURNAMENT RECORDS', GOLD);
+    drawPartLabel('PART 3 -- TOURNAMENT RECORDS');
     drawParagraph(
       'These catches beat the on-file tournament record. Records are updated manually after the event -- none of the scoring in this report reflects these new values.',
-      { fontSize: 8.3, fontStyle: 'italic', color: GRAY, lineHeight: 3.9 }
+      { fontSize: 8.3, fontStyle: 'italic', color: GRAY_TEXT, lineHeight: 3.9 }
     );
-    cursorY += 1.5;
+    cursorY += GAP - 1.5;
 
-    recordBreakingNotes.forEach((note) => {
-      const measured = measureEntry(
-        `${note.species} -- ${note.angler} (${note.hometown})`,
-        { fontSize: 11, color: NAVY },
-        [{ text: `${note.weight} lbs (previous record: ${note.record} lbs)`, fontStyle: 'bold', color: GOLD }]
+    recordBreakingNotes.forEach((note, i) => {
+      const measured = measureChampionCard(
+        i + 1,
+        `${note.species} -- ${note.angler}`,
+        [
+          { text: note.hometown, color: GRAY_TEXT },
+          { text: `${note.weight} lbs (previous record: ${note.record} lbs)`, fontStyle: 'bold', color: GOLD },
+        ],
+        GOLD
       );
-      drawMeasuredEntry(measured, { ruleColor: GOLD });
+      drawChampionCard(measured);
     });
   }
 
