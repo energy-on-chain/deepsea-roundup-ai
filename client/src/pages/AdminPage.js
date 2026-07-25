@@ -1557,7 +1557,7 @@ function RecordsTab({ year, apiUrl, config }) {
   const meatfishSpecies = inputs.meatfishSpeciesList || [];
 
   // Bay/Surf-only species (same mapping used in leaderboard controller)
-  const baySurfOnlySpecies = new Set(['Black Drum', 'Flounder', 'Gafftop', 'Pompano', 'Redfish', 'Speckled Trout']);
+  const baySurfOnlySpecies = new Set(['Black Drum', 'Flounder', 'Gafftop', 'Pompano', 'Redfish', 'Speckled Trout', 'Sheepshead']);
   const offshoreMeatfish = meatfishSpecies.filter(s => !baySurfOnlySpecies.has(s));
   const baySurfMeatfish = meatfishSpecies.filter(s => baySurfOnlySpecies.has(s));
 
