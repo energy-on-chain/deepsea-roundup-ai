@@ -16,6 +16,7 @@ export default {
     "Pot Winners",
     "Records",
     "Change Log",
+    "Boat Cleanup",
   ],
   CONFIG_ADMIN_TOURNAMENT_START_DATE_STRING: "2026-07-09",
   CONFIG_ADMIN_TOURNAMENT_END_DATE_STRING: "2026-07-12",
