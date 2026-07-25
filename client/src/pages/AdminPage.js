@@ -32,6 +32,7 @@ import { generatePressReport } from '../generators/pressReports';
 import { generateAnnouncerReport } from '../generators/announcerReports';
 import "./RegisterPage.css";
 import { loadConfigForYear } from '../config/masterConfig';
+import { formatCentral } from '../utils/dateTime';
 
 function AdminPage() {   
 
@@ -903,6 +904,16 @@ function AdminPage() {
                         config={config}
                       />
                     );
+                  } else if (tab === "Change Log") {
+                    return (
+                      <AnglerChangeLogTab
+                        key="Change Log"
+                        year={year}
+                        apiUrl={apiUrl}
+                        config={config}
+                        matches={matches}
+                      />
+                    );
                   } else if (tab === "Anglers") {
                     return (
                       <TabPanel key={tab} value={tab}>
@@ -1658,6 +1669,103 @@ function RecordsTab({ year, apiUrl, config }) {
             {saving ? 'Saving...' : `Save ${year} Records`}
           </Button>
         </>
+      )}
+    </TabPanel>
+  );
+}
+
+/**
+ * AnglerChangeLogTab — searchable audit trail of edits made to angler records.
+ * Every edit made via the Edit Angler modal writes an entry here with what changed, who
+ * changed it, and when -- including the angler's name both before and after the edit, so
+ * searching for an angler's ORIGINAL name still finds the entry even after a later rename.
+ * This is the paper trail for "you asked us to change it to this name on this date" if a
+ * participant later claims their registration was lost rather than intentionally renamed.
+ */
+function AnglerChangeLogTab({ year, apiUrl }) {
+  const [entries, setEntries] = useState([]);
+  const [loaded, setLoaded] = useState(false);
+  const [search, setSearch] = useState('');
+
+  useEffect(() => {
+    if (!apiUrl || loaded) return;
+    fetch(`${apiUrl}/api/${year}/admin_get_database_list`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ tableName: `anglerChangeLog${year}` }),
+    })
+      .then((r) => r.json())
+      .then((data) => {
+        const rows = Object.values(data || {}).sort(
+          (a, b) => new Date(b.timestamp) - new Date(a.timestamp)
+        );
+        setEntries(rows);
+        setLoaded(true);
+      })
+      .catch(() => setLoaded(true));
+  }, [apiUrl, year, loaded]);
+
+  const searchLower = search.trim().toLowerCase();
+  const filteredEntries = searchLower
+    ? entries.filter(
+        (e) =>
+          (e.anglerNameBefore || '').toLowerCase().includes(searchLower) ||
+          (e.anglerNameAfter || '').toLowerCase().includes(searchLower)
+      )
+    : entries;
+
+  const formatChanges = (changes) => {
+    if (!changes) return '';
+    return Object.entries(changes)
+      .map(([field, { from, to }]) => `${field}: "${from ?? ''}" → "${to ?? ''}"`)
+      .join('; ');
+  };
+
+  const thStyle = { textAlign: 'left', padding: '8px', borderBottom: '2px solid #ccc', whiteSpace: 'nowrap' };
+  const tdStyle = { padding: '8px', borderBottom: '1px solid #eee', verticalAlign: 'top' };
+
+  return (
+    <TabPanel value="Change Log">
+      <Typography variant="body2" sx={{ mb: 2 }}>
+        Every edit made to an angler record, including their name before and after each change --
+        search by either name to find what happened to a specific registration.
+      </Typography>
+      <TextField
+        label="Search by angler name"
+        value={search}
+        onChange={(e) => setSearch(e.target.value)}
+        fullWidth
+        sx={{ mb: 2 }}
+      />
+      {!loaded ? (
+        <CircularProgress />
+      ) : filteredEntries.length === 0 ? (
+        <Typography>No change log entries {searchLower ? 'match that search.' : 'yet.'}</Typography>
+      ) : (
+        <Box sx={{ overflowX: 'auto' }}>
+          <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+            <thead>
+              <tr>
+                <th style={thStyle}>Date/Time</th>
+                <th style={thStyle}>Name Before</th>
+                <th style={thStyle}>Name After</th>
+                <th style={thStyle}>Edited By</th>
+                <th style={thStyle}>Changes</th>
+              </tr>
+            </thead>
+            <tbody>
+              {filteredEntries.map((entry, i) => (
+                <tr key={entry.anglerChangeLogId || i}>
+                  <td style={tdStyle}>{formatCentral(entry.timestamp, 'MMM D, YYYY h:mm A')}</td>
+                  <td style={tdStyle}>{entry.anglerNameBefore}</td>
+                  <td style={tdStyle}>{entry.anglerNameAfter}</td>
+                  <td style={tdStyle}>{entry.editedBy}</td>
+                  <td style={tdStyle}>{formatChanges(entry.changes)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </Box>
       )}
     </TabPanel>
   );

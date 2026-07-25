@@ -100,6 +100,11 @@ module.exports = ({redisClient}) => {
       const speciesConfigList = Array.isArray(formData.speciesConfigList) ? formData.speciesConfigList : [];
       delete formData.speciesConfigList;
 
+      // editedBy (the logged-in admin's email) is sent along purely for the change log below --
+      // never persisted onto the angler document itself.
+      const editedBy = formData.editedBy || 'Unknown';
+      delete formData.editedBy;
+
       const anglerDocRef = db.collection(`anglers${year}`).doc(anglerId);
       const anglerDoc = await anglerDocRef.get();
 
@@ -164,6 +169,25 @@ module.exports = ({redisClient}) => {
         });
 
         await Promise.all(updatePromises);
+
+        // Audit log entry -- records exactly what changed, who changed it, and (crucially)
+        // both the name before and after this edit, so a search for an angler's ORIGINAL name
+        // still surfaces this entry even after a later rename. This is the paper trail for
+        // "you asked us to change it to this name on this date" if a participant later claims
+        // their registration was lost rather than intentionally renamed.
+        const changes = {};
+        Object.keys(updatedFields).forEach((key) => {
+          changes[key] = { from: existingAnglerData[key] ?? null, to: updatedFields[key] };
+        });
+
+        await db.collection(`anglerChangeLog${year}`).add({
+          anglerId,
+          timestamp: new Date().toISOString(),
+          editedBy,
+          anglerNameBefore: existingAnglerData.anglerName || 'Unknown',
+          anglerNameAfter: formData.anglerName || existingAnglerData.anglerName || 'Unknown',
+          changes,
+        });
       }
 
       // Handle pot records updates

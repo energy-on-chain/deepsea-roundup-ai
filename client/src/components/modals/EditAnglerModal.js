@@ -117,6 +117,8 @@ const EditAnglerModal = (props) => {
         ? import.meta.env.VITE_SERVER_URL_STAGING
         : import.meta.env.VITE_SERVER_URL_PRODUCTION;
 
+      const currentUser = JSON.parse(window.localStorage.getItem('user'));
+
       const submitData = {
         ...formData,
         over21: formData.over21 === 'true',
@@ -124,6 +126,8 @@ const EditAnglerModal = (props) => {
         // Sent only so the backend can validate a division change against this angler's
         // existing catches -- never saved onto the angler record itself.
         speciesConfigList,
+        // Sent only for the change-log audit trail -- never saved onto the angler record itself.
+        editedBy: currentUser?.email || 'Unknown',
       };
 
       const response = await fetch(`${apiUrl}/api/${year}/admin_edit_angler`, {
