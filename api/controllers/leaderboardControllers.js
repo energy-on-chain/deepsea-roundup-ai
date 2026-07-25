@@ -833,9 +833,9 @@ exports.getDeepseaRoundupMeatfishSpeciesWinner = async (req, res, externalYear =
       return acc;
     }, {});
 
-    // Filter anglers by age bracket
+    // Filter anglers by age bracket (only when specified — some divisions combine all ages)
     const validAnglerIds = Object.entries(anglers)
-      .filter(([id, angler]) => angler.ageBracket === ageBracket)
+      .filter(([id, angler]) => !ageBracket || angler.ageBracket === ageBracket)
       .map(([id]) => id);
 
     catches = catches.filter(catchItem => validAnglerIds.includes(catchItem.anglerId));
