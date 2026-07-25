@@ -914,6 +914,14 @@ function AdminPage() {
                         matches={matches}
                       />
                     );
+                  } else if (tab === "Boat Cleanup") {
+                    return (
+                      <BoatNameCleanupTab
+                        key="Boat Cleanup"
+                        year={year}
+                        apiUrl={apiUrl}
+                      />
+                    );
                   } else if (tab === "Anglers") {
                     return (
                       <TabPanel key={tab} value={tab}>
@@ -1767,6 +1775,127 @@ function AnglerChangeLogTab({ year, apiUrl }) {
           </table>
         </Box>
       )}
+    </TabPanel>
+  );
+}
+
+/**
+ * BoatNameCleanupTab — scans this year's registered boat names for likely duplicate spellings
+ * (e.g. "Reel Deal" / "The Reel Deal" / "Reel Deel") and lets an admin review each group and
+ * either approve a corrected spelling (renames every matching angler + pot entry, and logs it
+ * to the Change Log) or skip it if they're actually different boats. Nothing merges without an
+ * explicit per-group approval -- similar-looking names are sometimes genuinely different boats
+ * (e.g. "Miss Behavin" vs. "Miss Behavin II").
+ */
+function BoatNameCleanupTab({ year, apiUrl }) {
+  const [clusters, setClusters] = useState([]);
+  const [scanned, setScanned] = useState(false);
+  const [scanning, setScanning] = useState(false);
+  const [canonicalNames, setCanonicalNames] = useState({});
+  const [merging, setMerging] = useState({});
+
+  const handleScan = () => {
+    setScanning(true);
+    fetch(`${apiUrl}/api/${year}/admin_get_fuzzy_boat_name_clusters`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({}),
+    })
+      .then((r) => r.json())
+      .then((data) => {
+        setClusters(data);
+        const initialNames = {};
+        data.forEach((c, i) => { initialNames[i] = c.suggestedName; });
+        setCanonicalNames(initialNames);
+        setScanned(true);
+      })
+      .catch(() => toast.error('Error scanning for similar boat names.'))
+      .finally(() => setScanning(false));
+  };
+
+  const handleApprove = (index) => {
+    const cluster = clusters[index];
+    const canonicalName = (canonicalNames[index] || '').trim();
+    if (!canonicalName) {
+      toast.warning('Please enter a corrected boat name.');
+      return;
+    }
+
+    setMerging((prev) => ({ ...prev, [index]: true }));
+    const currentUser = JSON.parse(window.localStorage.getItem('user'));
+
+    fetch(`${apiUrl}/api/${year}/admin_merge_boat_names`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        canonicalName,
+        oldNames: cluster.spellings.map((s) => s.name),
+        editedBy: currentUser?.email || 'Unknown',
+      }),
+    })
+      .then((r) => {
+        if (!r.ok) throw new Error('Merge failed');
+        return r.json();
+      })
+      .then(() => {
+        toast.success(`Merged into "${canonicalName}".`);
+        setClusters((prev) => prev.filter((_, i) => i !== index));
+      })
+      .catch(() => toast.error('Error merging boat names.'))
+      .finally(() => setMerging((prev) => ({ ...prev, [index]: false })));
+  };
+
+  const handleSkip = (index) => {
+    setClusters((prev) => prev.filter((_, i) => i !== index));
+  };
+
+  return (
+    <TabPanel value="Boat Cleanup">
+      <Typography variant="body2" sx={{ mb: 2 }}>
+        Scans this year's registered boat names for likely duplicate spellings. Nothing changes
+        automatically -- review each group below and either approve a corrected spelling (renames
+        every matching angler and pot entry) or skip it if they're actually different boats.
+      </Typography>
+      <Button variant="contained" onClick={handleScan} disabled={scanning}>
+        {scanning ? 'Scanning...' : 'Scan for Similar Boat Names'}
+      </Button>
+      <br /><br />
+
+      {scanned && clusters.length === 0 && (
+        <Typography>No likely duplicate boat names found.</Typography>
+      )}
+
+      {clusters.map((cluster, index) => (
+        <Box key={cluster.suggestedName + index} sx={{ border: '1px solid #ccc', borderRadius: 1, p: 2, mb: 2 }}>
+          <Typography variant="subtitle1" sx={{ fontWeight: 'bold', mb: 1 }}>
+            {cluster.totalAnglers} angler{cluster.totalAnglers === 1 ? '' : 's'} across {cluster.spellings.length} spellings
+          </Typography>
+          <ul>
+            {cluster.spellings.map((s) => (
+              <li key={s.name}>{s.name} ({s.count} angler{s.count === 1 ? '' : 's'})</li>
+            ))}
+          </ul>
+          <TextField
+            label="Correct spelling"
+            value={canonicalNames[index] || ''}
+            onChange={(e) => setCanonicalNames((prev) => ({ ...prev, [index]: e.target.value }))}
+            fullWidth
+            sx={{ mb: 1 }}
+          />
+          <Button
+            variant="contained"
+            color="primary"
+            onClick={() => handleApprove(index)}
+            disabled={merging[index]}
+            sx={{ mr: 1 }}
+          >
+            {merging[index] ? 'Merging...' : 'Approve & Merge'}
+          </Button>
+          <Button variant="outlined" onClick={() => handleSkip(index)}>
+            Skip (Different Boats)
+          </Button>
+        </Box>
+      ))}
     </TabPanel>
   );
 }

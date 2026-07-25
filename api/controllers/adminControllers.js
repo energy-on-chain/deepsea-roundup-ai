@@ -281,6 +281,174 @@ module.exports = ({redisClient}) => {
     }
   };
 
+  // Boat name cleanup -- surfaces likely duplicate spellings of the same boat
+  // ("Reel Deal" / "The Reel Deal" / "Reel Deel") for an admin to review and merge.
+  // Nothing merges automatically; every cluster requires an explicit approve.
+
+  // Lowercase, drop a leading "the", strip punctuation, collapse whitespace.
+  const normalizeBoatName = (name) => {
+    return (name || '')
+      .toLowerCase()
+      .replace(/^the\s+/, '')
+      .replace(/[^a-z0-9\s]/g, '')
+      .replace(/\s+/g, ' ')
+      .trim();
+  };
+
+  // Plain Levenshtein edit distance -- strings here are short (boat names), no dependency needed.
+  const levenshteinDistance = (a, b) => {
+    const m = a.length, n = b.length;
+    const dp = Array.from({ length: m + 1 }, () => new Array(n + 1).fill(0));
+    for (let i = 0; i <= m; i++) dp[i][0] = i;
+    for (let j = 0; j <= n; j++) dp[0][j] = j;
+    for (let i = 1; i <= m; i++) {
+      for (let j = 1; j <= n; j++) {
+        dp[i][j] = a[i - 1] === b[j - 1]
+          ? dp[i - 1][j - 1]
+          : 1 + Math.min(dp[i - 1][j], dp[i][j - 1], dp[i - 1][j - 1]);
+      }
+    }
+    return dp[m][n];
+  };
+
+  // 0..1 similarity ratio (1 = identical after normalization).
+  const boatNameSimilarity = (a, b) => {
+    const normA = normalizeBoatName(a);
+    const normB = normalizeBoatName(b);
+    if (!normA || !normB) return 0;
+    if (normA === normB) return 1;
+    const maxLen = Math.max(normA.length, normB.length);
+    return 1 - levenshteinDistance(normA, normB) / maxLen;
+  };
+
+  // Conservative default -- catches obvious typos/variants (e.g. "Reel Deal" vs "Reel Deel")
+  // without being so loose it flags genuinely different boats as likely dupes too often.
+  const BOAT_NAME_SIMILARITY_THRESHOLD = 0.8;
+
+  const adminGetFuzzyBoatNameClusters = async (req, res) => {
+    try {
+      const { year } = req.params;
+      const db = getFirestore();
+
+      const anglersSnapshot = await db.collection(`anglers${year}`).get();
+
+      // Group anglers by exact (trimmed) boat name spelling
+      const bySpelling = {};
+      anglersSnapshot.docs.forEach((doc) => {
+        const angler = doc.data();
+        const name = (angler.boatName || '').trim();
+        if (!name) return;
+        if (!bySpelling[name]) bySpelling[name] = [];
+        bySpelling[name].push({ anglerId: doc.id, anglerName: angler.anglerName || 'Unknown' });
+      });
+
+      const distinctNames = Object.keys(bySpelling);
+
+      // Union-find: cluster any pair of spellings whose similarity clears the threshold.
+      const parent = {};
+      distinctNames.forEach((n) => { parent[n] = n; });
+      const find = (x) => (parent[x] === x ? x : (parent[x] = find(parent[x])));
+      const union = (x, y) => {
+        const rx = find(x), ry = find(y);
+        if (rx !== ry) parent[rx] = ry;
+      };
+
+      for (let i = 0; i < distinctNames.length; i++) {
+        for (let j = i + 1; j < distinctNames.length; j++) {
+          if (boatNameSimilarity(distinctNames[i], distinctNames[j]) >= BOAT_NAME_SIMILARITY_THRESHOLD) {
+            union(distinctNames[i], distinctNames[j]);
+          }
+        }
+      }
+
+      const groups = {};
+      distinctNames.forEach((n) => {
+        const root = find(n);
+        if (!groups[root]) groups[root] = [];
+        groups[root].push(n);
+      });
+
+      const clusters = Object.values(groups)
+        .filter((names) => names.length > 1)
+        .map((names) => {
+          const spellings = names
+            .map((name) => ({
+              name,
+              count: bySpelling[name].length,
+              anglerIds: bySpelling[name].map((a) => a.anglerId),
+            }))
+            .sort((a, b) => b.count - a.count);
+          return {
+            suggestedName: spellings[0].name, // most common spelling in the cluster
+            spellings,
+            totalAnglers: spellings.reduce((sum, s) => sum + s.count, 0),
+          };
+        })
+        .sort((a, b) => b.totalAnglers - a.totalAnglers);
+
+      res.status(200).json(clusters);
+    } catch (e) {
+      console.error('Error scanning for fuzzy boat name matches:', e);
+      res.status(500).json({ error: e.message });
+    }
+  };
+
+  const adminMergeBoatNames = async (req, res) => {
+    try {
+      const { year } = req.params;
+      const db = getFirestore();
+      const { canonicalName, oldNames, editedBy } = req.body;
+
+      if (!canonicalName || !Array.isArray(oldNames) || oldNames.length === 0) {
+        return res.status(400).json({ error: 'canonicalName and oldNames are required.' });
+      }
+
+      const namesToMerge = oldNames.filter((n) => n !== canonicalName);
+      if (namesToMerge.length === 0) {
+        return res.status(200).json({ message: 'Nothing to merge.', updatedCount: 0 });
+      }
+
+      const anglersSnapshot = await db.collection(`anglers${year}`).get();
+      const affectedAnglerDocs = anglersSnapshot.docs.filter((doc) =>
+        namesToMerge.includes(doc.data().boatName)
+      );
+
+      const writes = [];
+      affectedAnglerDocs.forEach((doc) => {
+        const angler = doc.data();
+        writes.push(doc.ref.update({ boatName: canonicalName }));
+        // Audit trail -- same collection/shape as angler-edit changes, so a boat-name merge
+        // shows up in the Change Log alongside any other edit to that angler's record.
+        writes.push(
+          db.collection(`anglerChangeLog${year}`).add({
+            anglerId: doc.id,
+            timestamp: new Date().toISOString(),
+            editedBy: editedBy || 'Unknown',
+            anglerNameBefore: angler.anglerName || 'Unknown',
+            anglerNameAfter: angler.anglerName || 'Unknown',
+            changes: { boatName: { from: angler.boatName, to: canonicalName } },
+          })
+        );
+      });
+
+      // Cascade to pot entries, which are keyed by boat name rather than angler ID.
+      const potsRef = db.collection(`pots${year}`);
+      for (const oldName of namesToMerge) {
+        const potSnapshot = await potsRef.where('name', '==', oldName).get();
+        potSnapshot.docs.forEach((doc) => {
+          writes.push(doc.ref.update({ name: canonicalName }));
+        });
+      }
+
+      await Promise.all(writes);
+
+      res.status(200).json({ message: 'Merged.', updatedCount: affectedAnglerDocs.length });
+    } catch (e) {
+      console.error('Error merging boat names:', e);
+      res.status(500).json({ error: e.message });
+    }
+  };
+
   const adminGetRegisteredAnglerDataForReport = async (req, res) => {
     console.log('In api/admin_get_registered_team_data_for_report...');
   
@@ -878,6 +1046,8 @@ module.exports = ({redisClient}) => {
     adminGetOldTeamNameList,
     adminEditAngler,
     adminDeleteAngler,
+    adminGetFuzzyBoatNameClusters,
+    adminMergeBoatNames,
     adminEditSponsor,
     adminDeleteSponsor,
     adminAddCatch,

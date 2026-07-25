@@ -10,6 +10,8 @@ module.exports = ({ redisClient }) => {
     adminGetOldTeamNameList,
     adminEditAngler,
     adminDeleteAngler,
+    adminGetFuzzyBoatNameClusters,
+    adminMergeBoatNames,
     adminEditSponsor,
     adminDeleteSponsor,
     adminAddCatch,
@@ -33,6 +35,8 @@ module.exports = ({ redisClient }) => {
   router.post('/api/admin_get_old_team_name_list', adminGetOldTeamNameList);
   router.post('/api/:year/admin_edit_angler', adminEditAngler);
   router.post('/api/:year/admin_delete_angler', adminDeleteAngler);
+  router.post('/api/:year/admin_get_fuzzy_boat_name_clusters', adminGetFuzzyBoatNameClusters);
+  router.post('/api/:year/admin_merge_boat_names', adminMergeBoatNames);
   // router.post('/api/:year/admin_edit_sponsor', upload.any(), adminEditSponsor);
   router.post('/api/:year/admin_edit_sponsor', upload.fields([
     { name: 'logo', maxCount: 1 }
