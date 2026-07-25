@@ -1805,7 +1805,7 @@ function BoatNameCleanupTab({ year, apiUrl }) {
       .then((data) => {
         setClusters(data);
         const initialNames = {};
-        data.forEach((c, i) => { initialNames[i] = c.suggestedName; });
+        data.forEach((c) => { initialNames[c.suggestedName] = c.suggestedName; });
         setCanonicalNames(initialNames);
         setScanned(true);
       })
@@ -1813,15 +1813,18 @@ function BoatNameCleanupTab({ year, apiUrl }) {
       .finally(() => setScanning(false));
   };
 
-  const handleApprove = (index) => {
-    const cluster = clusters[index];
-    const canonicalName = (canonicalNames[index] || '').trim();
+  // Keyed by cluster.suggestedName (stable per cluster) rather than array index -- indexes
+  // shift every time a cluster is removed after a merge/skip, which was causing the "Correct
+  // spelling" box to show the wrong cluster's value once an earlier row was approved.
+  const handleApprove = (cluster) => {
+    const clusterKey = cluster.suggestedName;
+    const canonicalName = (canonicalNames[clusterKey] || '').trim();
     if (!canonicalName) {
       toast.warning('Please enter a corrected boat name.');
       return;
     }
 
-    setMerging((prev) => ({ ...prev, [index]: true }));
+    setMerging((prev) => ({ ...prev, [clusterKey]: true }));
     const currentUser = JSON.parse(window.localStorage.getItem('user'));
 
     fetch(`${apiUrl}/api/${year}/admin_merge_boat_names`, {
@@ -1839,14 +1842,14 @@ function BoatNameCleanupTab({ year, apiUrl }) {
       })
       .then(() => {
         toast.success(`Merged into "${canonicalName}".`);
-        setClusters((prev) => prev.filter((_, i) => i !== index));
+        setClusters((prev) => prev.filter((c) => c.suggestedName !== clusterKey));
       })
       .catch(() => toast.error('Error merging boat names.'))
-      .finally(() => setMerging((prev) => ({ ...prev, [index]: false })));
+      .finally(() => setMerging((prev) => ({ ...prev, [clusterKey]: false })));
   };
 
-  const handleSkip = (index) => {
-    setClusters((prev) => prev.filter((_, i) => i !== index));
+  const handleSkip = (cluster) => {
+    setClusters((prev) => prev.filter((c) => c.suggestedName !== cluster.suggestedName));
   };
 
   return (
@@ -1865,8 +1868,8 @@ function BoatNameCleanupTab({ year, apiUrl }) {
         <Typography>No likely duplicate boat names found.</Typography>
       )}
 
-      {clusters.map((cluster, index) => (
-        <Box key={cluster.suggestedName + index} sx={{ border: '1px solid #ccc', borderRadius: 1, p: 2, mb: 2 }}>
+      {clusters.map((cluster) => (
+        <Box key={cluster.suggestedName} sx={{ border: '1px solid #ccc', borderRadius: 1, p: 2, mb: 2 }}>
           <Typography variant="subtitle1" sx={{ fontWeight: 'bold', mb: 1 }}>
             {cluster.totalAnglers} angler{cluster.totalAnglers === 1 ? '' : 's'} across {cluster.spellings.length} spellings
           </Typography>
@@ -1877,21 +1880,21 @@ function BoatNameCleanupTab({ year, apiUrl }) {
           </ul>
           <TextField
             label="Correct spelling"
-            value={canonicalNames[index] || ''}
-            onChange={(e) => setCanonicalNames((prev) => ({ ...prev, [index]: e.target.value }))}
+            value={canonicalNames[cluster.suggestedName] || ''}
+            onChange={(e) => setCanonicalNames((prev) => ({ ...prev, [cluster.suggestedName]: e.target.value }))}
             fullWidth
             sx={{ mb: 1 }}
           />
           <Button
             variant="contained"
             color="primary"
-            onClick={() => handleApprove(index)}
-            disabled={merging[index]}
+            onClick={() => handleApprove(cluster)}
+            disabled={merging[cluster.suggestedName]}
             sx={{ mr: 1 }}
           >
-            {merging[index] ? 'Merging...' : 'Approve & Merge'}
+            {merging[cluster.suggestedName] ? 'Merging...' : 'Approve & Merge'}
           </Button>
-          <Button variant="outlined" onClick={() => handleSkip(index)}>
+          <Button variant="outlined" onClick={() => handleSkip(cluster)}>
             Skip (Different Boats)
           </Button>
         </Box>
