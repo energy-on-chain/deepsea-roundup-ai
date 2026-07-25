@@ -344,6 +344,7 @@ const registrationFactory = ({ clientUrl, serverUrl, stripe, webhookSecret, redi
           const docRef = await db.collection(`sponsors${year}`).add(sponsorData);
           await docRef.update({ sponsorId: docRef.id });
           console.log(`Sponsor ${sponsorName} added with ID: ${docRef.id}`);
+          await emailService.notifySponsorRegistered(sponsorData);
         } catch (error) {
           console.error(`Error adding sponsor ${sponsorName}:`, error);
         }
