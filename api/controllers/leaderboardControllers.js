@@ -70,9 +70,13 @@ exports.getDeepseaRoundupTopWomanAngler = async (req, res) => {
       return catches.slice(0, 2);
     };
 
-    // Meatfish species that are Bay/Surf only — all others in meatfishSpeciesList use Offshore
+    // Meatfish species that are Bay/Surf only — all others in meatfishSpeciesList use Offshore.
+    // Sheepshead has no Offshore category at all, so it belongs here unambiguously. Bonito
+    // (Little Tunny) and Spanish Mackerel are intentionally left out -- they're dual-division
+    // species (valid in both Bay/Surf and Offshore) and picking just one here would silently
+    // miss real trophies caught in the other division; see the tournament rules before changing.
     const BAY_SURF_ONLY_SPECIES = new Set([
-      'Black Drum', 'Flounder', 'Gafftop', 'Pompano', 'Redfish', 'Speckled Trout',
+      'Black Drum', 'Flounder', 'Gafftop', 'Pompano', 'Redfish', 'Speckled Trout', 'Sheepshead',
     ]);
 
     // Helper function: Calculate angler stats for a list of species
