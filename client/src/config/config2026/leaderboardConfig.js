@@ -2171,16 +2171,15 @@ export default {
 
     // Flyfishing
     {
-      title: "Flyfishing - Redfish (Adult)", 
+      title: "Flyfishing - Redfish (Adult)",
       subtitle: "",
-      numPlaces: 5, 
+      numPlaces: 5,
       numTrophies: 2,
-      display: true, 
-      url: "get_deepsea_roundup_meatfish_species_winner",     
+      display: true,
+      url: "get_deepsea_roundup_meatfish_species_winner",
       inputs: [
         {
-          species: "Redfish", 
-          ageBracket: "Adult",
+          species: "Redfish",
           division: "Flyfishing",
         }
       ],
@@ -2204,82 +2203,15 @@ export default {
       ]
     },
     { 
-      title: "Flyfishing - Speckled Trout (Adult)", 
+      title: "Flyfishing - Speckled Trout (Adult)",
       subtitle: "",
-      numPlaces: 5, 
+      numPlaces: 5,
       numTrophies: 2,
-      display: true, 
-      url: "get_deepsea_roundup_meatfish_species_winner",     
+      display: true,
+      url: "get_deepsea_roundup_meatfish_species_winner",
       inputs: [
         {
-          species: "Speckled Trout", 
-          ageBracket: "Adult",
-          division: "Flyfishing",
-        }
-      ],
-      desktopColumns: [
-        { field: 'place', headerName: 'Place', flex: 1, headerClassName: 'super-app-theme--header', headerAlign: 'center', align: 'center', isDateTime: false},
-        { field: 'species', headerName: 'Species', flex: 1, headerClassName: 'super-app-theme--header', headerAlign: 'center', align: 'center', isDateTime: false},
-        { field: 'angler', headerName: 'Name', flex: 1, headerClassName: 'super-app-theme--header', headerAlign: 'center', align: 'center', isDateTime: false},
-        { field: 'hometown', headerName: 'Hometown', flex: 1, headerClassName: 'super-app-theme--header', headerAlign: 'center', align: 'center', isDateTime: false},
-        { field: 'weight', headerName: 'Weight (lbs)', flex: 1, headerClassName: 'super-app-theme--header', headerAlign: 'center', align: 'center', isDateTime: false},
-        { field: 'length', headerName: 'Length (in)', flex: 1, headerClassName: 'super-app-theme--header', headerAlign: 'center', align: 'center', isDateTime: false},
-        { field: 'girth', headerName: 'Girth (in)', flex: 1, headerClassName: 'super-app-theme--header', headerAlign: 'center', align: 'center', isDateTime: false},
-      ],
-      mobileColumns: [
-        { field: 'place', headerName: 'Place', width: 150, headerClassName: 'super-app-theme--header', headerAlign: 'center', align: 'center', isDateTime: false},
-        { field: 'species', headerName: 'Species', width: 150, headerClassName: 'super-app-theme--header', headerAlign: 'center', align: 'center', isDateTime: false},
-        { field: 'name', headerName: 'Name', width: 150, headerClassName: 'super-app-theme--header', headerAlign: 'center', align: 'center', isDateTime: false},
-        { field: 'hometown', headerName: 'Hometown', width: 150, headerClassName: 'super-app-theme--header', headerAlign: 'center', align: 'center', isDateTime: false},
-        { field: 'weight', headerName: 'Weight (lbs)', width: 150, headerClassName: 'super-app-theme--header', headerAlign: 'center', align: 'center', isDateTime: false},
-        { field: 'length', headerName: 'Length (in)', width: 150, headerClassName: 'super-app-theme--header', headerAlign: 'center', align: 'center', isDateTime: false},
-        { field: 'girth', headerName: 'Girth (in)', width: 150, headerClassName: 'super-app-theme--header', headerAlign: 'center', align: 'center', isDateTime: false},
-      ]
-    },
-    { 
-      title: "Flyfishing - Redfish (Junior)", 
-      subtitle: "",
-      numPlaces: 5, 
-      numTrophies: 2,
-      display: true, 
-      url: "get_deepsea_roundup_meatfish_species_winner",     
-      inputs: [
-        {
-          species: "Redfish", 
-          ageBracket: "Junior",
-          division: "Flyfishing",
-        }
-      ],
-      desktopColumns: [
-        { field: 'place', headerName: 'Place', flex: 1, headerClassName: 'super-app-theme--header', headerAlign: 'center', align: 'center', isDateTime: false},
-        { field: 'species', headerName: 'Species', flex: 1, headerClassName: 'super-app-theme--header', headerAlign: 'center', align: 'center', isDateTime: false},
-        { field: 'angler', headerName: 'Name', flex: 1, headerClassName: 'super-app-theme--header', headerAlign: 'center', align: 'center', isDateTime: false},
-        { field: 'hometown', headerName: 'Hometown', flex: 1, headerClassName: 'super-app-theme--header', headerAlign: 'center', align: 'center', isDateTime: false},
-        { field: 'weight', headerName: 'Weight (lbs)', flex: 1, headerClassName: 'super-app-theme--header', headerAlign: 'center', align: 'center', isDateTime: false},
-        { field: 'length', headerName: 'Length (in)', flex: 1, headerClassName: 'super-app-theme--header', headerAlign: 'center', align: 'center', isDateTime: false},
-        { field: 'girth', headerName: 'Girth (in)', flex: 1, headerClassName: 'super-app-theme--header', headerAlign: 'center', align: 'center', isDateTime: false},
-      ],
-      mobileColumns: [
-        { field: 'place', headerName: 'Place', width: 150, headerClassName: 'super-app-theme--header', headerAlign: 'center', align: 'center', isDateTime: false},
-        { field: 'species', headerName: 'Species', width: 150, headerClassName: 'super-app-theme--header', headerAlign: 'center', align: 'center', isDateTime: false},
-        { field: 'name', headerName: 'Name', width: 150, headerClassName: 'super-app-theme--header', headerAlign: 'center', align: 'center', isDateTime: false},
-        { field: 'hometown', headerName: 'Hometown', width: 150, headerClassName: 'super-app-theme--header', headerAlign: 'center', align: 'center', isDateTime: false},
-        { field: 'weight', headerName: 'Weight (lbs)', width: 150, headerClassName: 'super-app-theme--header', headerAlign: 'center', align: 'center', isDateTime: false},
-        { field: 'length', headerName: 'Length (in)', width: 150, headerClassName: 'super-app-theme--header', headerAlign: 'center', align: 'center', isDateTime: false},
-        { field: 'girth', headerName: 'Girth (in)', width: 150, headerClassName: 'super-app-theme--header', headerAlign: 'center', align: 'center', isDateTime: false},
-      ]
-    },
-    { 
-      title: "Flyfishing - Speckled Trout (Junior)", 
-      subtitle: "",
-      numPlaces: 5, 
-      numTrophies: 2,
-      display: true, 
-      url: "get_deepsea_roundup_meatfish_species_winner",     
-      inputs: [
-        {
-          species: "Speckled Trout", 
-          ageBracket: "Junior",
+          species: "Speckled Trout",
           division: "Flyfishing",
         }
       ],
@@ -2304,17 +2236,16 @@ export default {
     },
 
     // Kayak
-    { 
-      title: "Kayak - Redfish (Adult)", 
+    {
+      title: "Kayak - Redfish (Adult)",
       subtitle: "",
-      numPlaces: 5, 
+      numPlaces: 5,
       numTrophies: 2,
-      display: true, 
-      url: "get_deepsea_roundup_meatfish_species_winner",     
+      display: true,
+      url: "get_deepsea_roundup_meatfish_species_winner",
       inputs: [
         {
-          species: "Redfish", 
-          ageBracket: "Adult",
+          species: "Redfish",
           division: "Kayak",
         }
       ],
@@ -2337,83 +2268,16 @@ export default {
         { field: 'girth', headerName: 'Girth (in)', width: 150, headerClassName: 'super-app-theme--header', headerAlign: 'center', align: 'center', isDateTime: false},
       ]
     },
-    { 
-      title: "Kayak - Speckled Trout (Adult)", 
+    {
+      title: "Kayak - Speckled Trout (Adult)",
       subtitle: "",
-      numPlaces: 5, 
+      numPlaces: 5,
       numTrophies: 2,
-      display: true, 
-      url: "get_deepsea_roundup_meatfish_species_winner",     
+      display: true,
+      url: "get_deepsea_roundup_meatfish_species_winner",
       inputs: [
         {
-          species: "Speckled Trout", 
-          ageBracket: "Adult",
-          division: "Kayak",
-        }
-      ],
-      desktopColumns: [
-        { field: 'place', headerName: 'Place', flex: 1, headerClassName: 'super-app-theme--header', headerAlign: 'center', align: 'center', isDateTime: false},
-        { field: 'species', headerName: 'Species', flex: 1, headerClassName: 'super-app-theme--header', headerAlign: 'center', align: 'center', isDateTime: false},
-        { field: 'angler', headerName: 'Name', flex: 1, headerClassName: 'super-app-theme--header', headerAlign: 'center', align: 'center', isDateTime: false},
-        { field: 'hometown', headerName: 'Hometown', flex: 1, headerClassName: 'super-app-theme--header', headerAlign: 'center', align: 'center', isDateTime: false},
-        { field: 'weight', headerName: 'Weight (lbs)', flex: 1, headerClassName: 'super-app-theme--header', headerAlign: 'center', align: 'center', isDateTime: false},
-        { field: 'length', headerName: 'Length (in)', flex: 1, headerClassName: 'super-app-theme--header', headerAlign: 'center', align: 'center', isDateTime: false},
-        { field: 'girth', headerName: 'Girth (in)', flex: 1, headerClassName: 'super-app-theme--header', headerAlign: 'center', align: 'center', isDateTime: false},
-      ],
-      mobileColumns: [
-        { field: 'place', headerName: 'Place', width: 150, headerClassName: 'super-app-theme--header', headerAlign: 'center', align: 'center', isDateTime: false},
-        { field: 'species', headerName: 'Species', width: 150, headerClassName: 'super-app-theme--header', headerAlign: 'center', align: 'center', isDateTime: false},
-        { field: 'name', headerName: 'Name', width: 150, headerClassName: 'super-app-theme--header', headerAlign: 'center', align: 'center', isDateTime: false},
-        { field: 'hometown', headerName: 'Hometown', width: 150, headerClassName: 'super-app-theme--header', headerAlign: 'center', align: 'center', isDateTime: false},
-        { field: 'weight', headerName: 'Weight (lbs)', width: 150, headerClassName: 'super-app-theme--header', headerAlign: 'center', align: 'center', isDateTime: false},
-        { field: 'length', headerName: 'Length (in)', width: 150, headerClassName: 'super-app-theme--header', headerAlign: 'center', align: 'center', isDateTime: false},
-        { field: 'girth', headerName: 'Girth (in)', width: 150, headerClassName: 'super-app-theme--header', headerAlign: 'center', align: 'center', isDateTime: false},
-      ]
-    },
-    { 
-      title: "Kayak - Redfish (Junior)", 
-      subtitle: "",
-      numPlaces: 5, 
-      numTrophies: 2,
-      display: true, 
-      url: "get_deepsea_roundup_meatfish_species_winner",     
-      inputs: [
-        {
-          species: "Redfish", 
-          ageBracket: "Junior",
-          division: "Kayak",
-        }
-      ],
-      desktopColumns: [
-        { field: 'place', headerName: 'Place', flex: 1, headerClassName: 'super-app-theme--header', headerAlign: 'center', align: 'center', isDateTime: false},
-        { field: 'species', headerName: 'Species', flex: 1, headerClassName: 'super-app-theme--header', headerAlign: 'center', align: 'center', isDateTime: false},
-        { field: 'angler', headerName: 'Name', flex: 1, headerClassName: 'super-app-theme--header', headerAlign: 'center', align: 'center', isDateTime: false},
-        { field: 'hometown', headerName: 'Hometown', flex: 1, headerClassName: 'super-app-theme--header', headerAlign: 'center', align: 'center', isDateTime: false},
-        { field: 'weight', headerName: 'Weight (lbs)', flex: 1, headerClassName: 'super-app-theme--header', headerAlign: 'center', align: 'center', isDateTime: false},
-        { field: 'length', headerName: 'Length (in)', flex: 1, headerClassName: 'super-app-theme--header', headerAlign: 'center', align: 'center', isDateTime: false},
-        { field: 'girth', headerName: 'Girth (in)', flex: 1, headerClassName: 'super-app-theme--header', headerAlign: 'center', align: 'center', isDateTime: false},
-      ],
-      mobileColumns: [
-        { field: 'place', headerName: 'Place', width: 150, headerClassName: 'super-app-theme--header', headerAlign: 'center', align: 'center', isDateTime: false},
-        { field: 'species', headerName: 'Species', width: 150, headerClassName: 'super-app-theme--header', headerAlign: 'center', align: 'center', isDateTime: false},
-        { field: 'name', headerName: 'Name', width: 150, headerClassName: 'super-app-theme--header', headerAlign: 'center', align: 'center', isDateTime: false},
-        { field: 'hometown', headerName: 'Hometown', width: 150, headerClassName: 'super-app-theme--header', headerAlign: 'center', align: 'center', isDateTime: false},
-        { field: 'weight', headerName: 'Weight (lbs)', width: 150, headerClassName: 'super-app-theme--header', headerAlign: 'center', align: 'center', isDateTime: false},
-        { field: 'length', headerName: 'Length (in)', width: 150, headerClassName: 'super-app-theme--header', headerAlign: 'center', align: 'center', isDateTime: false},
-        { field: 'girth', headerName: 'Girth (in)', width: 150, headerClassName: 'super-app-theme--header', headerAlign: 'center', align: 'center', isDateTime: false},
-      ]
-    },
-    { 
-      title: "Kayak - Speckled Trout (Junior)", 
-      subtitle: "",
-      numPlaces: 5, 
-      numTrophies: 2,
-      display: true, 
-      url: "get_deepsea_roundup_meatfish_species_winner",     
-      inputs: [
-        {
-          species: "Speckled Trout", 
-          ageBracket: "Junior",
+          species: "Speckled Trout",
           division: "Kayak",
         }
       ],
