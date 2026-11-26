@@ -5,7 +5,7 @@ export default {
   // Set to true after the tournament concludes to make pot winners public on the pots page.
   CONFIG_POTS_SHOW_WINNERS_PUBLICLY: false,
   CONFIG_POTS_INCLUDE_PRELIMINARY_RESULTS_DISCLAIMER: true,
-  CONFIG_POTS_PRELIMINARY_RESULTS_DISCLAIMER_CUTOFF_IN_LOCAL_TIME_IN_MS: "1816059600000",    // PLACEHOLDER Tue 20-Jul-2027 00:00 CDT (end of Mon 19 Jul): confirm with client
+  CONFIG_POTS_PRELIMINARY_RESULTS_DISCLAIMER_CUTOFF_IN_LOCAL_TIME_IN_MS: "1816059600000",    // TODO(2027): confirm (tentative: Tue, Jul 20, 2027, 12:00 AM CT)
   CONFIG_POTS_TEAM_SUMMARY_DESKTOP_COLUMN_DEFINITIONS: [
     { field: 'team', headerName: 'Team', flex: 1, headerClassName: 'super-app-theme--header', headerAlign: 'center', align: 'center', isDateTime: false, isCurrency: false},
     { field: 'payout', headerName: 'Payout', flex: 1, headerClassName: 'super-app-theme--header', headerAlign: 'center', align: 'center', isDateTime: false, isCurrency: true},

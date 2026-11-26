@@ -4,20 +4,20 @@
 export default {
   // Safety flag: set to true until prices/dates are officially confirmed.
   // While true, registration page shows an amber "Coming Soon" banner and disables the register button.
-  CONFIG_REGISTRATION_PRICES_PENDING_CONFIRMATION: true,    // flip to false to open 2027 registration
+  CONFIG_REGISTRATION_PRICES_PENDING_CONFIRMATION: true,    // flip to false to open registration
 
   CONFIG_REGISTRATION_HAS_EARLYBIRD_REGISTRATION: true,
-  CONFIG_REGISTRATION_EARLYBIRD_CUTOFF_IN_LOCAL_TIME_IN_MS: "1814331600000",    // PLACEHOLDER Wed 30-Jun-2027 00:00 CDT: confirm with client
-  CONFIG_ANGLER_REGISTRATION_CUTOFF_IN_LOCAL_TIME_IN_MS: "1815541200000",    // PLACEHOLDER Wed 14-Jul-2027 00:00 CDT (end of Tue 13 Jul): confirm with client
-  CONFIG_SPONSOR_REGISTRATION_CUTOFF_IN_LOCAL_TIME_IN_MS: "1815541200000",    // PLACEHOLDER Wed 14-Jul-2027 00:00 CDT (end of Tue 13 Jul): confirm with client
+  CONFIG_REGISTRATION_EARLYBIRD_CUTOFF_IN_LOCAL_TIME_IN_MS: "1814331600000",    // TODO(2027): confirm (tentative: Wed, Jun 30, 2027, 12:00 AM CT)
+  CONFIG_ANGLER_REGISTRATION_CUTOFF_IN_LOCAL_TIME_IN_MS: "1815541200000",    // TODO(2027): confirm (tentative: Wed, Jul 14, 2027, 12:00 AM CT)
+  CONFIG_SPONSOR_REGISTRATION_CUTOFF_IN_LOCAL_TIME_IN_MS: "1815541200000",    // TODO(2027): confirm (tentative: Wed, Jul 14, 2027, 12:00 AM CT)
   CONFIG_REGISTRATION_EARLYBIRD_DATE_STRING:
-    "Pre-registration (before June 30th, 2027):",
-  CONFIG_REGISTRATION_EARLYBIRD_ADULT_FEE: 150,    // PLACEHOLDER: confirm with client (2026 price)
-  CONFIG_REGISTRATION_EARLYBIRD_JUNIOR_FEE: 110,    // PLACEHOLDER: confirm with client (2026 price)
+    "Pre-registration (deadline to be announced):",    // TODO(2027): confirm
+  CONFIG_REGISTRATION_EARLYBIRD_ADULT_FEE: 150,    // TODO(2027): confirm price (copied from 2026)
+  CONFIG_REGISTRATION_EARLYBIRD_JUNIOR_FEE: 110,    // TODO(2027): confirm price (copied from 2026)
   CONFIG_REGISTRATION_NORMAL_DATE_STRING:
-    "Normal registration (after June 30th, 2027):",
-  CONFIG_REGISTRATION_NORMAL_ADULT_FEE: 200,    // PLACEHOLDER: confirm with client (2026 price)
-  CONFIG_REGISTRATION_NORMAL_JUNIOR_FEE: 130,    // PLACEHOLDER: confirm with client (2026 price)
+    "Normal registration:",
+  CONFIG_REGISTRATION_NORMAL_ADULT_FEE: 200,    // TODO(2027): confirm price (copied from 2026)
+  CONFIG_REGISTRATION_NORMAL_JUNIOR_FEE: 130,    // TODO(2027): confirm price (copied from 2026)
   CONFIG_REGISTRATION_PAST_TEAMS_TABLES_FOR_AUTOCOMPLETE_NAME_LIST: [
     // "anglers2026",
   ],
@@ -28,7 +28,7 @@ export default {
       "All decisions made by the weigh master and/or tournament directors are final.",
     ],
   },
-  // PLACEHOLDER: 2026 sponsorship tiers and prices; confirm with client
+  // TODO(2027): confirm sponsorship tiers, additional sponsorships and prices (copied from 2026)
   CONFIG_SPONSOR_REGISTRATION_TIERS: {
     "Tournament Top Sponsor": 25000,
     "Platinum Tier": 10000,

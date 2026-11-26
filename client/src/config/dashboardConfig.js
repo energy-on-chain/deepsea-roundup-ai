@@ -24,7 +24,7 @@ const dashboardConfig = {
     {
       logo: './DeepseaRoundupLogo2027.jpg',
       title: "Deepsea Roundup 2027 (91st Edition)",
-      dates: "July 2027 (dates coming soon)",
+      dates: "Dates to be announced",
       home: "/2027/home",
       register: "/2027/register",
       leaderboard: "/2027/leaderboard",

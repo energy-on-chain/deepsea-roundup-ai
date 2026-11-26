@@ -168,8 +168,11 @@ function HomePage() {
     CONFIG_HOME_TOURNAMENT_HEADLINE_STRING,
     CONFIG_HOME_TOURNAMENT_START_IN_LOCAL_TIME_IN_MS,
     CONFIG_HOME_PAST_TOURNAMENT_RESULT_STRINGS,
-    CONFIG_HOME_CATCH_STAT_TYPE
+    CONFIG_HOME_CATCH_STAT_TYPE,
+    CONFIG_HOME_DATES_CONFIRMED
   } = configs.homeConfig;
+  // Years before 2027 don't set this flag; treat missing as confirmed.
+  const datesConfirmed = CONFIG_HOME_DATES_CONFIRMED !== false;
 
   const {
     CONFIG_REGISTRATION_HAS_EARLYBIRD_REGISTRATION,
@@ -200,9 +203,11 @@ function HomePage() {
           <br />
           <h2 style={{color: CONFIG_STYLING_HOME_HERO_TEXT_COLOR}}>{CONFIG_HOME_TOURNAMENT_HEADLINE_STRING}</h2>
           <h2 style={{color: CONFIG_STYLING_HOME_HERO_TEXT_COLOR}}>{CONFIG_HOME_TOURNAMENT_DATE_STRING}</h2>
-          <div className="tournamentColElement">
-            <HomeCountdownTimer className="countdown-timer-element" targetDate={parseInt(CONFIG_HOME_TOURNAMENT_START_IN_LOCAL_TIME_IN_MS, 10)} />
-          </div>
+          {datesConfirmed && (
+            <div className="tournamentColElement">
+              <HomeCountdownTimer className="countdown-timer-element" targetDate={parseInt(CONFIG_HOME_TOURNAMENT_START_IN_LOCAL_TIME_IN_MS, 10)} />
+            </div>
+          )}
         </section>
         <section style={{backgroundColor: CONFIG_STYLING_HOME_INFO_BACKGROUND_COLOR}} className="section-hero2">
           {configs.generalConfig.CONFIG_GENERAL_HAS_REGISTRATION && (

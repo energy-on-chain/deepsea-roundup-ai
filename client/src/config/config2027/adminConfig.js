@@ -18,8 +18,8 @@ export default {
     "Change Log",
     "Boat Cleanup",
   ],
-  CONFIG_ADMIN_TOURNAMENT_START_DATE_STRING: "2027-07-08",    // PLACEHOLDER: confirm with client (tournament start)
-  CONFIG_ADMIN_TOURNAMENT_END_DATE_STRING: "2027-07-11",    // PLACEHOLDER: confirm with client (tournament end)
+  CONFIG_ADMIN_TOURNAMENT_START_DATE_STRING: "2027-07-08",    // TODO(2027): confirm (tentative)
+  CONFIG_ADMIN_TOURNAMENT_END_DATE_STRING: "2027-07-11",    // TODO(2027): confirm (tentative)
   // Default values pre-filled when admin adds an angler manually
   CONFIG_ADMIN_DEFAULT_PHONE: "",
   CONFIG_ADMIN_DEFAULT_EMAIL: "",
