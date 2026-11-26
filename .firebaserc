@@ -1,0 +1,6 @@
+{
+  "projects": {
+    "staging": "deepsea-roundup-ai-dev",
+    "production": "deepsea-roundup-ai-prod"
+  }
+}

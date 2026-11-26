@@ -1,7 +1,7 @@
 const express = require('express');
-const bodyParser = require("body-parser");
+const { requireAdmin } = require('../middleware/auth');
 
-module.exports = ({ clientUrl, serverUrl, stripe, webhookSecret, redisClient }) => {
+module.exports = ({ stripe, webhookSecret }) => {
   const router = express.Router();
   const { 
     registrationCheckoutSession, 
@@ -14,14 +14,15 @@ module.exports = ({ clientUrl, serverUrl, stripe, webhookSecret, redisClient }) 
     registrationGetNumberOfCheckedInTeams,
     registrationGetTotalRegistrationFeesCollected,
     upload  
-  } = require('../controllers/registrationControllers')({ clientUrl, serverUrl, stripe, webhookSecret, redisClient });
+  } = require('../controllers/registrationControllers')({ stripe, webhookSecret });
 
   router.post('/api/:year/registration_checkout_session', upload.fields([
     { name: 'sponsorLogo', maxCount: 1 }
   ]), registrationCheckoutSession);
-  router.post('/api/registration_webhook', bodyParser.raw({ type: 'application/json' }), registrationWebhook);
+  router.post('/api/registration_webhook', registrationWebhook); // raw body captured globally in server.js
   router.post(
     '/api/:year/registration_by_admin',
+    requireAdmin,
     upload.single('sponsorLogo'), // Handle single file upload for sponsorLogo
     registrationByAdmin
   );

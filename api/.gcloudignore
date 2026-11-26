@@ -1,0 +1,5 @@
+# Files Cloud Run's source deploy does not upload.
+node_modules/
+test/
+.env*
+*.log

@@ -1,12 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams } from 'react-router-dom';
 import {
   InputLabel, Select, MenuItem, Button, FormControl, Dialog, DialogContent, DialogTitle,
-  IconButton, Stack, Checkbox, Typography, OutlinedInput, FormControlLabel, TextField, Alert,
-  Box, Divider, CircularProgress
+  IconButton, Stack, Checkbox, Typography, OutlinedInput, FormControlLabel, TextField,
+  CircularProgress
 } from "@mui/material";
 import CloseIcon from "@mui/icons-material/Close";
-import LockIcon from "@mui/icons-material/Lock";
 import { toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import { useMediaQuery, useTheme } from "@mui/material";
@@ -15,17 +14,9 @@ import { loadConfigForYear } from '../../config/masterConfig';
 const AddSponsorModal = (props) => {
 
   const { year } = useParams();
-  const navigate = useNavigate();
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
   const [config, setConfig] = useState(null);
-  const [paymentProvider, setPaymentProvider] = useState('stripe');
-  const [acceptJsLoaded, setAcceptJsLoaded] = useState(false);
-  const [cardholderName, setCardholderName] = useState('');
-  const [cardNumber, setCardNumber] = useState('');
-  const [cardExpiry, setCardExpiry] = useState('');
-  const [cardCode, setCardCode] = useState('');
-  const [cardError, setCardError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSubmitted, setIsSubmitted] = useState(false);
 
@@ -52,26 +43,10 @@ const AddSponsorModal = (props) => {
     try {
       const loadedConfig = await loadConfigForYear(year);
       setConfig(loadedConfig);
-      const provider = loadedConfig?.registrationConfig?.CONFIG_PAYMENT_PROVIDER || 'stripe';
-      setPaymentProvider(provider);
     } catch (error) {
       console.log('Error loading config in AddSponsorModal: ' + error);
     }
   };
-
-  // Load Accept.js when using Authorize.net
-  useEffect(() => {
-    if (paymentProvider !== 'authorize_net') return;
-    const src = import.meta.env.VITE_NODE_ENV === 'production'
-      ? 'https://js.authorize.net/v1/Accept.js'
-      : 'https://jstest.authorize.net/v1/Accept.js';
-    if (document.querySelector(`script[src="${src}"]`)) { setAcceptJsLoaded(true); return; }
-    const script = document.createElement('script');
-    script.src = src;
-    script.charset = 'utf-8';
-    script.onload = () => setAcceptJsLoaded(true);
-    document.head.appendChild(script);
-  }, [paymentProvider]);
 
   const calculateTotalFee = () => {
     const tierFee = selectedTier === "None" ? 0 : config?.registrationConfig?.CONFIG_SPONSOR_REGISTRATION_TIERS[selectedTier] || 0;
@@ -185,21 +160,8 @@ const AddSponsorModal = (props) => {
     phone: phone || null,
     selectedTier,
     selectedSponsorships,
-    totalFee,
-    tierFeeStructure: config.registrationConfig.CONFIG_SPONSOR_REGISTRATION_TIERS,
-    selectedSponsorshipsFeeStructure: config.registrationConfig.CONFIG_SPONSOR_REGISTRATION_ADDITIONAL_SPONSORSHIPS,
+    totalFee, // display only; the server works out what is actually charged
   });
-
-  const readLogoAsBase64 = () =>
-    new Promise((resolve) => {
-      if (!sponsorLogo?.file) { resolve(null); return; }
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        const base64 = e.target.result.split(',')[1];
-        resolve({ [sponsorLogo.file.name]: { buffer: base64, mimetype: sponsorLogo.file.type } });
-      };
-      reader.readAsDataURL(sponsorLogo.file);
-    });
 
   const handlePayment = async () => {
     const apiUrl = getApiUrl();
@@ -213,11 +175,7 @@ const AddSponsorModal = (props) => {
         method: 'POST', body: formData,
       }).then(res => res.ok ? res.json() : res.json().then(j => Promise.reject(j)))
         .then(() => { setIsSubmitted(true); window.location.reload(); })
-        .catch(e => { console.error(e); setIsSubmitting(false); });
-
-    } else if (paymentProvider === 'authorize_net') {
-      const imageBuffers = await readLogoAsBase64();
-      handleAuthorizeNetPayment(apiUrl, { ...metaDataObject, imageBuffers });
+        .catch(e => { console.error(e); toast.error(e?.error || 'Something went wrong. Please try again.'); setIsSubmitting(false); });
 
     } else {
       // Stripe path
@@ -225,59 +183,8 @@ const AddSponsorModal = (props) => {
         method: 'POST', body: formData,
       }).then(res => res.ok ? res.json() : res.json().then(j => Promise.reject(j)))
         .then(({ url }) => { setIsSubmitted(true); window.location = url; })
-        .catch(e => { console.error(e); setIsSubmitting(false); });
+        .catch(e => { console.error(e); toast.error(e?.error || 'Something went wrong. Please try again.'); setIsSubmitting(false); });
     }
-  };
-
-  const handleAuthorizeNetPayment = (apiUrl, metadata) => {
-    setCardError('');
-    const isProduction = import.meta.env.VITE_NODE_ENV === 'production';
-    const secureData = {
-      authData: {
-        clientKey: isProduction
-          ? import.meta.env.VITE_AUTHORIZE_NET_CLIENT_KEY_PRODUCTION
-          : import.meta.env.VITE_AUTHORIZE_NET_CLIENT_KEY_STAGING,
-        apiLoginID: isProduction
-          ? import.meta.env.VITE_AUTHORIZE_NET_API_LOGIN_ID_PRODUCTION
-          : import.meta.env.VITE_AUTHORIZE_NET_API_LOGIN_ID_STAGING,
-      },
-      cardData: {
-        cardNumber: cardNumber.replace(/\s/g, ''),
-        month: cardExpiry.split('/')[0]?.trim().padStart(2, '0'),
-        year: cardExpiry.split('/')[1]?.trim(),
-        cardCode,
-        fullName: cardholderName,
-      },
-    };
-
-    window.Accept.dispatchData(secureData, (response) => {
-      if (response.messages.resultCode === 'Error') {
-        const msg = response.messages.message.map(m => m.text).join(' ');
-        setCardError(msg);
-        setIsSubmitting(false);
-        return;
-      }
-
-      fetch(`${apiUrl}/api/${props.year}/authorize_net_charge`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ metadata, opaqueData: response.opaqueData }),
-      })
-        .then(res => res.json())
-        .then(data => {
-          if (data.success) {
-            setIsSubmitted(true);
-            navigate(`/${props.year}/registration_success`);
-          } else {
-            setCardError(data.message || 'Payment was declined. Please try again.');
-            setIsSubmitting(false);
-          }
-        })
-        .catch(() => {
-          setCardError('A network error occurred. Please try again.');
-          setIsSubmitting(false);
-        });
-    });
   };
 
   return (
@@ -444,82 +351,8 @@ const AddSponsorModal = (props) => {
                 }
               />
 
-              {/* Email for non-admin Authorize.net (Stripe collects on its hosted page) */}
-              {!props.isAdmin && paymentProvider === 'authorize_net' && (
-                <Stack spacing={2} sx={{ border: '1px solid #ddd', p: 2 }}>
-                  <Typography variant="subtitle2" sx={{ fontWeight: 'bold' }}>Contact Information</Typography>
-                  <TextField label="Email" type="email" value={email || ''} onChange={e => setEmail(e.target.value)} fullWidth required />
-                  <TextField label="Phone" value={phone || ''} onChange={e => setPhone(e.target.value)} fullWidth />
-                </Stack>
-              )}
-
-              {/* Authorize.net inline card form */}
-              {!props.isAdmin && paymentProvider === 'authorize_net' && !isSubmitted && (
-                <Stack spacing={2} sx={{ border: '1px solid #1976d2', borderRadius: 1, p: 2 }}>
-                  <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 1 }}>
-                    <Typography variant="subtitle2" sx={{ fontWeight: 'bold', color: '#1976d2' }}>Card Information</Typography>
-                    <Box sx={{ display: 'flex', gap: 0.5, alignItems: 'center' }}>
-                      {['visa', 'mastercard', 'amex', 'discover'].map(brand => (
-                        <Box key={brand} component="img"
-                          src={`https://js.authorize.net/v1/images/${brand}.png`}
-                          alt={brand}
-                          sx={{ height: 22, borderRadius: '3px', border: '1px solid #e0e0e0' }}
-                          onError={e => { e.target.style.display = 'none'; }}
-                        />
-                      ))}
-                    </Box>
-                  </Box>
-                  <Divider />
-                  <TextField label="Cardholder Name" value={cardholderName} onChange={e => setCardholderName(e.target.value)} fullWidth required />
-                  <Stack direction={isMobile ? 'column' : 'row'} spacing={2}>
-                    <TextField
-                      label="Card Number"
-                      value={cardNumber}
-                      onChange={e => setCardNumber(e.target.value.replace(/[^\d\s]/g, '').slice(0, 19))}
-                      fullWidth required inputProps={{ inputMode: 'numeric', maxLength: 19 }}
-                    />
-                    <TextField
-                      label="MM/YY"
-                      value={cardExpiry}
-                      onChange={e => {
-                        let v = e.target.value.replace(/[^\d/]/g, '');
-                        if (v.length === 2 && !v.includes('/')) v = v + '/';
-                        setCardExpiry(v.slice(0, 5));
-                      }}
-                      sx={{ width: isMobile ? '100%' : 120 }} required inputProps={{ inputMode: 'numeric', maxLength: 5 }}
-                    />
-                    <TextField
-                      label="CVV"
-                      value={cardCode}
-                      onChange={e => setCardCode(e.target.value.replace(/\D/g, '').slice(0, 4))}
-                      sx={{ width: isMobile ? '100%' : 100 }} required inputProps={{ inputMode: 'numeric', maxLength: 4 }}
-                    />
-                  </Stack>
-                  {cardError && <Alert severity="error">{cardError}</Alert>}
-                  <Button
-                    color="primary" variant="contained"
-                    disabled={!agreedToRules || totalFee === 0 || isSubmitting || !acceptJsLoaded || !cardholderName || !cardNumber || !cardExpiry || !cardCode}
-                    onClick={handleSubmit}
-                    startIcon={isSubmitting ? <CircularProgress size={20} /> : null}
-                  >
-                    {isSubmitting ? "Processing..." : `Pay $${totalFee.toLocaleString()}`}
-                  </Button>
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75, justifyContent: 'center' }}>
-                    <LockIcon sx={{ fontSize: 14, color: '#555' }} />
-                    <Typography variant="caption" sx={{ color: '#555' }}>
-                      Secured by{' '}
-                      <Box component="a" href="https://verify.authorize.net" target="_blank" rel="noopener noreferrer"
-                        sx={{ color: '#555', fontWeight: 'bold', textDecoration: 'none', '&:hover': { textDecoration: 'underline' } }}>
-                        Authorize.net
-                      </Box>
-                      {' '}· 256-bit SSL encryption
-                    </Typography>
-                  </Box>
-                </Stack>
-              )}
-
               {/* Stripe / Admin submit button */}
-              {(props.isAdmin || paymentProvider === 'stripe') && !isSubmitted && (
+              {!isSubmitted && (
                 <Button
                   color="primary" variant="contained"
                   onClick={handleSubmit}

@@ -4,12 +4,25 @@
 # DATE STARTED: 2-December-2024
 # DESCRIPTION: Full-stack tournament management app for the Deepsea Roundup
 #   annual fishing tournament. Built on the v3 angler tourney template.
-#   React (Vite) + Express.js + Firebase + Stripe + Redis + Heroku.
+#   React (Vite) + Express.js + Firebase (Hosting, Firestore, Storage, Auth)
+#   + Cloud Run + Stripe + Resend.
 ###############################################################################
 
 ###############################################################################
 # CHANGELOG
 ###############################################################################
+
+# v3.2.0  (November 2026) — moved off Heroku
+# - Firebase Hosting serves the site; /api/** is routed to a Cloud Run service ("api")
+#   running the Express app. Deploy with scripts/deploy.sh staging|production.
+# - Redis and express-session removed: pending checkouts live in Firestore
+#   (pendingRegistrations, 7-day TTL); the response cache is in-memory.
+# - Stripe webhook saves each registration exactly once (transaction) and returns 500
+#   on failure so Stripe retries. Authorize.net removed; Stripe only.
+# - Angler and sponsor prices are computed server-side from the year's registrationConfig
+#   (api/generated/registration-pricing.json). Tests: cd api && npm test.
+# - Admin routes require a Firebase ID token from an ADMIN_EMAILS user; public reads drop
+#   contact/payment fields and only read the expected collections.
 
 # v3.1.0  (April 2026)
 # - Migrated front-end build from Create React App (react-scripts) to Vite
@@ -39,85 +52,49 @@
 # Initial commit. Firebase projects: deepsea-roundup-v3-staging, deepsea-roundup-v3-prod
 
 ###############################################################################
-# HEROKU DEPLOYMENT NOTES
+# DEPLOYMENT (Firebase Hosting + Cloud Run)
 ###############################################################################
 
-# Apps
-#   Staging:    deepsea-roundup-ai-dev   (auto-deploys from: develop branch)
-#   Production: deepsea-roundup-ai-prod  (auto-deploys from: main branch)
+# Environments (same Firebase projects every year)
+#   Staging:    deepsea-roundup-ai-dev   https://deepsea-roundup-ai-dev.web.app
+#   Production: deepsea-roundup-ai-prod  https://deepsearoundup.customtournamentsolutions.com
+#                                        (www. redirects to it; also deepsea-roundup-ai-prod.web.app)
 
-# Build process (heroku-postbuild in root package.json)
-#   1. cd client && npm install && npm run build   (Vite build, outputs to client/dist/)
-#   2. cd api && npm install
+# Deploy (needs gcloud configuration "arrowhead" and firebase-tools on Node 22)
+#   scripts/deploy.sh staging
+#   scripts/deploy.sh production      (asks to confirm when not on main)
+#   Builds pricing + the site, deploys the API to Cloud Run, deploys Hosting, then
+#   smoke-tests /api/health.
 
-# IMPORTANT: vite and @vitejs/plugin-react MUST be in client/package.json "dependencies"
-#   (not "devDependencies"). Heroku sets NODE_ENV=production and skips devDependencies,
-#   causing "vite: not found" if they are in devDependencies.
+# Settings
+#   deploy/staging.env, deploy/production.env   non-secret settings (committed)
+#   .env.staging, .env.production               public Firebase web config for the Vite build
+#                                               (vite reads env files from the repo root)
+#   Secret Manager (per project): STRIPE_SECRET_KEY, STRIPE_WEBHOOK_SECRET, RESEND_API_KEY
+#   The API runs as firebase-adminsdk-fbsvc@<project>.iam.gserviceaccount.com; no key files.
 
-# Redis
-#   Add Heroku Key-Value Store (Redis) Mini addon to BOTH staging and prod apps.
-#   The REDIS_TLS_URL config var is set automatically by the addon — do NOT add manually.
-#   api/services/cache.js reads REDIS_TLS_URL at startup.
+# Event week: set MIN_INSTANCES=1 in deploy/production.env and redeploy; back to 0 after.
 
-# Private key env vars (Firebase service account)
-#   Paste the private key as a single line with literal \n characters in Heroku config vars.
-#   The server calls .replace(/\\n/g, '\n') at runtime to restore the real newlines.
-#   Example (from .env — do NOT add quotes around the value in Heroku):
-#     VITE_GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY=-----BEGIN PRIVATE KEY-----\nMIIE...\n-----END PRIVATE KEY-----\n
+# Stripe webhook URLs (event: checkout.session.completed)
+#   Staging:    https://deepsea-roundup-ai-dev.web.app/api/registration_webhook
+#   Production: https://deepsearoundup.customtournamentsolutions.com/api/registration_webhook
 
-# Config vars to set on both apps (staging and prod versions where noted)
-#   VITE_NODE_ENV                          staging | production
-#   VITE_SERVER_URL_STAGING                https://your-staging-app.herokuapp.com
-#   VITE_SERVER_URL_PRODUCTION             https://your-prod-app.herokuapp.com
-#   VITE_FIREBASE_API_KEY                  (staging / prod values)
-#   VITE_FIREBASE_AUTH_DOMAIN
-#   VITE_FIREBASE_PROJECT_ID
-#   VITE_FIREBASE_STORAGE_BUCKET
-#   VITE_FIREBASE_MESSAGING_SENDER_ID
-#   VITE_FIREBASE_APP_ID
-#   VITE_GOOGLE_SERVICE_ACCOUNT_TYPE
-#   VITE_GOOGLE_SERVICE_ACCOUNT_PROJECT_ID
-#   VITE_GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY_ID
-#   VITE_GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY   (single-line with literal \n)
-#   VITE_GOOGLE_SERVICE_ACCOUNT_CLIENT_EMAIL
-#   VITE_GOOGLE_SERVICE_ACCOUNT_CLIENT_ID
-#   VITE_GOOGLE_SERVICE_ACCOUNT_AUTH_URI
-#   VITE_GOOGLE_SERVICE_ACCOUNT_TOKEN_URI
-#   VITE_STRIPE_PRIVATE_KEY_TESTING
-#   VITE_STRIPE_WEBHOOK_SECRET_KEY_TESTING
-#   VITE_STRIPE_PRIVATE_KEY_PRODUCTION
-#   VITE_STRIPE_WEBHOOK_SECRET_KEY_PRODUCTION
-
-# Stripe webhook URLs
-#   Staging:    https://your-staging-app.herokuapp.com/api/registration_webhook
-#   Production: https://your-prod-app.herokuapp.com/api/registration_webhook
+# Parity check against another host reading the same Firestore project:
+#   node migration/parity-check.mjs <oldBaseUrl> <newBaseUrl> 2024 2025 2026
 
 ###############################################################################
 # LOCAL DEVELOPMENT
 ###############################################################################
 
-# Prerequisites
-#   nvm (use node 21.6.0)
-#   Redis installed locally
-#   Stripe CLI installed
+# Prerequisites: Node 22, Stripe CLI (for registration testing)
 
-# Terminal 1 — Redis
-#   redis-server
-#   (confirm: redis-cli ping → PONG)
+# Terminal 1 — API server:   cd api && npm run dev
+# Terminal 2 — Vite:         cd client && npm start   (proxies /api to localhost:8000)
+# Terminal 3 — Stripe:       stripe listen --forward-to localhost:8000/api/registration_webhook
 
-# Terminal 2 — API server
-#   nvm use 21.6.0
-#   cd api && npm run dev
-
-# Terminal 3 — Vite dev server
-#   nvm use 21.6.0
-#   cd client && npm start
-
-# Terminal 4 — Stripe webhook forwarding (for registration testing)
-#   stripe listen --forward-to localhost:3001/api/registration_webhook
-
-# .env file lives in the project root directory (gitignored).
-# Copy the structure from Heroku config vars above.
+# Local .env (repo root, gitignored): the legacy REACT_APP_*_STAGING service-account vars,
+# REACT_APP_STRIPE_PRIVATE_KEY_TESTING / _WEBHOOK_SECRET_KEY_TESTING, plus VITE_* web config.
+# See api/config.js for the full list.
 
 ###############################################################################
 # FIREBASE SETUP (per new year / new project)
@@ -159,9 +136,9 @@
 # 3. Update client/src/config/masterConfig.js to route the new year
 # 4. Update client/src/config/dashboardConfig.js with the new Firebase project IDs
 # 5. Update client/src/App.js if a new year route is needed
-# 6. Create new Firebase projects (see Firebase Setup above)
-# 7. Update Heroku config vars with new Firebase credentials
-# 8. Update Stripe webhook URLs if the Heroku app URL has changed
+# 6. Keep the same Firebase projects (staging/production are reused every year)
+# 7. cd api && npm run build:pricing && npm test   (regenerates server-side prices)
+# 8. Deploy staging, test, then deploy production (see Deployment above)
 # 9. Set CONFIG_REGISTRATION_PRICES_PENDING_CONFIRMATION: true in registrationConfig.js
 #    while prices are being confirmed — flip to false when ready to open registration
 

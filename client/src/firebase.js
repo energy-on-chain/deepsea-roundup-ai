@@ -28,3 +28,24 @@ if (import.meta.env.VITE_NODE_ENV === "staging") {
 const app = initializeApp(firebaseConfig);
 export const auth = getAuth();
 
+// Admin API calls need proof of sign-in: when an admin is signed in, attach their
+// Firebase ID token to every request to our own /api/ routes. The server checks it
+// (api/middleware/auth.js). Signed-out visitors' requests go out unchanged.
+const originalFetch = window.fetch.bind(window);
+window.fetch = async (input, init = {}) => {
+  const url = typeof input === "string" ? input : input?.url || String(input);
+  const apiBases = ["", window.location.origin, import.meta.env.VITE_SERVER_URL_STAGING, import.meta.env.VITE_SERVER_URL_PRODUCTION]
+    .filter((b) => b !== undefined && b !== null)
+    .map((b) => b.replace(/\/$/, ""));
+  const isOurApi = apiBases.some((base) => url.startsWith(`${base}/api/`));
+  if (isOurApi) {
+    await auth.authStateReady();
+    if (auth.currentUser) {
+      const token = await auth.currentUser.getIdToken();
+      const headers = new Headers(init.headers || (typeof input !== "string" ? input.headers : undefined));
+      headers.set("Authorization", `Bearer ${token}`);
+      init = { ...init, headers };
+    }
+  }
+  return originalFetch(input, init);
+};

@@ -2,10 +2,6 @@
 // REGISTRATION SETTINGS ////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////////////////////////
 export default {
-  // Payment provider: "stripe" | "authorize_net"
-  // Switch back to "stripe" at any time — all Stripe infrastructure is preserved.
-  CONFIG_PAYMENT_PROVIDER: "stripe",
-
   // Safety flag: set to true until prices/dates are officially confirmed.
   // While true, registration page shows an amber "Coming Soon" banner and disables the register button.
   CONFIG_REGISTRATION_PRICES_PENDING_CONFIRMATION: false,

@@ -1,0 +1,109 @@
+{
+  "2024": {
+    "hasEarlybird": true,
+    "earlybirdCutoffMs": 1719810000000,
+    "anglerCutoffMs": 1721023200000,
+    "sponsorCutoffMs": 1721023200000,
+    "pricesPendingConfirmation": false,
+    "fees": {
+      "earlybird": {
+        "Adult": 130,
+        "Junior": 110
+      },
+      "normal": {
+        "Adult": 150,
+        "Junior": 130
+      }
+    },
+    "sponsorTiers": {
+      "Platinum Tier": 10000,
+      "Gold Tier": 5000,
+      "Silver Tier": 1000,
+      "Bronze Tier": 500
+    },
+    "sponsorAddOns": {
+      "Single Day Exhibit - Friday": 750,
+      "Single Day Exhibit - Saturday": 750,
+      "Bill & Bo Horn Memorial Fish Fry": 1000,
+      "Junior Boatmen Raffle": 1000,
+      "Piggy Perch": 500,
+      "Junior Trophies - Bay/Surf": 1500,
+      "Junior Trophies - Offshore": 2000,
+      "All Championship Trophies": 500,
+      "Adult Division - 1st Place Trophies": 225,
+      "Adult Division - 2nd Place Trophies": 175
+    }
+  },
+  "2025": {
+    "hasEarlybird": true,
+    "earlybirdCutoffMs": 1751346000000,
+    "anglerCutoffMs": 1752555600000,
+    "sponsorCutoffMs": 1752555600000,
+    "pricesPendingConfirmation": false,
+    "fees": {
+      "earlybird": {
+        "Adult": 130,
+        "Junior": 110
+      },
+      "normal": {
+        "Adult": 150,
+        "Junior": 130
+      }
+    },
+    "sponsorTiers": {
+      "Tournament Top Sponsor": 25000,
+      "Platinum Tier": 10000,
+      "Gold Tier": 5000,
+      "Silver Tier": 1000,
+      "Bronze Tier": 500
+    },
+    "sponsorAddOns": {
+      "Single Day Exhibit - Friday": 750,
+      "Single Day Exhibit - Saturday": 750,
+      "Bill & Bo Horn Memorial Fish Fry": 1000,
+      "Junior Boatmen Raffle": 1000,
+      "Piggy Perch": 500,
+      "Junior Trophies - Bay/Surf": 1500,
+      "Junior Trophies - Offshore": 2000,
+      "All Championship Trophies": 500,
+      "Adult Division - 1st Place Trophies": 225,
+      "Adult Division - 2nd Place Trophies": 175
+    }
+  },
+  "2026": {
+    "hasEarlybird": true,
+    "earlybirdCutoffMs": 1782882000000,
+    "anglerCutoffMs": 1784091600000,
+    "sponsorCutoffMs": 1784091600000,
+    "pricesPendingConfirmation": false,
+    "fees": {
+      "earlybird": {
+        "Adult": 150,
+        "Junior": 110
+      },
+      "normal": {
+        "Adult": 200,
+        "Junior": 130
+      }
+    },
+    "sponsorTiers": {
+      "Tournament Top Sponsor": 25000,
+      "Platinum Tier": 10000,
+      "Gold Tier": 5000,
+      "Silver Tier": 1000,
+      "Bronze Tier": 500
+    },
+    "sponsorAddOns": {
+      "Single Day Exhibit - Friday": 750,
+      "Single Day Exhibit - Saturday": 750,
+      "Bill & Bo Horn Memorial Fish Fry": 1000,
+      "Junior Boatmen Raffle": 1000,
+      "Piggy Perch": 500,
+      "Junior Trophies - Bay/Surf": 1500,
+      "Junior Trophies - Offshore": 2000,
+      "All Championship Trophies": 500,
+      "Adult Division - 1st Place Trophies": 225,
+      "Adult Division - 2nd Place Trophies": 175
+    }
+  }
+}

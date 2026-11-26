@@ -8,15 +8,17 @@ function Redirect() {
 
   useEffect(() => {
     const getCurrentYearAndRedirect = async () => {
-      const currentYear = new Date().getFullYear(); // Default to the current year
-      const config = await loadConfigForYear(currentYear);
-
-      // Set the year based on config or default to the current year
-      if (config && config.generalConfig) {
-        setCurrentYear(config.generalConfig.CONFIG_GENERAL_YEAR || currentYear);
-      } else {
-        setCurrentYear(currentYear);
+      // Use this year's config if it exists; otherwise fall back to the newest year that
+      // has one (e.g. on Jan 1, before next year's config has been added).
+      const thisYear = new Date().getFullYear();
+      for (let year = thisYear; year >= thisYear - 5; year--) {
+        const config = await loadConfigForYear(year);
+        if (config && config.generalConfig) {
+          setCurrentYear(config.generalConfig.CONFIG_GENERAL_YEAR || year);
+          return;
+        }
       }
+      setCurrentYear(thisYear);
     };
 
     getCurrentYearAndRedirect();

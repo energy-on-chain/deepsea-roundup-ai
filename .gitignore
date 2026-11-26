@@ -3,9 +3,6 @@
 */build
 /.pnp
 .pnp.js
-api/package-lock.json
-client/package-lock.json
-package-lock.json
 
 # testing
 /coverage
@@ -30,6 +27,8 @@ examples/
 
 # misc
 *.env
+# non-secret deploy settings are committed on purpose
+!deploy/*.env
 .DS_Store
 .env.local
 .env.development.local
@@ -50,3 +49,9 @@ key.pem
 *dump.rdb
 
 .codegpt
+
+# firebase hosting deploy cache
+.firebase/
+
+# local working files
+heroku-inventory-*.md

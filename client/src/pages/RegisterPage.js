@@ -112,10 +112,10 @@ function RegisterPage(props) {
         } else {
           setIsEarlyBird(true);
         }
-        if (currentTime > registrationConfig.CONFIG_ANGLER_REGISTRATION_CUTOFF_IN_LOCAL_TIME_IN_MS) {
+        if (import.meta.env.VITE_REGISTRATION_TEST_MODE !== 'true' && currentTime > registrationConfig.CONFIG_ANGLER_REGISTRATION_CUTOFF_IN_LOCAL_TIME_IN_MS) {
           setIsAnglerRegistrationDisable(true); // Disable the registration button
         }
-        if (currentTime > registrationConfig.CONFIG_SPONSOR_REGISTRATION_CUTOFF_IN_LOCAL_TIME_IN_MS) {
+        if (import.meta.env.VITE_REGISTRATION_TEST_MODE !== 'true' && currentTime > registrationConfig.CONFIG_SPONSOR_REGISTRATION_CUTOFF_IN_LOCAL_TIME_IN_MS) {
           setIsSponsorRegistrationDisable(true); // Disable the registration button
         }
 

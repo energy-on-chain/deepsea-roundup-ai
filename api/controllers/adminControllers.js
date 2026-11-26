@@ -1,5 +1,5 @@
 const multer = require('multer');
-const { v4: uuidv4 } = require('uuid');
+const crypto = require('crypto');
 const { getFirestore } = require("firebase-admin/firestore");
 const { getStorage } = require("firebase-admin/storage");
 
@@ -21,67 +21,56 @@ const flattenObjectWithPrefix = (obj, prefix = '') => {
   }, {});
 };
 
-module.exports = ({redisClient}) => {
+module.exports = () => {
 
   // General
+  // The public Pots page reads the angler list too, so these reads stay open, but a
+  // caller who isn't a signed-in admin only gets known tournament collections, with
+  // contact and payment details removed.
+  const PUBLIC_COLLECTION = /^(anglers|catches|pots|announcements)\d{4}$/;
+  const PRIVATE_FIELD = /email|phone|cardholder|address|paymentstatus|stripe/i;
+  const publicView = (data) => Object.fromEntries(
+    Object.entries(data).filter(([key]) => !PRIVATE_FIELD.test(key))
+  );
+
+  const readCollection = async (req, res, tableName) => {
+    const isAdmin = Boolean(req.adminUser);
+    if (!isAdmin && !PUBLIC_COLLECTION.test(tableName)) {
+      return res.status(403).json({ error: 'Not available' });
+    }
+    if (!tableName) return res.status(400).json({ error: 'tableName is required' });
+    const snapshot = await getFirestore().collection(tableName).get();
+    const documentObject = {};
+    snapshot.forEach((document) => {
+      documentObject[document.id] = isAdmin ? document.data() : publicView(document.data());
+    });
+    res.send(documentObject);
+  };
+
   const adminGetDatabaseList = async (req, res) => {
-    console.log('In api/admin_get_database_list...');
-  
     try {
-
-      const { year } = req.params;
-      let tableName = req.body.tableName;
-
-      const db = getFirestore();
-      const documentObject = {};
-      const snapshot = await db.collection(tableName).get();
-      snapshot.forEach(document => {
-        documentObject[document.id] = document.data();
-      });
-      res.send(documentObject);
+      await readCollection(req, res, String(req.body.tableName || ''));
     } catch (e) {
       res.status(500).json({ error: e.message });
     }
   };
 
   const adminGetAnglerList = async (req, res) => {
-    console.log('In api/admin_get_angler_list...');
-  
     try {
-
-      const { year } = req.params;
-
-      const db = getFirestore();
-      const documentObject = {};
-      const snapshot = await db.collection(`anglers${year}`).get();
-      snapshot.forEach(document => {
-        documentObject[document.id] = document.data();
-      });
-      res.send(documentObject);
+      await readCollection(req, res, `anglers${req.params.year}`);
     } catch (e) {
       res.status(500).json({ error: e.message });
     }
   };
-  
+
   const adminGetOldTeamNameList = async (req, res) => {
-    console.log('In api/admin_get_old_team_name_list...');
-  
     try {
-
-      let tableName = req.body.tableName;
-
-      const db = getFirestore();
-      const documentObject = {};
-      const snapshot = await db.collection(tableName).get();
-      snapshot.forEach(document => {
-        documentObject[document.id] = document.data();
-      });
-      res.send(documentObject);
+      await readCollection(req, res, String(req.body.tableName || ''));
     } catch (e) {
       res.status(500).json({ error: e.message });
     }
   };
-  
+
   // Anglers
   const adminEditAngler = async (req, res) => {
     try {
@@ -102,7 +91,8 @@ module.exports = ({redisClient}) => {
 
       // editedBy (the logged-in admin's email) is sent along purely for the change log below --
       // never persisted onto the angler document itself.
-      const editedBy = formData.editedBy || 'Unknown';
+      // Prefer the verified sign-in over what the browser says.
+      const editedBy = req.adminUser?.email || formData.editedBy || 'Unknown';
       delete formData.editedBy;
 
       const anglerDocRef = db.collection(`anglers${year}`).doc(anglerId);
@@ -397,7 +387,8 @@ module.exports = ({redisClient}) => {
     try {
       const { year } = req.params;
       const db = getFirestore();
-      const { canonicalName, oldNames, editedBy } = req.body;
+      const { canonicalName, oldNames } = req.body;
+      const editedBy = req.adminUser?.email || req.body.editedBy;
 
       if (!canonicalName || !Array.isArray(oldNames) || oldNames.length === 0) {
         return res.status(400).json({ error: 'canonicalName and oldNames are required.' });
@@ -509,7 +500,7 @@ module.exports = ({redisClient}) => {
       // Handle logo file upload, if provided
       if (req.files?.logo && req.files.logo.length > 0) {
         const logoFile = req.files.logo[0];
-        const filename = `${uuidv4()}-${logoFile.originalname.replace(/\s+/g, '-')}`;
+        const filename = `${crypto.randomUUID()}-${logoFile.originalname.replace(/\s+/g, '-')}`;
         const fileUpload = bucket.file(filename);
   
         // Delete the old logo from Firebase Storage if it exists
@@ -635,7 +626,7 @@ module.exports = ({redisClient}) => {
         const file = req.files.find(file => file.fieldname === `catchPhoto_${index}`);
 
         if (file) {
-          const filename = `${uuidv4()}-${file.originalname}`;  // Generate unique filename
+          const filename = `${crypto.randomUUID()}-${file.originalname}`;  // Generate unique filename
           const fileUpload = bucket.file(filename);
 
           // Upload the file to Firebase Storage
@@ -715,7 +706,7 @@ module.exports = ({redisClient}) => {
           }
   
           // Upload the new image to Firebase Storage
-          const filename = `${uuidv4()}-${file.originalname}`;
+          const filename = `${crypto.randomUUID()}-${file.originalname}`;
           const fileUpload = bucket.file(filename);
           await fileUpload.save(file.buffer, {
             metadata: { contentType: file.mimetype },

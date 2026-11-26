@@ -87,7 +87,7 @@ function HomePage() {
 
     // Check if the current time is past the cutoff, and disable registration if so
     const currentTime = new Date().getTime();
-    if (currentTime > CONFIG_ANGLER_REGISTRATION_CUTOFF_IN_LOCAL_TIME_IN_MS) {
+    if (import.meta.env.VITE_REGISTRATION_TEST_MODE !== 'true' && currentTime > CONFIG_ANGLER_REGISTRATION_CUTOFF_IN_LOCAL_TIME_IN_MS) {
       setIsRegistrationDisabled(true); // Disable the registration button
     }
     if (CONFIG_REGISTRATION_PRICES_PENDING_CONFIRMATION === true) {
