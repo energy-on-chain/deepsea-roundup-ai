@@ -80,3 +80,13 @@ test('sponsors: closed after the sponsor cutoff unless the cutoff is ignored', (
   assert.throws(() => quoteSponsor(2026, 'Gold Tier', [], afterSponsorCutoff), PricingError);
   assert.strictEqual(quoteSponsor(2026, 'Gold Tier', [], afterSponsorCutoff, { ignoreCutoff: true }).total, p26.sponsorTiers['Gold Tier']);
 });
+
+test('a year with prices pending refuses public checkout but admins can still register', () => {
+  const pendingYear = Object.keys(pricing).find((y) => pricing[y].pricesPendingConfirmation);
+  if (!pendingYear) return; // nothing pending right now
+  const p = pricing[pendingYear];
+  assert.throws(() => quoteAnglers(pendingYear, [angler('A', 'Adult')], p.earlybirdCutoffMs - 1000), PricingError);
+  assert.throws(() => quoteSponsor(pendingYear, 'None', [Object.keys(p.sponsorAddOns)[0]], p.earlybirdCutoffMs - 1000), PricingError);
+  const q = quoteAnglers(pendingYear, [angler('A', 'Adult')], p.earlybirdCutoffMs - 1000, { ignorePending: true });
+  assert.strictEqual(q.total, p.fees.earlybird.Adult);
+});

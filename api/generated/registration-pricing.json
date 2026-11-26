@@ -105,5 +105,41 @@
       "Adult Division - 1st Place Trophies": 225,
       "Adult Division - 2nd Place Trophies": 175
     }
+  },
+  "2027": {
+    "hasEarlybird": true,
+    "earlybirdCutoffMs": 1814331600000,
+    "anglerCutoffMs": 1815541200000,
+    "sponsorCutoffMs": 1815541200000,
+    "pricesPendingConfirmation": true,
+    "fees": {
+      "earlybird": {
+        "Adult": 150,
+        "Junior": 110
+      },
+      "normal": {
+        "Adult": 200,
+        "Junior": 130
+      }
+    },
+    "sponsorTiers": {
+      "Tournament Top Sponsor": 25000,
+      "Platinum Tier": 10000,
+      "Gold Tier": 5000,
+      "Silver Tier": 1000,
+      "Bronze Tier": 500
+    },
+    "sponsorAddOns": {
+      "Single Day Exhibit - Friday": 750,
+      "Single Day Exhibit - Saturday": 750,
+      "Bill & Bo Horn Memorial Fish Fry": 1000,
+      "Junior Boatmen Raffle": 1000,
+      "Piggy Perch": 500,
+      "Junior Trophies - Bay/Surf": 1500,
+      "Junior Trophies - Offshore": 2000,
+      "All Championship Trophies": 500,
+      "Adult Division - 1st Place Trophies": 225,
+      "Adult Division - 2nd Place Trophies": 175
+    }
   }
 }

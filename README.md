@@ -128,6 +128,26 @@
 #      node scripts/migrate-to-new-projects.js
 
 ###############################################################################
+# 2027 GO-LIVE CHECKLIST (config2027 is templated; registration is locked)
+###############################################################################
+
+# client/src/config/config2027/ is a copy of 2026 with placeholder dates and 2026 prices.
+# Every value that needs the client's confirmation is marked "PLACEHOLDER" in a comment:
+#   grep -rn PLACEHOLDER client/src/config/config2027
+# 1. homeConfig.js          date string + countdown start (CONFIG_HOME_TOURNAMENT_START_...)
+# 2. adminConfig.js         tournament start/end dates
+# 3. registrationConfig.js  earlybird + angler/sponsor cutoffs, adult/junior fees,
+#                           sponsorship tiers and additional sponsorships
+# 4. leaderboardConfig.js, potsConfig.js  preliminary-results cutoff; pot list/entry amounts
+# 5. dashboardConfig.js     2027 dates string
+# 6. Stripe (with Cody): point both webhooks at the URLs under Deployment, put the real
+#    whsec_ values in Secret Manager (STRIPE_WEBHOOK_SECRET), redeploy, and run one
+#    staging test registration (angler + sponsor) end to end.
+# 7. Set CONFIG_REGISTRATION_PRICES_PENDING_CONFIRMATION: false, then
+#    cd api && npm run build:pricing && npm test, deploy staging, check, deploy production.
+# Until step 7 the 2027 pages show "Coming Soon" and the server refuses 2027 checkout.
+
+###############################################################################
 # ADDING A NEW TOURNAMENT YEAR
 ###############################################################################
 

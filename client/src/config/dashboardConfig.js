@@ -22,6 +22,22 @@ const dashboardConfig = {
   },
   CONFIG_DASHBOARD_UPCOMING_AND_ACTIVE_TOURNAMENT_DATA: [
     {
+      logo: './DeepseaRoundupLogo2027.jpg',
+      title: "Deepsea Roundup 2027 (91st Edition)",
+      dates: "July 2027 (dates coming soon)",
+      home: "/2027/home",
+      register: "/2027/register",
+      leaderboard: "/2027/leaderboard",
+      pots: "/2027/pots",
+      newsfeed: "/2027/newsfeed",
+      records: "/2027/records",
+      auction: null,
+      admin: "/2027/admin",
+    },
+  ],
+
+  CONFIG_DASHBOARD_PAST_TOURNAMENT_DATA: [
+    {
       logo: './DeepseaRoundupLogo2026.jpg',
       title: "Deepsea Roundup 2026 (90th Edition)",
       dates: "July 9th - 12th 2026",
@@ -34,9 +50,6 @@ const dashboardConfig = {
       auction: null,
       admin: "/2026/admin",
     },
-  ],
-
-  CONFIG_DASHBOARD_PAST_TOURNAMENT_DATA: [
     {
       logo: './DeepseaRoundupLogo2025.jpg',
       title: "Deepsea Roundup 2025",
